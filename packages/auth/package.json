@@ -1,0 +1,22 @@
+{
+  "name": "@moojot/auth",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "@better-auth/expo": "catalog:",
+    "@moojot/db": "workspace:*",
+    "better-auth": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@moojot/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

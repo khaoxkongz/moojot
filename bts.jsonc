@@ -1,0 +1,28 @@
+// Better-T-Stack project metadata
+//
+// Keep this file to use the `add` command.
+// Add addons: bunx create-better-t-stack@latest add
+//
+// Docs: https://better-t-stack.dev/docs
+// Stack Builder: https://better-t-stack.dev/new
+
+{
+  "$schema": "https://r2.better-t-stack.dev/schema.json",
+  "version": "3.44.1",
+  "createdAt": "2026-09-24T09:13:03.258Z",
+  "reproducibleCommand": "bun create better-t-stack@latest moojot --frontend next native-bare --backend hono --runtime bun --database mongodb --orm prisma --api orpc --auth better-auth --payments none --addons evlog oxlint skills vite-plus --examples none --db-setup mongodb-atlas --web-deploy none --server-deploy none --git --package-manager bun --install",
+  "database": "mongodb",
+  "orm": "prisma",
+  "backend": "hono",
+  "runtime": "bun",
+  "frontend": ["next", "native-bare"],
+  "addons": ["evlog", "oxlint", "skills", "vite-plus"],
+  "examples": [],
+  "auth": "better-auth",
+  "payments": "none",
+  "packageManager": "bun",
+  "dbSetup": "mongodb-atlas",
+  "api": "orpc",
+  "webDeploy": "none",
+  "serverDeploy": "none",
+}
