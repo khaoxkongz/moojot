@@ -145,9 +145,7 @@ Hidden from users but crucial for discoverability. Use comma-separated keywords 
 
 ```json
 {
-  "keywords": [
-    "finance,budget,expense,money,tracker,savings,bills,income,spending,wallet,personal,weekly,monthly"
-  ]
+  "keywords": ["finance,budget,expense,money,tracker,savings,bills,income,spending,wallet,personal,weekly,monthly"]
 }
 ```
 
@@ -314,9 +312,7 @@ module.exports = {
     info: {
       "en-US": {
         ...baseConfig.apple.info["en-US"],
-        promoText: isProduction
-          ? "Download now and get started!"
-          : "[BETA] Help us test new features!",
+        promoText: isProduction ? "Download now and get started!" : "[BETA] Help us test new features!",
       },
     },
   },

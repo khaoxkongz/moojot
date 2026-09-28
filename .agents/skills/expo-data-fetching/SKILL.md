@@ -134,9 +134,7 @@ function UserProfile({ userId }: { userId: string }) {
 
   return (
     <>
-      {error && (
-        <InlineError message="Could not refresh. Showing saved data." onRetry={() => refetch()} />
-      )}
+      {error && <InlineError message="Could not refresh. Showing saved data." onRetry={() => refetch()} />}
       {data === null ? <EmptyState message="User not found" /> : <Profile user={data} />}
     </>
   );
@@ -165,9 +163,7 @@ function CreateUserForm() {
   };
 
   // Form keeps its draft on error and disables Submit while isLoading.
-  return (
-    <Form onSubmit={handleSubmit} isLoading={mutation.isPending} error={mutation.error?.message} />
-  );
+  return <Form onSubmit={handleSubmit} isLoading={mutation.isPending} error={mutation.error?.message} />;
 }
 ```
 
@@ -182,7 +178,7 @@ class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public code?: string,
+    public code?: string
   ) {
     super(message);
     this.name = "ApiError";

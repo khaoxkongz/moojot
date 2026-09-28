@@ -1,6 +1,7 @@
-import type { AppRouterClient } from "@moojot/api/routers/index";
+import type { AppRouterClient } from "@moojot/api/features/index";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { SimpleCsrfProtectionLinkPlugin } from "@orpc/client/plugins";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ export const queryClient = createQueryClient();
 
 export const link = new RPCLink({
   url: `${process.env.NEXT_PUBLIC_SERVER_URL!.replace(/\/$/, "")}/rpc`,
+  plugins: [new SimpleCsrfProtectionLinkPlugin()],
   fetch(url, options) {
     return fetch(url, {
       ...options,

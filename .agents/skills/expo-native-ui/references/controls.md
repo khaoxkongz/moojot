@@ -126,12 +126,7 @@ const [date, setDate] = useState(new Date());
 ### Min/Max Dates
 
 ```tsx
-<DateTimePicker
-  value={date}
-  mode="date"
-  minimumDate={new Date(2020, 0, 1)}
-  maximumDate={new Date(2030, 11, 31)}
-/>
+<DateTimePicker value={date} mode="date" minimumDate={new Date(2020, 0, 1)} maximumDate={new Date(2030, 11, 31)} />
 ```
 
 ## TextInput

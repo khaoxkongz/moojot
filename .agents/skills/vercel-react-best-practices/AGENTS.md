@@ -486,9 +486,7 @@ function AnimationPlayer({
 
   useEffect(() => {
     if (enabled && !frames && typeof window !== "undefined") {
-      import("./animation-frames.js")
-        .then((mod) => setFrames(mod.frames))
-        .catch(() => setEnabled(false));
+      import("./animation-frames.js").then((mod) => setFrames(mod.frames)).catch(() => setEnabled(false));
     }
   }, [enabled, frames, setEnabled]);
 
@@ -623,9 +621,7 @@ const baseDir = path.join(process.cwd(), "content/" + contentKind);
 
 ```ts
 const baseDir =
-  kind === ContentKind.Blog
-    ? path.join(process.cwd(), "content/blog")
-    : path.join(process.cwd(), "content/docs");
+  kind === ContentKind.Blog ? path.join(process.cwd(), "content/blog") : path.join(process.cwd(), "content/docs");
 ```
 
 In Next.js server code, this matters for output file tracing too. `path.join(process.cwd(), someVar)` can widen the traced file set because Next.js statically analyze `import`, `require`, and `fs` usage.
@@ -1191,9 +1187,7 @@ If one `getChat(id)` out of 100 is extremely slow, the authors of the other 99 c
 **Correct: each item chains its own nested fetch**
 
 ```tsx
-const chatAuthors = await Promise.all(
-  chatIds.map((id) => getChat(id).then((chat) => getUser(chat.author))),
-);
+const chatAuthors = await Promise.all(chatIds.map((id) => getChat(id).then((chat) => getUser(chat.author))));
 ```
 
 Each item independently chains `getChat` → `getUser`, so a slow chat doesn't block author fetches for the others.
@@ -1576,7 +1570,7 @@ function cachePrefs(user: FullUser) {
       JSON.stringify({
         theme: user.preferences.theme,
         notifications: user.preferences.notifications,
-      }),
+      })
     );
   } catch {}
 }
@@ -1710,9 +1704,7 @@ A common reason developers do this is to access parent variables without passing
 ```tsx
 function UserProfile({ user, theme }) {
   // Defined inside to access `theme` - BAD
-  const Avatar = () => (
-    <img src={user.avatarUrl} className={theme === "dark" ? "avatar-dark" : "avatar-light"} />
-  );
+  const Avatar = () => <img src={user.avatarUrl} className={theme === "dark" ? "avatar-dark" : "avatar-light"} />;
 
   // Defined inside to access `user` - BAD
   const Stats = () => (
@@ -1934,9 +1926,7 @@ When a hook contains multiple independent tasks with different dependencies, spl
 ```tsx
 const sortedProducts = useMemo(() => {
   const filtered = products.filter((p) => p.category === category);
-  const sorted = filtered.toSorted((a, b) =>
-    sortOrder === "asc" ? a.price - b.price : b.price - a.price,
-  );
+  const sorted = filtered.toSorted((a, b) => (sortOrder === "asc" ? a.price - b.price : b.price - a.price));
   return sorted;
 }, [products, category, sortOrder]);
 ```
@@ -1944,17 +1934,11 @@ const sortedProducts = useMemo(() => {
 **Correct: filtering only recomputes when products or category change**
 
 ```tsx
-const filteredProducts = useMemo(
-  () => products.filter((p) => p.category === category),
-  [products, category],
-);
+const filteredProducts = useMemo(() => products.filter((p) => p.category === category), [products, category]);
 
 const sortedProducts = useMemo(
-  () =>
-    filteredProducts.toSorted((a, b) =>
-      sortOrder === "asc" ? a.price - b.price : b.price - a.price,
-    ),
-  [filteredProducts, sortOrder],
+  () => filteredProducts.toSorted((a, b) => (sortOrder === "asc" ? a.price - b.price : b.price - a.price)),
+  [filteredProducts, sortOrder]
 );
 ```
 
@@ -2025,7 +2009,7 @@ function TodoList() {
     (newItems: Item[]) => {
       setItems([...items, ...newItems]);
     },
-    [items],
+    [items]
   ); // ❌ items dependency causes recreations
 
   // Risk of stale closure if dependency is forgotten
@@ -2205,10 +2189,7 @@ function Search({ items }: { items: Item[] }) {
 function Search({ items }: { items: Item[] }) {
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const filtered = useMemo(
-    () => items.filter((item) => fuzzyMatch(item, deferredQuery)),
-    [items, deferredQuery],
-  );
+  const filtered = useMemo(() => items.filter((item) => fuzzyMatch(item, deferredQuery)), [items, deferredQuery]);
   const isStale = query !== deferredQuery;
 
   return (

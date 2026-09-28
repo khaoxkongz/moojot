@@ -9,11 +9,7 @@ export type AuthConfig = {
   CORS_ORIGIN: string;
 };
 
-export function createAuth(
-  env: AuthConfig,
-  database: Database,
-  desktopOrigins: readonly string[] = [],
-) {
+export function createAuth(env: AuthConfig, database: Database, desktopOrigins: readonly string[] = []) {
   return betterAuth({
     database: prismaAdapter(database, {
       provider: "mongodb",
@@ -22,8 +18,19 @@ export function createAuth(
       env.CORS_ORIGIN,
       ...desktopOrigins,
       "moojot://",
-      "exp://",
-      "http://localhost:8081",
+      "moojot://*",
+      ...(process.env.NODE_ENV === "development"
+        ? [
+            "exp://",
+            "exp://**",
+            "http://localhost:8081",
+            "http://127.0.0.1:8081",
+            "http://localhost:19006",
+            "http://127.0.0.1:19006",
+            "http://172.16.97.79:8081",
+            "http://172.16.97.79:3000",
+          ]
+        : []),
     ],
     emailAndPassword: { enabled: true },
     secret: env.BETTER_AUTH_SECRET,

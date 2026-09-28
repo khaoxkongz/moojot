@@ -53,9 +53,7 @@ function ProductList() {
   return (
     <LegendList
       data={products}
-      renderItem={({ item }) => (
-        <ProductRow name={item.name} price={item.price} imageUrl={item.image} />
-      )}
+      renderItem={({ item }) => <ProductRow name={item.name} price={item.price} imageUrl={item.image} />}
     />
   );
 }

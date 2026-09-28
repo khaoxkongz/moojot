@@ -14,10 +14,7 @@ Use `withAppleZoom` on `Link.Trigger` to zoom the entire trigger element into th
 <Link href="/photo" asChild>
   <Link.Trigger withAppleZoom>
     <Pressable>
-      <Image
-        source={{ uri: "https://example.com/thumb.jpg" }}
-        style={{ width: 120, height: 120, borderRadius: 12 }}
-      />
+      <Image source={{ uri: "https://example.com/thumb.jpg" }} style={{ width: 120, height: 120, borderRadius: 12 }} />
     </Pressable>
   </Link.Trigger>
 </Link>
@@ -32,10 +29,7 @@ Wrap only the element that should animate. Siblings outside `Link.AppleZoom` are
   <Link.Trigger>
     <Pressable style={{ alignItems: "center" }}>
       <Link.AppleZoom>
-        <Image
-          source={{ uri: "https://example.com/thumb.jpg" }}
-          style={{ width: 200, aspectRatio: 4 / 3 }}
-        />
+        <Image source={{ uri: "https://example.com/thumb.jpg" }} style={{ width: 200, aspectRatio: 4 / 3 }} />
       </Link.AppleZoom>
       <Text>Caption text (not zoomed)</Text>
     </Pressable>
@@ -57,10 +51,7 @@ export default function PhotoScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Link.AppleZoomTarget>
-        <Image
-          source={{ uri: "https://example.com/full.jpg" }}
-          style={{ width: "100%", aspectRatio: 4 / 3 }}
-        />
+        <Image source={{ uri: "https://example.com/full.jpg" }} style={{ width: "100%", aspectRatio: 4 / 3 }} />
       </Link.AppleZoomTarget>
       <Text>Photo details below</Text>
     </View>
@@ -122,10 +113,7 @@ Zoom transitions work alongside long-press previews:
 <Link href="/photo" asChild>
   <Link.Trigger withAppleZoom>
     <Pressable>
-      <Image
-        source={{ uri: "https://example.com/thumb.jpg" }}
-        style={{ width: 120, height: 120 }}
-      />
+      <Image source={{ uri: "https://example.com/thumb.jpg" }} style={{ width: 120, height: 120 }} />
     </Pressable>
   </Link.Trigger>
   <Link.Preview />

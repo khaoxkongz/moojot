@@ -63,7 +63,7 @@ function cachePrefs(user: FullUser) {
       JSON.stringify({
         theme: user.preferences.theme,
         notifications: user.preferences.notifications,
-      }),
+      })
     );
   } catch {}
 }

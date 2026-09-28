@@ -35,11 +35,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
     opacity: withTiming(expanded ? 1 : 0),
   }));
 
-  return (
-    <Animated.View style={[{ height: 200, transformOrigin: "top" }, animatedStyle]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[{ height: 200, transformOrigin: "top" }, animatedStyle]}>{children}</Animated.View>;
 }
 ```
 

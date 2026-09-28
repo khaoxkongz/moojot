@@ -1,0 +1,13 @@
+model Task {
+  id    Int    @id @map("_id")
+  title String
+  desc  String @default("")
+  files File[]
+}
+
+model File {
+  id          Int    @id @map("_id")
+  storagePath String
+  Task        Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId      Int
+}

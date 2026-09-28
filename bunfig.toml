@@ -1,1 +1,5 @@
 env = false
+
+[install]
+# Keep the Expo workspace self-contained so its React and native modules resolve together.
+linker = "hoisted"

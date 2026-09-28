@@ -3,7 +3,7 @@ import { Stack, router } from "expo-router";
 import { Text, View, StyleSheet } from "react-native";
 
 import { Container } from "@/components/container";
-import { NAV_THEME } from "@/lib/constants";
+import { NAV_THEME } from "@/utils/constants";
 import { useColorScheme } from "@/lib/use-color-scheme";
 
 export default function NotFoundScreen() {
@@ -33,7 +33,7 @@ export default function NotFoundScreen() {
                   textStyle={{ color: theme.text, fontSize: 14, textAlign: "center" }}
                   style={{ opacity: 0.7 }}
                 >
-                  Sorry, the page you're looking for doesn't exist.
+                  Sorry, the page you&apos;re looking for doesn&apos;t exist.
                 </ExpoUIText>
                 <Button label="Go to Home" variant="outlined" onPress={() => router.replace("/")} />
               </Column>

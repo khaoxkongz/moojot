@@ -6,10 +6,10 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "build": "tsc -b",
-    "check-types": "tsc -b",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
+    "build": "node scripts/patch-prisma-generated.mjs && tsc -b",
+    "check-types": "node scripts/patch-prisma-generated.mjs && tsc -b",
+    "db:push": "prisma db push && node scripts/patch-prisma-generated.mjs",
+    "db:generate": "prisma generate && node scripts/patch-prisma-generated.mjs",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio"
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@moojot/config": "workspace:*",
     "prisma": "6.19.3",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "varlock": "catalog:"
   }
 }

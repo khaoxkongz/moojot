@@ -43,13 +43,7 @@ function AnimatedButton({ onPress }: { onPress: () => void }) {
 
 ```tsx
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  runOnJS,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS } from "react-native-reanimated";
 
 function AnimatedButton({ onPress }: { onPress: () => void }) {
   // Store the press STATE (0 = not pressed, 1 = pressed)

@@ -31,10 +31,7 @@ function DomainSearch() {
   return (
     <>
       <TextInput value={keyword} onChangeText={setKeyword} />
-      <LegendList
-        data={domains}
-        renderItem={({ item }) => <DomainItem item={item} keyword={keyword} />}
-      />
+      <LegendList data={domains} renderItem={({ item }) => <DomainItem item={item} keyword={keyword} />} />
     </>
   );
 }

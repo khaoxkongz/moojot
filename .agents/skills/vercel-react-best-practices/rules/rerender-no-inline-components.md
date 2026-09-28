@@ -18,9 +18,7 @@ A common reason developers do this is to access parent variables without passing
 ```tsx
 function UserProfile({ user, theme }) {
   // Defined inside to access `theme` - BAD
-  const Avatar = () => (
-    <img src={user.avatarUrl} className={theme === "dark" ? "avatar-dark" : "avatar-light"} />
-  );
+  const Avatar = () => <img src={user.avatarUrl} className={theme === "dark" ? "avatar-dark" : "avatar-light"} />;
 
   // Defined inside to access `user` - BAD
   const Stats = () => (

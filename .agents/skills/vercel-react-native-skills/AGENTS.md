@@ -395,9 +395,7 @@ function ProductList() {
   return (
     <LegendList
       data={products}
-      renderItem={({ item }) => (
-        <ProductRow name={item.name} price={item.price} imageUrl={item.image} />
-      )}
+      renderItem={({ item }) => <ProductRow name={item.name} price={item.price} imageUrl={item.image} />}
     />
   );
 }
@@ -468,10 +466,7 @@ function DomainSearch() {
   return (
     <>
       <TextInput value={keyword} onChangeText={setKeyword} />
-      <LegendList
-        data={domains}
-        renderItem={({ item }) => <DomainItem item={item} keyword={keyword} />}
-      />
+      <LegendList data={domains} renderItem={({ item }) => <DomainItem item={item} keyword={keyword} />} />
     </>
   );
 }
@@ -732,11 +727,7 @@ function ProductItem({ product }: { product: Product }) {
 
   return (
     <View>
-      <Image
-        source={{ uri: thumbnailUrl }}
-        style={{ width: 100, height: 100 }}
-        contentFit="cover"
-      />
+      <Image source={{ uri: thumbnailUrl }} style={{ width: 100, height: 100 }} contentFit="cover" />
       <Text>{product.name}</Text>
     </View>
   );
@@ -779,9 +770,7 @@ function ListItem({ item }: { item: Item }) {
 }
 
 function Feed({ items }: { items: Item[] }) {
-  return (
-    <LegendList data={items} renderItem={({ item }) => <ListItem item={item} />} recycleItems />
-  );
+  return <LegendList data={items} renderItem={({ item }) => <ListItem item={item} />} recycleItems />;
 }
 ```
 
@@ -892,11 +881,7 @@ function CollapsiblePanel({ expanded }: { expanded: boolean }) {
     opacity: withTiming(expanded ? 1 : 0),
   }));
 
-  return (
-    <Animated.View style={[{ height: 200, transformOrigin: "top" }, animatedStyle]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[{ height: 200, transformOrigin: "top" }, animatedStyle]}>{children}</Animated.View>;
 }
 ```
 
@@ -944,7 +929,7 @@ function MyComponent() {
     () => progress.value,
     (current) => {
       opacity.value = 1 - current;
-    },
+    }
   );
 
   // ...
@@ -1014,13 +999,7 @@ function AnimatedButton({ onPress }: { onPress: () => void }) {
 
 ```tsx
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  runOnJS,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate, runOnJS } from "react-native-reanimated";
 
 function AnimatedButton({ onPress }: { onPress: () => void }) {
   // Store the press STATE (0 = not pressed, 1 = pressed)
@@ -1927,9 +1906,7 @@ scroll area without re-rendering content.
 
 ```tsx
 function Feed({ bottomOffset }: { bottomOffset: number }) {
-  return (
-    <ScrollView contentContainerStyle={{ paddingBottom: bottomOffset }}>{children}</ScrollView>
-  );
+  return <ScrollView contentContainerStyle={{ paddingBottom: bottomOffset }}>{children}</ScrollView>;
 }
 // Changing bottomOffset triggers full layout recalculation
 ```
@@ -1939,10 +1916,7 @@ function Feed({ bottomOffset }: { bottomOffset: number }) {
 ```tsx
 function Feed({ bottomOffset }: { bottomOffset: number }) {
   return (
-    <ScrollView
-      contentInset={{ bottom: bottomOffset }}
-      scrollIndicatorInsets={{ bottom: bottomOffset }}
-    >
+    <ScrollView contentInset={{ bottom: bottomOffset }} scrollIndicatorInsets={{ bottom: bottomOffset }}>
       {children}
     </ScrollView>
   );
@@ -2768,10 +2742,7 @@ function Price({ amount }: { amount: number }) {
 **For dynamic locales, memoize:**
 
 ```tsx
-const dateFormatter = useMemo(
-  () => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }),
-  [locale],
-);
+const dateFormatter = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }), [locale]);
 ```
 
 **Common formatters to hoist:**

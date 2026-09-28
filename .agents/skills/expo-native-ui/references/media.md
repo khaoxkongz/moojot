@@ -85,9 +85,7 @@ function Camera({ onPicture }: { onPicture: (uri: string) => Promise<void> }) {
             style={{ width: 64, height: 64, borderRadius: 99, backgroundColor: "white" }}
           />
         </GlassView>
-        <View
-          style={{ flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 8 }}
-        >
+        <View style={{ flexDirection: "row", justifyContent: "space-around", paddingHorizontal: 8 }}>
           <GlassButton onPress={selectPhoto} icon="photo" />
           <GlassButton
             onPress={() => setType((t) => (t === "back" ? "front" : "back"))}
@@ -115,13 +113,7 @@ const player = useAudioPlayer({ uri: "https://stream.nightride.fm/rektory.mp3" }
 ## Audio Recording (Microphone)
 
 ```tsx
-import {
-  useAudioRecorder,
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorderState,
-} from "expo-audio";
+import { useAudioRecorder, AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorderState } from "expo-audio";
 import { Alert, Button } from "react-native";
 
 function App() {
@@ -143,10 +135,7 @@ function App() {
   const stop = () => audioRecorder.stop();
 
   return (
-    <Button
-      title={recorderState.isRecording ? "Stop" : "Start"}
-      onPress={recorderState.isRecording ? stop : record}
-    />
+    <Button title={recorderState.isRecording ? "Stop" : "Start"} onPress={recorderState.isRecording ? stop : record} />
   );
 }
 ```

@@ -82,8 +82,7 @@ The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet
 //      (jumps to "below, no transition"), force a reflow.
 //   3. Remove .is-enter-start    — new text animates back to rest.
 const el = document.querySelector(".t-text-swap");
-const dur =
-  parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--text-swap-dur")) || 200;
+const dur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--text-swap-dur")) || 200;
 
 function swapText(next) {
   el.classList.add("is-exit");

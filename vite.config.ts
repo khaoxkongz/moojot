@@ -40,8 +40,12 @@ export default defineConfig({
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
     ],
-    singleQuote: false,
+    endOfLine: "lf",
     semi: true,
+    singleQuote: false,
+    tabWidth: 2,
+    trailingComma: "es5",
+    printWidth: 120,
     sortPackageJson: true,
   },
   staged: {

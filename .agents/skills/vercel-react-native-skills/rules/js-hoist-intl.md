@@ -39,10 +39,7 @@ function Price({ amount }: { amount: number }) {
 **For dynamic locales, memoize:**
 
 ```tsx
-const dateFormatter = useMemo(
-  () => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }),
-  [locale],
-);
+const dateFormatter = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: "medium" }), [locale]);
 ```
 
 **Common formatters to hoist:**

@@ -14,14 +14,7 @@ pieces they need.
 **Incorrect (monolithic component with render props):**
 
 ```tsx
-function Composer({
-  renderHeader,
-  renderFooter,
-  renderActions,
-  showAttachments,
-  showFormatting,
-  showEmojis,
-}: Props) {
+function Composer({ renderHeader, renderFooter, renderActions, showAttachments, showFormatting, showEmojis }: Props) {
   return (
     <form>
       {renderHeader?.()}
@@ -61,11 +54,7 @@ function ComposerInput() {
     meta: { inputRef },
   } = use(ComposerContext);
   return (
-    <TextInput
-      ref={inputRef}
-      value={state.input}
-      onChangeText={(text) => update((s) => ({ ...s, input: text }))}
-    />
+    <TextInput ref={inputRef} value={state.input} onChangeText={(text) => update((s) => ({ ...s, input: text }))} />
   );
 }
 

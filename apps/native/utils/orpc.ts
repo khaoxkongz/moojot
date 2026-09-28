@@ -1,13 +1,13 @@
-import type { AppRouterClient } from "@moojot/api/routers/index";
+import type { AppRouterClient } from "@moojot/api/features/index";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { SimpleCsrfProtectionLinkPlugin } from "@orpc/client/plugins";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
 
 import { authClient } from "@/lib/auth-client";
-
-import { ENV } from "../src/env";
+import { getServerBaseUrl } from "@/utils/server-url";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -30,7 +30,8 @@ async function expoFetch(request: Request, init?: RequestInit) {
 }
 
 export const link = new RPCLink({
-  url: `${ENV.EXPO_PUBLIC_SERVER_URL}/rpc`,
+  url: () => `${getServerBaseUrl()}/rpc`,
+  plugins: [new SimpleCsrfProtectionLinkPlugin()],
   fetch(request, init) {
     return expoFetch(request, {
       ...init,

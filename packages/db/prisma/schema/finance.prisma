@@ -1,0 +1,123 @@
+// Dates that represent days or accounting periods remain local calendar strings.
+// They must not shift when clients in different time zones read the same ledger.
+
+model FinanceCategory {
+  dbId      String  @id @default(cuid()) @map("_id")
+  id        String
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  systemKey String?
+  name      String
+  kind      String
+  icon      String
+  color     String
+  isSystem  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  @@unique([userId, id])
+  @@index([userId, kind, sortOrder])
+  @@index([userId, systemKey])
+  @@map("finance_category")
+}
+
+model FinanceTag {
+  dbId   String @id @default(cuid()) @map("_id")
+  id     String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+  color  String
+
+  @@unique([userId, id])
+  @@index([userId, name])
+  @@map("finance_tag")
+}
+
+model FinanceRecurringRule {
+  id           String   @id @default(cuid()) @map("_id")
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String
+  amountSatang BigInt   @db.Long
+  title        String
+  note         String   @default("")
+  bank         String?
+  categoryId   String?
+  tagIds       String[] @default([])
+  dayOfMonth   Int
+  startsOn     String
+  endsOn       String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, isActive, startsOn])
+  @@index([userId, categoryId])
+  @@map("finance_recurring_rule")
+}
+
+model FinanceTransaction {
+  id                String    @id @default(cuid()) @map("_id")
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind              String
+  amountSatang      BigInt    @db.Long
+  occurredOn        String
+  title             String
+  note              String    @default("")
+  bank              String?
+  cardName          String?
+  cardLast4         String?
+  slipImageUri      String?
+  source            String
+  categoryId        String?
+  recurringRuleId   String?
+  tagIds            String[]  @default([])
+  dedupeKey         String?
+  // These are required so MongoDB's unique indexes do not collide on null.
+  // Use "id:<transaction id>" when the optional source key is absent.
+  dedupeIdentity    String
+  recurringIdentity String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  @@unique([userId, dedupeIdentity])
+  @@unique([userId, recurringIdentity])
+  @@index([userId, deletedAt, occurredOn(sort: Desc), createdAt(sort: Desc)])
+  @@index([userId, categoryId])
+  @@index([userId, bank])
+  @@index([userId, recurringRuleId])
+  @@index([userId, tagIds])
+  @@map("finance_transaction")
+}
+
+model FinanceBudget {
+  id                      String   @id @default(cuid()) @map("_id")
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodKey               String
+  scopeKey                String
+  categoryId              String?
+  tagId                   String?
+  limitSatang             BigInt   @db.Long
+  warningThresholdPercent Int      @default(80)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([userId, periodKey, scopeKey])
+  @@index([userId, categoryId])
+  @@index([userId, tagId])
+  @@map("finance_budget")
+}
+
+model FinanceSetting {
+  id     String @id @default(cuid()) @map("_id")
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String
+  value  String
+
+  @@unique([userId, key])
+  @@map("finance_setting")
+}

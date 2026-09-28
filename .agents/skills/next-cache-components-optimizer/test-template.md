@@ -85,7 +85,7 @@ test.describe("instant initial load: B", () => {
         await page.goto(url);
         await expect(page.locator(SHELL_MARKER)).toBeVisible();
       },
-      { baseURL: new URL(url).origin },
+      { baseURL: new URL(url).origin }
     );
   });
 });
