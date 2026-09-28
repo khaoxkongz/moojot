@@ -223,6 +223,21 @@ function makeLedgerOperations(
       });
     }),
 
+    // Import identities survive soft deletion and never match another user's row.
+    findTransactionIdentity: Effect.fn("LedgerService.findTransactionIdentity")(function* (
+      userId: string,
+      dedupeKey: string
+    ) {
+      return yield* Effect.tryPromise({
+        try: () =>
+          db.financeTransaction.findUnique({
+            where: { userId_dedupeIdentity: { userId, dedupeIdentity: `key:${dedupeKey}` } },
+            select: { id: true },
+          }),
+        catch: (cause) => new FinanceReadError({ cause }),
+      });
+    }),
+
     listTransactions: Effect.fn("LedgerService.listTransactions")(function* (
       userId: string,
       input: typeof ledgerInputs.listTransactions.Type
