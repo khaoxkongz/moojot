@@ -4,13 +4,8 @@ import { useState } from "react";
 import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text } from "@/components/ui/typography";
-
-const NAVY = "#0B243B";
-const YELLOW = "#FFDA60";
-const BLUE = "#1778F7";
-const MUTED_BLUE = "#144A83";
-const MUTED_TEXT = "#A5B7C8";
 
 const pages = [
   {
@@ -40,6 +35,7 @@ const pages = [
 ] as const;
 
 export default function StreakTutorialScreen() {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
 
@@ -67,7 +63,7 @@ export default function StreakTutorialScreen() {
       overScrollMode="never"
       contentInsetAdjustmentBehavior="never"
       showsVerticalScrollIndicator={false}
-      style={{ flex: 1, backgroundColor: NAVY }}
+      style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{ flexGrow: 1 }}
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -80,7 +76,7 @@ export default function StreakTutorialScreen() {
           right: 0,
           bottom: 0,
           left: 0,
-          backgroundColor: YELLOW,
+          backgroundColor: theme.accent,
         }}
       />
 
@@ -101,14 +97,17 @@ export default function StreakTutorialScreen() {
             hitSlop={10}
             style={{ width: 41, minHeight: 48, alignItems: "center", justifyContent: "center" }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 42, lineHeight: 47, fontWeight: "300" }}>‹</Text>
+            <Text style={{ color: theme.text, fontSize: 42, lineHeight: 47, fontWeight: "300" }}>‹</Text>
           </Pressable>
           <View
             accessibilityLabel={`ขั้นตอน ${page + 1} จาก ${pages.length}`}
             style={{ flex: 1, flexDirection: "row", gap: 8 }}
           >
             {pages.map((_, index) => (
-              <View key={index} style={{ flex: 1, height: 6, backgroundColor: index === page ? BLUE : MUTED_BLUE }} />
+              <View
+                key={index}
+                style={{ flex: 1, height: 6, backgroundColor: index === page ? theme.accent : theme.border }}
+              />
             ))}
           </View>
           <Pressable
@@ -118,7 +117,7 @@ export default function StreakTutorialScreen() {
             hitSlop={10}
             style={{ width: 41, minHeight: 48, alignItems: "center", justifyContent: "center" }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 35, lineHeight: 40, fontWeight: "300" }}>×</Text>
+            <Text style={{ color: theme.text, fontSize: 35, lineHeight: 40, fontWeight: "300" }}>×</Text>
           </Pressable>
         </View>
 
@@ -132,7 +131,7 @@ export default function StreakTutorialScreen() {
         >
           <Text
             style={{
-              color: "#FFFFFF",
+              color: theme.text,
               fontSize: 23,
               lineHeight: 31,
               fontWeight: "900",
@@ -143,7 +142,7 @@ export default function StreakTutorialScreen() {
           </Text>
           <Text
             style={{
-              color: MUTED_TEXT,
+              color: theme.muted,
               fontSize: 16,
               lineHeight: 26,
               fontWeight: "500",
@@ -188,7 +187,7 @@ export default function StreakTutorialScreen() {
               onPress={back}
               style={{ minHeight: 52, flex: 1, alignItems: "center", justifyContent: "center" }}
             >
-              <Text style={{ color: BLUE, fontSize: 17, fontWeight: "800" }}>ย้อนกลับ</Text>
+              <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "800" }}>ย้อนกลับ</Text>
             </Pressable>
           ) : (
             <View style={{ flex: 1 }} />
@@ -202,12 +201,12 @@ export default function StreakTutorialScreen() {
               borderRadius: 28,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: BLUE,
+              backgroundColor: theme.accent,
               opacity: pressed ? 0.8 : 1,
-              boxShadow: "0 3px 6px rgba(0, 60, 130, 0.18)",
+              boxShadow: "0 3px 6px rgba(45, 45, 43, 0.18)",
             })}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "900" }}>
+            <Text style={{ color: theme.onAccent, fontSize: 18, fontWeight: "900" }}>
               {page === pages.length - 1 ? "เริ่มเลย!" : "ต่อไป"}
             </Text>
           </Pressable>

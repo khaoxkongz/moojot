@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import type { WalletFilterSelection } from "@/types/finance";
 import { orpc } from "@/utils/orpc";
@@ -18,6 +18,7 @@ type AppData = {
 const AppDataContext = createContext<AppData | null>(null);
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
+  const theme = useAppTheme();
   const [appliedWalletFilter, setAppliedWalletFilter] = useState<WalletFilterSelection | null>(null);
 
   const { data: session } = authClient.useSession();
@@ -34,35 +35,35 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FFDA60",
+          backgroundColor: theme.background,
           padding: 24,
           gap: 16,
         }}
       >
         <OnboardingIllustration variant="logo" size={155} />
-        <Text style={{ color: palette.ink, fontSize: 30, fontWeight: "900" }}>หมูจด</Text>
+        <Text style={{ color: theme.text, fontSize: 30, fontWeight: "900" }}>หมูจด</Text>
         {error ? (
           <>
-            <Text selectable style={{ color: palette.red, textAlign: "center" }}>
+            <Text selectable style={{ color: theme.dangerText, textAlign: "center" }}>
               {error.message}
             </Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => refetch()}
               style={{
-                backgroundColor: palette.pink,
+                backgroundColor: theme.accent,
                 borderRadius: 14,
                 paddingHorizontal: 22,
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>ลองอีกครั้ง</Text>
+              <Text style={{ color: theme.onAccent, fontWeight: "700" }}>ลองอีกครั้ง</Text>
             </Pressable>
           </>
         ) : (
           <>
-            <ActivityIndicator color="#1978F2" />
-            <Text style={{ color: palette.muted, textAlign: "center" }}>กำลังเตรียมข้อมูล...</Text>
+            <ActivityIndicator color={theme.accentText} />
+            <Text style={{ color: theme.muted, textAlign: "center" }}>กำลังเตรียมข้อมูล...</Text>
           </>
         )}
       </View>

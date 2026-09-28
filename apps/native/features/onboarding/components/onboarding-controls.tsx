@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
 
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export type Choice = "yes" | "no" | null;
 
@@ -20,6 +20,7 @@ export function PrimaryButton({
   disabled?: boolean;
   busy?: boolean;
 }) {
+  const theme = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -30,7 +31,7 @@ export function PrimaryButton({
       style={({ pressed }) => ({
         minHeight: 56,
         borderRadius: 999,
-        backgroundColor: disabled ? "#9FC8FF" : color.blue,
+        backgroundColor: disabled ? theme.raised : theme.accent,
         justifyContent: "center",
         alignItems: "center",
         paddingHorizontal: 24,
@@ -38,7 +39,9 @@ export function PrimaryButton({
         boxShadow: disabled ? undefined : "0 3px 4px rgba(0, 0, 0, .13)",
       })}
     >
-      <Text style={{ color: color.white, fontSize: 19, fontWeight: "800", textAlign: "center" }}>
+      <Text
+        style={{ color: disabled ? theme.muted : theme.onAccent, fontSize: 19, fontWeight: "800", textAlign: "center" }}
+      >
         {busy ? "กำลังบันทึก…" : label}
       </Text>
     </Pressable>
@@ -60,11 +63,12 @@ export function Footer({
   white?: boolean;
   extra?: React.ReactNode;
 }) {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
       style={{
-        backgroundColor: white ? color.white : "transparent",
+        backgroundColor: white ? theme.surface : "transparent",
         paddingHorizontal: 24,
         paddingTop: 20,
         paddingBottom: Math.max(insets.bottom, 16),
@@ -80,11 +84,12 @@ export function Footer({
 }
 
 export function Header({ title, onBack, info }: { title: string; onBack: () => void; info?: () => void }) {
+  const theme = useAppTheme();
   return (
     <View
       style={{
         height: 64,
-        backgroundColor: color.yellow,
+        backgroundColor: theme.accent,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
@@ -98,9 +103,9 @@ export function Header({ title, onBack, info }: { title: string; onBack: () => v
         hitSlop={10}
         style={{ position: "absolute", left: 14, padding: 7 }}
       >
-        <MaterialCommunityIcons name="chevron-left" size={34} color={color.ink} />
+        <MaterialCommunityIcons name="chevron-left" size={34} color={theme.onAccent} />
       </Pressable>
-      <Text style={{ color: color.ink, fontSize: 20, fontWeight: "800" }}>{title}</Text>
+      <Text style={{ color: theme.onAccent, fontSize: 20, fontWeight: "800" }}>{title}</Text>
       {info ? (
         <Pressable
           accessibilityRole="button"
@@ -109,7 +114,7 @@ export function Header({ title, onBack, info }: { title: string; onBack: () => v
           hitSlop={10}
           style={{ position: "absolute", right: 19, padding: 7 }}
         >
-          <MaterialCommunityIcons name="information-outline" size={25} color={color.ink} />
+          <MaterialCommunityIcons name="information-outline" size={25} color={theme.onAccent} />
         </Pressable>
       ) : null}
     </View>
@@ -117,6 +122,7 @@ export function Header({ title, onBack, info }: { title: string; onBack: () => v
 }
 
 export function FloatingBack({ onBack }: { onBack: () => void }) {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
     <Pressable
@@ -126,24 +132,19 @@ export function FloatingBack({ onBack }: { onBack: () => void }) {
       hitSlop={10}
       style={{ position: "absolute", zIndex: 2, left: 13, top: insets.top + 6, padding: 8 }}
     >
-      <MaterialCommunityIcons name="chevron-left" size={32} color={color.ink} />
+      <MaterialCommunityIcons name="chevron-left" size={32} color={theme.text} />
     </Pressable>
   );
 }
 
-export function Page({
-  children,
-  backgroundColor = color.yellow,
-}: {
-  children: React.ReactNode;
-  backgroundColor?: string;
-}) {
+export function Page({ children, backgroundColor }: { children: React.ReactNode; backgroundColor?: string }) {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor,
+        backgroundColor: backgroundColor ?? theme.background,
         paddingTop: insets.top,
       }}
     >
@@ -153,6 +154,7 @@ export function Page({
 }
 
 export function ConsentChoice({ value, onChange }: { value: Choice; onChange: (choice: Choice) => void }) {
+  const theme = useAppTheme();
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-around", gap: 12 }}>
       {(["yes", "no"] as const).map((option) => (
@@ -170,17 +172,17 @@ export function ConsentChoice({ value, onChange }: { value: Choice; onChange: (c
               height: 23,
               borderRadius: 12,
               borderWidth: 2,
-              borderColor: value === option ? color.blue : color.ink,
-              backgroundColor: value === option ? color.blue : color.white,
+              borderColor: value === option ? theme.accent : theme.text,
+              backgroundColor: value === option ? theme.accent : theme.surface,
               justifyContent: "center",
               alignItems: "center",
             }}
           >
             {value === option ? (
-              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color.white }} />
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: theme.onAccent }} />
             ) : null}
           </View>
-          <Text style={{ fontSize: 17, color: color.ink }}>{option === "yes" ? "ยินยอม" : "ไม่ยินยอม"}</Text>
+          <Text style={{ fontSize: 17, color: theme.text }}>{option === "yes" ? "ยินยอม" : "ไม่ยินยอม"}</Text>
         </Pressable>
       ))}
     </View>

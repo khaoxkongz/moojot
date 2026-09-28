@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Modal, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
-import { styles } from "@/features/entries/entry-styles";
+import { useEntryStyles } from "@/features/entries/entry-styles";
 
 export function EntryExitDialog({
   visible,
@@ -17,6 +17,7 @@ export function EntryExitDialog({
   onDiscard: () => void;
   onSave: () => void;
 }) {
+  const styles = useEntryStyles();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.exitOverlay}>

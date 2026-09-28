@@ -32,7 +32,8 @@ import {
   entryInputFromDraft,
   hasEntryChanges,
 } from "@/features/entries/entry-draft";
-import { colors, styles } from "@/features/entries/entry-styles";
+import { useEntryStyles } from "@/features/entries/entry-styles";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
 import { authClient } from "@/lib/auth-client";
@@ -48,6 +49,8 @@ function goBack() {
 }
 
 export default function EditEntryRoute() {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const entryId = Array.isArray(id) ? id[0] : id;
   const isFocused = useIsFocused();
@@ -85,7 +88,7 @@ export default function EditEntryRoute() {
             ) : null}
           </>
         ) : (
-          <ActivityIndicator color={colors.lightBlue} />
+          <ActivityIndicator color={theme.accentText} />
         )}
       </View>
     );
@@ -113,6 +116,8 @@ function EditEntryScreen({
   transactionError: string | null;
   onRetryTransaction: () => void;
 }) {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -340,7 +345,7 @@ function EditEntryScreen({
                 <Path
                   d="M4 6h16M9 6V4h6v2m-9 0 1 15h10l1-15M10 10v8m4-8v8"
                   fill="none"
-                  stroke="#E84B55"
+                  stroke={theme.dangerText}
                   strokeWidth={1.9}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -398,7 +403,7 @@ function EditEntryScreen({
         tagIds={draft.tagIds}
         onCategoryChange={(categoryId) => form.setFieldValue("categoryId", categoryId)}
         onTagIdsChange={(tagIds) => form.setFieldValue("tagIds", tagIds)}
-        onCreateTag={(name) => createTagMutation.mutateAsync({ name, color: colors.blue })}
+        onCreateTag={(name) => createTagMutation.mutateAsync({ name, color: theme.accent })}
         onManageCategories={() => router.push("/categories")}
         onClose={() => setPickerOpen(false)}
       />

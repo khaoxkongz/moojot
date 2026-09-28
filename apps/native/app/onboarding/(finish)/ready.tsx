@@ -8,11 +8,12 @@ import { Text } from "@/components/ui/typography";
 import { FloatingBack, Footer, Page } from "@/features/onboarding/components/onboarding-controls";
 import { dateKey } from "@/features/onboarding/date";
 import { useOnboardingFlow } from "@/features/onboarding/flow-context";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
 
 export default function OnboardingReadyRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const { birthDate, acceptedTerms, personalization, updates, reasons } = useOnboardingFlow();
@@ -74,10 +75,10 @@ export default function OnboardingReadyRoute() {
           paddingBottom: 25,
         }}
       >
-        <Text style={{ color: color.ink, fontSize: 31, fontWeight: "900", textAlign: "center" }}>หมูจดพร้อมจดแล้ว!</Text>
+        <Text style={{ color: theme.text, fontSize: 31, fontWeight: "900", textAlign: "center" }}>หมูจดพร้อมจดแล้ว!</Text>
         <Text
           style={{
-            color: color.ink,
+            color: theme.text,
             fontSize: 19,
             lineHeight: 28,
             textAlign: "center",
@@ -91,7 +92,7 @@ export default function OnboardingReadyRoute() {
       {error ? (
         <Text
           accessibilityRole="alert"
-          style={{ color: "#B33235", textAlign: "center", paddingHorizontal: 18, paddingBottom: 8 }}
+          style={{ color: theme.dangerText, textAlign: "center", paddingHorizontal: 18, paddingBottom: 8 }}
         >
           {error}
         </Text>

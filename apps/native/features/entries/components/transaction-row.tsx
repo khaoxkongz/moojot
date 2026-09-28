@@ -1,7 +1,7 @@
 import { Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, FinanceTransaction } from "@/types/finance";
 import { formatMoney, sourceLabel } from "@/utils/format";
 
@@ -14,7 +14,8 @@ export function TransactionRow({
   category?: Category;
   onPress: () => void;
 }) {
-  const color = item.kind === "income" ? palette.green : item.kind === "transfer" ? palette.muted : palette.ink;
+  const theme = useAppTheme();
+  const color = item.kind === "income" ? theme.successText : item.kind === "transfer" ? theme.muted : theme.text;
   const symbol = item.kind === "income" ? "+" : item.kind === "expense" ? "−" : "";
   return (
     <Pressable
@@ -32,7 +33,7 @@ export function TransactionRow({
           width: 46,
           height: 46,
           borderRadius: 17,
-          backgroundColor: category?.color ? `${category.color}22` : palette.pinkPale,
+          backgroundColor: category?.color ? `${category.color}22` : theme.raised,
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -40,10 +41,10 @@ export function TransactionRow({
         <Text style={{ fontSize: 22 }}>{category?.icon ?? (item.kind === "transfer" ? "🔁" : "🧾")}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text numberOfLines={1} style={{ color: palette.ink, fontSize: 15, fontWeight: "800" }}>
+        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 15, fontWeight: "800" }}>
           {item.title}
         </Text>
-        <Text numberOfLines={1} style={{ color: palette.muted, fontSize: 12 }}>
+        <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 12 }}>
           {category?.name ?? (item.kind === "transfer" ? "ย้ายเงิน" : "ไม่ระบุหมวด")} ·{" "}
           {item.bank || item.cardName || sourceLabel(item.source)}
         </Text>
@@ -53,7 +54,7 @@ export function TransactionRow({
           {symbol}
           {formatMoney(item.amountSatang)}
         </Text>
-        <Text style={{ color: palette.muted, fontSize: 11 }}>
+        <Text style={{ color: theme.muted, fontSize: 11 }}>
           {item.source === "slip" ? "จากสลิป" : item.source === "statement" ? "จากบัตร" : ""}
         </Text>
       </View>

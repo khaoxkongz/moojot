@@ -5,15 +5,16 @@ import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations
 import { Text } from "@/components/ui/typography";
 import { ConsentChoice, Footer, Header, Page } from "@/features/onboarding/components/onboarding-controls";
 import { useOnboardingFlow } from "@/features/onboarding/flow-context";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingUpdatesRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const { updates, setUpdates } = useOnboardingFlow();
 
   return (
-    <Page backgroundColor={color.navy}>
+    <Page backgroundColor={theme.background}>
       <Header title="พี่มนุษย์อนุญาตไหม?" onBack={() => router.back()} />
       <ScrollView
         bounces={false}
@@ -26,7 +27,7 @@ export default function OnboardingUpdatesRoute() {
         <View
           style={{
             minHeight: Math.min(height * 0.3, 250),
-            backgroundColor: color.yellow,
+            backgroundColor: theme.accent,
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -34,10 +35,10 @@ export default function OnboardingUpdatesRoute() {
           <OnboardingIllustration variant="privacy" size={Math.min(width * 0.55, 230)} />
         </View>
         <View style={{ padding: 20, gap: 16 }}>
-          <Text style={{ color: color.white, fontSize: 21, fontWeight: "800", lineHeight: 31 }}>
+          <Text style={{ color: theme.text, fontSize: 21, fontWeight: "800", lineHeight: 31 }}>
             อยากรับข่าวสารและเคล็ดลับจากหมูจดไหม?
           </Text>
-          <Text style={{ color: color.muted, fontSize: 16, lineHeight: 26 }}>
+          <Text style={{ color: theme.muted, fontSize: 16, lineHeight: 26 }}>
             ตัวเลือกนี้บันทึกความต้องการของคุณไว้ ยังไม่มีการส่งอีเมลข่าวสารจากแอปในตอนนี้
           </Text>
         </View>

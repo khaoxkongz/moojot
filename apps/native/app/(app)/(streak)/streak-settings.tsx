@@ -6,20 +6,11 @@ import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { CarrotIcon } from "@/features/streak/components/carrot-icon";
 import { streakMutationOptions } from "@/features/streak/mutation-options";
 import { streakQueryOptions } from "@/features/streak/query-options";
 import type { StreakCountMode } from "@/features/streak/types";
-
-const colors = {
-  yellow: "#FFDA60",
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  blue: "#2584F8",
-  white: "#FFFFFF",
-  muted: "#A7B8C9",
-};
 
 function goBack() {
   if (router.canGoBack()) router.back();
@@ -41,6 +32,7 @@ function CountOption({
   disabled: boolean;
   onPress: (mode: StreakCountMode) => void;
 }) {
+  const theme = useAppTheme();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -53,7 +45,7 @@ function CountOption({
         flexDirection: "row",
         alignItems: "center",
         gap: 13,
-        backgroundColor: colors.dark,
+        backgroundColor: theme.surface,
         paddingHorizontal: 18,
         paddingVertical: 17,
         opacity: pressed ? 0.8 : disabled ? 0.65 : 1,
@@ -65,25 +57,26 @@ function CountOption({
           height: 32,
           borderRadius: 16,
           borderWidth: selected ? 0 : 2,
-          borderColor: "#48A3FF",
-          backgroundColor: selected ? "#3D9DFB" : "transparent",
+          borderColor: theme.accent,
+          backgroundColor: selected ? theme.accent : "transparent",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         {selected ? (
-          <Text style={{ color: colors.white, fontSize: 24, lineHeight: 28, fontWeight: "800" }}>✓</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 24, lineHeight: 28, fontWeight: "800" }}>✓</Text>
         ) : null}
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: colors.white, fontSize: 17, fontWeight: "700" }}>{title}</Text>
-        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 19 }}>{description}</Text>
+        <Text style={{ color: theme.text, fontSize: 17, fontWeight: "700" }}>{title}</Text>
+        <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>{description}</Text>
       </View>
     </Pressable>
   );
 }
 
 function HomeExample({ mode, enabled }: { mode: StreakCountMode; enabled: boolean }) {
+  const theme = useAppTheme();
   return (
     <View
       accessible
@@ -92,7 +85,7 @@ function HomeExample({ mode, enabled }: { mode: StreakCountMode; enabled: boolea
         width: "100%",
         maxWidth: 330,
         height: 320,
-        backgroundColor: "#092138",
+        backgroundColor: theme.surface,
         borderRadius: 26,
         alignSelf: "center",
         overflow: "hidden",
@@ -109,19 +102,19 @@ function HomeExample({ mode, enabled }: { mode: StreakCountMode; enabled: boolea
             flexDirection: "row",
             alignItems: "center",
             gap: 7,
-            backgroundColor: colors.slate,
+            backgroundColor: theme.raised,
           }}
         >
           <CarrotIcon size={19} />
-          <Text style={{ color: colors.white, fontWeight: "800", fontSize: 14 }}>{enabled ? "30 วัน" : "ปิดการนับ"}</Text>
+          <Text style={{ color: theme.text, fontWeight: "800", fontSize: 14 }}>{enabled ? "30 วัน" : "ปิดการนับ"}</Text>
         </View>
-        <View style={{ width: 19, height: 19, borderRadius: 10, backgroundColor: colors.slate }} />
+        <View style={{ width: 19, height: 19, borderRadius: 10, backgroundColor: theme.raised }} />
       </View>
-      <View style={{ backgroundColor: colors.slate, borderRadius: 14, padding: 11, gap: 4 }}>
-        <Text style={{ color: colors.white, fontSize: 12, fontWeight: "800" }}>
+      <View style={{ backgroundColor: theme.raised, borderRadius: 14, padding: 11, gap: 4 }}>
+        <Text style={{ color: theme.text, fontSize: 12, fontWeight: "800" }}>
           {mode === "categorized" ? "วันนี้เลือกหมวดครบแล้ว 🎉" : "วันนี้จดรายรับรายจ่ายแล้ว 🎉"}
         </Text>
-        <Text style={{ color: colors.muted, fontSize: 11 }}>
+        <Text style={{ color: theme.muted, fontSize: 11 }}>
           {mode === "categorized" ? "ดูสรุปครบทุกหมวด และให้น้องหมูกินแครอต" : "แครอตพร้อมแล้ว ไปให้อาหารน้องหมูกัน"}
         </Text>
       </View>
@@ -136,16 +129,16 @@ function HomeExample({ mode, enabled }: { mode: StreakCountMode; enabled: boolea
           style={{
             borderTopLeftRadius: 14,
             borderTopRightRadius: 14,
-            backgroundColor: colors.yellow,
+            backgroundColor: theme.accent,
             height: 67,
             paddingHorizontal: 13,
             paddingVertical: 7,
             gap: 2,
           }}
         >
-          <Text style={{ color: colors.navy, fontSize: 12, fontWeight: "800" }}>ก.ย. 69</Text>
-          <Text style={{ color: colors.navy, fontSize: 11 }}>ยอดใช้จ่าย</Text>
-          <Text style={{ color: colors.navy, fontSize: 18, fontWeight: "900" }}>14,657.04 ฿</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 12, fontWeight: "800" }}>ก.ย. 69</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 11 }}>ยอดใช้จ่าย</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 18, fontWeight: "900" }}>14,657.04 ฿</Text>
         </View>
       </View>
     </View>
@@ -153,6 +146,7 @@ function HomeExample({ mode, enabled }: { mode: StreakCountMode; enabled: boolea
 }
 
 export default function StreakSettingsScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
 
@@ -217,12 +211,12 @@ export default function StreakSettingsScreen() {
       overScrollMode="never"
       contentInsetAdjustmentBehavior="never"
       showsVerticalScrollIndicator={false}
-      style={{ flex: 1, backgroundColor: colors.navy }}
+      style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, 18) }}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={{ backgroundColor: colors.yellow, paddingTop: insets.top }}>
+      <View style={{ backgroundColor: theme.accent, paddingTop: insets.top }}>
         <View
           style={{
             minHeight: 62,
@@ -240,14 +234,14 @@ export default function StreakSettingsScreen() {
             onPress={goBack}
             style={{ width: 47, height: 50, justifyContent: "center" }}
           >
-            <Text style={{ color: colors.dark, fontSize: 38, lineHeight: 43 }}>‹</Text>
+            <Text style={{ color: theme.onAccent, fontSize: 38, lineHeight: 43 }}>‹</Text>
           </Pressable>
           <Text
             numberOfLines={1}
             style={{
               flex: 1,
               textAlign: "center",
-              color: colors.dark,
+              color: theme.onAccent,
               fontSize: 19,
               fontWeight: "900",
             }}
@@ -267,7 +261,7 @@ export default function StreakSettingsScreen() {
               opacity: busy || !settings ? 0.5 : 1,
             }}
           >
-            <Text style={{ color: "#1971E8", fontSize: 17, fontWeight: "800" }}>รีเซ็ต</Text>
+            <Text style={{ color: theme.onAccent, fontSize: 17, fontWeight: "800" }}>รีเซ็ต</Text>
           </Pressable>
         </View>
       </View>
@@ -288,14 +282,14 @@ export default function StreakSettingsScreen() {
                 void settingsQuery.refetch();
               }}
             >
-              <Text selectable style={{ color: "#FFD0C8" }}>
+              <Text selectable style={{ color: theme.dangerText }}>
                 {loadError} · ลองอีกครั้ง
               </Text>
             </Pressable>
           ) : (
             <>
-              <ActivityIndicator color={colors.yellow} size="large" />
-              <Text style={{ color: colors.muted }}>กำลังโหลดการตั้งค่า…</Text>
+              <ActivityIndicator color={theme.accentText} size="large" />
+              <Text style={{ color: theme.muted }}>กำลังโหลดการตั้งค่า…</Text>
             </>
           )}
         </View>
@@ -303,13 +297,13 @@ export default function StreakSettingsScreen() {
         <View style={{ flex: 1, width: "100%", maxWidth: 680, alignSelf: "center" }}>
           <View
             style={{
-              backgroundColor: colors.navy,
+              backgroundColor: theme.background,
               paddingHorizontal: 18,
               paddingTop: 22,
               paddingBottom: 17,
             }}
           >
-            <Text style={{ color: colors.white, fontSize: 17, fontWeight: "800" }}>นับความต่อเนื่องจาก</Text>
+            <Text style={{ color: theme.text, fontSize: 17, fontWeight: "800" }}>นับความต่อเนื่องจาก</Text>
           </View>
           <View accessibilityRole="radiogroup" style={{ gap: 1 }}>
             <CountOption
@@ -331,19 +325,19 @@ export default function StreakSettingsScreen() {
           </View>
           <View
             style={{
-              backgroundColor: colors.navy,
+              backgroundColor: theme.background,
               paddingHorizontal: 18,
               paddingTop: 22,
               paddingBottom: 17,
             }}
           >
-            <Text style={{ color: colors.white, fontSize: 17, fontWeight: "800" }}>ตัวอย่างในหน้าแรก</Text>
+            <Text style={{ color: theme.text, fontSize: 17, fontWeight: "800" }}>ตัวอย่างในหน้าแรก</Text>
           </View>
           <View
             style={{
               flex: 1,
               minHeight: 368,
-              backgroundColor: colors.dark,
+              backgroundColor: theme.surface,
               justifyContent: "center",
               paddingHorizontal: 20,
               paddingVertical: 24,
@@ -361,10 +355,10 @@ export default function StreakSettingsScreen() {
               paddingTop: 21,
               paddingHorizontal: 16,
               paddingBottom: 20,
-              backgroundColor: colors.dark,
+              backgroundColor: theme.surface,
             }}
           >
-            <Text style={{ color: colors.muted, fontSize: 15 }}>
+            <Text style={{ color: theme.muted, fontSize: 15 }}>
               {settings.enabled ? "ไม่อยากนับความต่อเนื่อง?" : "ปิดการนับความต่อเนื่องอยู่"}
             </Text>
             <Pressable
@@ -373,7 +367,7 @@ export default function StreakSettingsScreen() {
               disabled={busy}
               onPress={() => void toggleEnabled()}
             >
-              <Text style={{ color: "#45A2FF", fontSize: 15, fontWeight: "800" }}>
+              <Text style={{ color: theme.accentText, fontSize: 15, fontWeight: "800" }}>
                 {settings.enabled ? "ปิดการนับ" : "เปิดการนับ"}
               </Text>
             </Pressable>
@@ -381,7 +375,7 @@ export default function StreakSettingsScreen() {
         </View>
       )}
       {error || (settings && settingsQuery.error) ? (
-        <Text selectable style={{ color: "#FFD0C8", textAlign: "center", padding: 16 }}>
+        <Text selectable style={{ color: theme.dangerText, textAlign: "center", padding: 16 }}>
           {error ?? settingsQuery.error?.message}
         </Text>
       ) : null}
@@ -399,9 +393,9 @@ export default function StreakSettingsScreen() {
             paddingHorizontal: 22,
           }}
         >
-          <View style={{ backgroundColor: colors.slate, borderRadius: 23, padding: 22, gap: 14 }}>
-            <Text style={{ color: colors.white, fontSize: 20, fontWeight: "900" }}>เริ่มนับความต่อเนื่องใหม่?</Text>
-            <Text style={{ color: colors.muted, fontSize: 14, lineHeight: 22 }}>
+          <View style={{ backgroundColor: theme.raised, borderRadius: 23, padding: 22, gap: 14 }}>
+            <Text style={{ color: theme.text, fontSize: 20, fontWeight: "900" }}>เริ่มนับความต่อเนื่องใหม่?</Text>
+            <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 22 }}>
               สถิติจะเริ่มนับใหม่จากวันนี้ รายรับรายจ่ายและแครอตที่สะสมไว้ยังอยู่
             </Text>
             <View style={{ flexDirection: "row", gap: 10, paddingTop: 5 }}>
@@ -412,13 +406,13 @@ export default function StreakSettingsScreen() {
                 style={{
                   flex: 1,
                   borderRadius: 14,
-                  backgroundColor: colors.navy,
+                  backgroundColor: theme.background,
                   minHeight: 46,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: colors.white, fontWeight: "800" }}>ยกเลิก</Text>
+                <Text style={{ color: theme.text, fontWeight: "800" }}>ยกเลิก</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -427,13 +421,13 @@ export default function StreakSettingsScreen() {
                 style={{
                   flex: 1,
                   borderRadius: 14,
-                  backgroundColor: colors.blue,
+                  backgroundColor: theme.accent,
                   minHeight: 46,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: colors.white, fontWeight: "800" }}>รีเซ็ต</Text>
+                <Text style={{ color: theme.onAccent, fontWeight: "800" }}>รีเซ็ต</Text>
               </Pressable>
             </View>
           </View>

@@ -1,19 +1,13 @@
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Line, Path } from "react-native-svg";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text } from "@/components/ui/typography";
 import type { FinanceTransaction } from "@/types/finance";
-
-const color = {
-  card: "#1B354D",
-  blue: "#4CA6FF",
-  white: "#FFFFFF",
-  muted: "#AAB9CA",
-  icon: "#73899D",
-};
 
 const weekdays = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
 const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -30,6 +24,8 @@ function slipDateLabel(occurredOn: string, createdAt: string) {
 }
 
 function BankIcon() {
+  const theme = useAppTheme();
+  const styles = useLocalStyles();
   return (
     <View style={styles.bankIcon}>
       <Svg
@@ -42,7 +38,7 @@ function BankIcon() {
         <Path
           d="M3 10h18M5 10v9m5-9v9m4-9v9m5-9v9M3 20h18M4 8l8-5 8 5H4Z"
           fill="none"
-          stroke="#FFFFFF"
+          stroke={theme.onAccent}
           strokeWidth={1.7}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -53,6 +49,8 @@ function BankIcon() {
 }
 
 function ShopIcon() {
+  const styles = useLocalStyles();
+  const theme = useAppTheme();
   return (
     <View style={styles.shopIcon}>
       <Svg
@@ -65,7 +63,7 @@ function ShopIcon() {
         <Path
           d="M4 10 5.5 4h13L20 10M4 10v10h16V10M8 20v-6h8v6"
           fill="none"
-          stroke={color.icon}
+          stroke={theme.muted}
           strokeWidth={1.7}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -73,7 +71,7 @@ function ShopIcon() {
         <Path
           d="M4 10c0 2 3 2 4 0 1 2 3 2 4 0 1 2 3 2 4 0 1 2 4 2 4 0"
           fill="none"
-          stroke={color.icon}
+          stroke={theme.muted}
           strokeWidth={1.7}
         />
       </Svg>
@@ -82,6 +80,7 @@ function ShopIcon() {
 }
 
 function ReceiptIcon() {
+  const theme = useAppTheme();
   return (
     <Svg
       width={30}
@@ -93,13 +92,13 @@ function ReceiptIcon() {
       <Path
         d="M5 2h20v30l-4-3-4 3-4-3-4 3-4-3V2Z"
         fill="none"
-        stroke={color.icon}
+        stroke={theme.muted}
         strokeWidth={2}
         strokeLinejoin="round"
       />
-      <Line x1={9} y1={10} x2={21} y2={10} stroke={color.icon} strokeWidth={2} />
-      <Line x1={9} y1={16} x2={21} y2={16} stroke={color.icon} strokeWidth={2} />
-      <Line x1={9} y1={22} x2={17} y2={22} stroke={color.icon} strokeWidth={2} />
+      <Line x1={9} y1={10} x2={21} y2={10} stroke={theme.muted} strokeWidth={2} />
+      <Line x1={9} y1={16} x2={21} y2={16} stroke={theme.muted} strokeWidth={2} />
+      <Line x1={9} y1={22} x2={17} y2={22} stroke={theme.muted} strokeWidth={2} />
     </Svg>
   );
 }
@@ -111,6 +110,7 @@ export interface SlipImageViewerProps {
 }
 
 export function SlipImageViewer({ visible, imageUri, onClose }: SlipImageViewerProps) {
+  const styles = useLocalStyles();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [failedUri, setFailedUri] = useState<string | null>(null);
@@ -164,6 +164,7 @@ export interface SlipSourceCardProps {
 }
 
 export function SlipSourceCard({ transaction, imageUri, payerName = "บัญชีของฉัน", merchantName }: SlipSourceCardProps) {
+  const styles = useLocalStyles();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [failedThumbnailUri, setFailedThumbnailUri] = useState<string | null>(null);
   const merchant = merchantName?.trim() || transaction.title.trim() || "ไม่ระบุปลายทาง";
@@ -226,100 +227,107 @@ export function SlipSourceCard({ transaction, imageUri, payerName = "บัญ�
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: color.card,
-    borderRadius: 9,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    gap: 12,
-  },
-  cardTitle: { color: color.white, fontSize: 15, lineHeight: 22, fontWeight: "700" },
-  mainRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  flow: { flex: 1, minWidth: 0, gap: 1 },
-  flowRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 27 },
-  flowText: { color: color.white, flex: 1, fontSize: 15, lineHeight: 21 },
-  flowArrow: { color: color.icon, fontSize: 15, lineHeight: 15, marginLeft: 12 },
-  bankIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#13A6DB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  shopIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: color.icon,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thumbnail: {
-    width: 82,
-    height: 78,
-    borderRadius: 5,
-    backgroundColor: "#EEF4F8",
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thumbnailImage: { width: "100%", height: "100%" },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  date: { color: color.muted, fontSize: 12, lineHeight: 18, flex: 1 },
-  viewLinkHit: { paddingVertical: 3 },
-  viewLink: { color: color.blue, fontSize: 15, fontWeight: "700" },
-  viewer: {
-    flex: 1,
-    backgroundColor: "#000000",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  closeViewer: {
-    position: "absolute",
-    right: 16,
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  closeViewerText: { color: "#1178F7", fontSize: 42, lineHeight: 45, fontWeight: "300" },
-  viewerCenter: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    paddingTop: 50,
-  },
-  viewerNotice: {
-    color: color.white,
-    fontSize: 16,
-    lineHeight: 23,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 24,
-  },
-  unavailable: {
-    width: "86%",
-    minHeight: 200,
-    borderWidth: 1,
-    borderColor: "#31465A",
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 22,
-    gap: 11,
-  },
-  unavailableTitle: { color: color.white, fontSize: 18, fontWeight: "700", textAlign: "center" },
-  unavailableBody: { color: color.muted, fontSize: 14, lineHeight: 21, textAlign: "center" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: theme.surface,
+      borderRadius: 9,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 14,
+      gap: 12,
+    },
+    cardTitle: { color: theme.text, fontSize: 15, lineHeight: 22, fontWeight: "700" },
+    mainRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    flow: { flex: 1, minWidth: 0, gap: 1 },
+    flowRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 27 },
+    flowText: { color: theme.text, flex: 1, fontSize: 15, lineHeight: 21 },
+    flowArrow: { color: theme.muted, fontSize: 15, lineHeight: 15, marginLeft: 12 },
+    bankIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.accent,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    shopIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: theme.muted,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    thumbnail: {
+      width: 82,
+      height: 78,
+      borderRadius: 5,
+      backgroundColor: theme.raised,
+      overflow: "hidden",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    thumbnailImage: { width: "100%", height: "100%" },
+    footerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      gap: 8,
+    },
+    date: { color: theme.muted, fontSize: 12, lineHeight: 18, flex: 1 },
+    viewLinkHit: { paddingVertical: 3 },
+    viewLink: { color: theme.accentText, fontSize: 15, fontWeight: "700" },
+    viewer: {
+      flex: 1,
+      backgroundColor: theme.background,
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    closeViewer: {
+      position: "absolute",
+      right: 16,
+      width: 42,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2,
+    },
+    closeViewerText: { color: theme.accentText, fontSize: 42, lineHeight: 45, fontWeight: "300" },
+    viewerCenter: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      paddingTop: 50,
+    },
+    viewerNotice: {
+      color: theme.text,
+      fontSize: 16,
+      lineHeight: 23,
+      textAlign: "center",
+      paddingHorizontal: 20,
+      paddingTop: 18,
+      paddingBottom: 24,
+    },
+    unavailable: {
+      width: "86%",
+      minHeight: 200,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 22,
+      gap: 11,
+    },
+    unavailableTitle: { color: theme.text, fontSize: 18, fontWeight: "700", textAlign: "center" },
+    unavailableBody: { color: theme.muted, fontSize: 14, lineHeight: 21, textAlign: "center" },
+  });
+}
+
+function useLocalStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

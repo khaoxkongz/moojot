@@ -1,22 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useIsFocused } from "expo-router";
+import { useMemo } from "react";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text } from "@/components/ui/typography";
-import { SettingsPage, settingsPageStyles } from "@/features/settings/components/settings-page";
+import { SettingsPage, useSettingsPageStyles } from "@/features/settings/components/settings-page";
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 
 type SavedCard = { cardName: string; cardLast4: string | null };
 
-const NAVY = "#0B243B";
-const PANEL = "#1D384F";
-const BLUE = "#1377F8";
-const YELLOW = "#FFDA60";
-const MUTED = "#A9B8C8";
-
-function CreditCardGlyph({ color = BLUE, size = 27 }: { color?: string; size?: number }) {
+function CreditCardGlyph({ color, size = 27 }: { color?: string; size?: number }) {
+  const theme = useAppTheme();
+  const iconColor = color ?? theme.accentText;
   return (
     <Svg
       width={size}
@@ -25,8 +24,8 @@ function CreditCardGlyph({ color = BLUE, size = 27 }: { color?: string; size?: n
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Rect x="3" y="7" width="26" height="18" rx="2" fill="none" stroke={color} strokeWidth="2" />
-      <Path d="M3 13h26M7 20h6" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <Rect x="3" y="7" width="26" height="18" rx="2" fill="none" stroke={iconColor} strokeWidth="2" />
+      <Path d="M3 13h26M7 20h6" fill="none" stroke={iconColor} strokeWidth="2" strokeLinecap="round" />
     </Svg>
   );
 }
@@ -67,6 +66,7 @@ function PersonGlyph({ color }: { color: string }) {
 }
 
 function PrimaryAction({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useCardsStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -80,6 +80,8 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
 }
 
 function EmptyCards() {
+  const theme = useAppTheme();
+  const styles = useCardsStyles();
   return (
     <View style={styles.emptyContent}>
       <View style={styles.mockPhone}>
@@ -97,7 +99,7 @@ function EmptyCards() {
               onPress={() => router.push("/entry")}
               style={({ pressed }) => [styles.mockAdd, pressed && { opacity: 0.78 }]}
             >
-              <HomeIcon name="edit" size={25} color="#FFFFFF" />
+              <HomeIcon name="edit" size={25} color={theme.onAccent} />
               <Text style={styles.mockAddText}>จดเพิ่ม</Text>
             </Pressable>
             <Pressable
@@ -106,7 +108,7 @@ function EmptyCards() {
               onPress={() => router.push("/entry")}
               style={styles.mockUp}
             >
-              <HomeIcon name="chevronUp" size={30} color="#FFFFFF" strokeWidth={2.5} />
+              <HomeIcon name="chevronUp" size={30} color={theme.onAccent} strokeWidth={2.5} />
             </Pressable>
             <Svg
               width={44}
@@ -119,7 +121,7 @@ function EmptyCards() {
               <Path
                 d="M42 36C37 14 24 9 5 10m0 0 9-8M5 10l9 7"
                 fill="none"
-                stroke={YELLOW}
+                stroke={theme.accentText}
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -129,11 +131,11 @@ function EmptyCards() {
         </View>
         <View style={styles.mockTabs}>
           <View style={styles.mockTab}>
-            <HouseGlyph color={BLUE} />
-            <Text style={[styles.mockTabText, { color: BLUE }]}>หน้าแรก</Text>
+            <HouseGlyph color={theme.accentText} />
+            <Text style={[styles.mockTabText, { color: theme.accentText }]}>หน้าแรก</Text>
           </View>
           <View style={styles.mockTab}>
-            <PersonGlyph color="#0E1724" />
+            <PersonGlyph color={theme.text} />
             <Text style={styles.mockTabText}>พี่มนุษย์</Text>
           </View>
         </View>
@@ -146,6 +148,8 @@ function EmptyCards() {
 }
 
 function SavedCards({ cards }: { cards: SavedCard[] }) {
+  const theme = useAppTheme();
+  const styles = useCardsStyles();
   return (
     <View style={styles.savedContent}>
       <Text style={styles.savedHeading}>บัตรในรายการของฉัน</Text>
@@ -154,7 +158,7 @@ function SavedCards({ cards }: { cards: SavedCard[] }) {
         {cards.map((card, index) => (
           <View key={`${card.cardName}-${card.cardLast4 ?? ""}-${index}`} style={styles.cardRow}>
             <View style={styles.savedIcon}>
-              <CreditCardGlyph color="#FFFFFF" size={25} />
+              <CreditCardGlyph color={theme.text} size={25} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Text selectable numberOfLines={2} style={styles.cardName}>
@@ -180,10 +184,13 @@ function SavedCards({ cards }: { cards: SavedCard[] }) {
 }
 
 function CardsContent({ cards }: { cards: SavedCard[] }) {
+  const styles = useCardsStyles();
   return <View style={styles.screen}>{cards.length ? <SavedCards cards={cards} /> : <EmptyCards />}</View>;
 }
 
 export default function CardsSettingsScreen() {
+  const theme = useAppTheme();
+  const settingsPageStyles = useSettingsPageStyles();
   const isFocused = useIsFocused();
   const cardsQuery = useQuery({ ...walletsQueryOptions.cards(), enabled: isFocused });
 
@@ -209,7 +216,7 @@ export default function CardsSettingsScreen() {
               </Text>
             </Pressable>
           ) : (
-            <ActivityIndicator color={BLUE} style={{ marginTop: 30 }} />
+            <ActivityIndicator color={theme.accentText} style={{ marginTop: 30 }} />
           )
         ) : (
           <>
@@ -226,116 +233,123 @@ export default function CardsSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, minHeight: 540, backgroundColor: NAVY, alignItems: "center" },
-  emptyContent: { width: "100%", alignItems: "center", paddingTop: 50, paddingBottom: 38 },
-  mockPhone: {
-    width: "68%",
-    maxWidth: 300,
-    minWidth: 255,
-    borderRadius: 15,
-    overflow: "hidden",
-    backgroundColor: PANEL,
-  },
-  mockMain: { height: 153, paddingTop: 18, paddingHorizontal: 12, alignItems: "center" },
-  mockHeading: { flexDirection: "row", alignItems: "center", gap: 12, marginLeft: 26 },
-  mockHeadingText: { color: "#FFFFFF", fontSize: 20, fontWeight: "800" },
-  mockCardIcon: {
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mockActionRow: { marginTop: 21, flexDirection: "row", alignItems: "center" },
-  mockAdd: {
-    minHeight: 50,
-    borderTopLeftRadius: 26,
-    borderBottomLeftRadius: 26,
-    backgroundColor: BLUE,
-    paddingLeft: 20,
-    paddingRight: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  mockAddText: { color: "#FFFFFF", fontSize: 19, fontWeight: "800" },
-  mockUp: {
-    minHeight: 50,
-    width: 50,
-    borderTopRightRadius: 26,
-    borderBottomRightRadius: 26,
-    borderWidth: 3,
-    borderColor: YELLOW,
-    backgroundColor: BLUE,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  mockArrow: { marginLeft: 6, marginTop: 17 },
-  mockTabs: {
-    height: 61,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  mockTab: { alignItems: "center", gap: 1 },
-  mockTabText: { color: "#0E1724", fontSize: 12, fontWeight: "800" },
-  emptyGuide: {
-    color: MUTED,
-    fontSize: 16,
-    lineHeight: 25,
-    textAlign: "center",
-    marginTop: 25,
-    maxWidth: 310,
-  },
-  importLink: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-    marginTop: 3,
-  },
-  importLinkText: {
-    color: "#51A1FF",
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  savedContent: { width: "100%", maxWidth: 560, paddingTop: 12, paddingBottom: 32, gap: 15 },
-  savedHeading: { color: "#FFFFFF", fontSize: 19, fontWeight: "800" },
-  savedDescription: { color: MUTED, fontSize: 14, lineHeight: 22 },
-  cardList: { gap: 10, marginTop: 7 },
-  cardRow: {
-    minHeight: 80,
-    borderRadius: 18,
-    backgroundColor: PANEL,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 13,
-  },
-  savedIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardName: { color: "#FFFFFF", fontSize: 16, lineHeight: 23, fontWeight: "800" },
-  cardNumber: { color: MUTED, fontSize: 13, lineHeight: 19, fontVariant: ["tabular-nums"] },
-  primaryAction: {
-    minHeight: 50,
-    borderRadius: 25,
-    backgroundColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 18,
-    marginTop: 6,
-  },
-  primaryActionText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, minHeight: 540, backgroundColor: theme.background, alignItems: "center" },
+    emptyContent: { width: "100%", alignItems: "center", paddingTop: 50, paddingBottom: 38 },
+    mockPhone: {
+      width: "68%",
+      maxWidth: 300,
+      minWidth: 255,
+      borderRadius: 15,
+      overflow: "hidden",
+      backgroundColor: theme.surface,
+    },
+    mockMain: { height: 153, paddingTop: 18, paddingHorizontal: 12, alignItems: "center" },
+    mockHeading: { flexDirection: "row", alignItems: "center", gap: 12, marginLeft: 26 },
+    mockHeadingText: { color: theme.text, fontSize: 20, fontWeight: "800" },
+    mockCardIcon: {
+      width: 43,
+      height: 43,
+      borderRadius: 22,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    mockActionRow: { marginTop: 21, flexDirection: "row", alignItems: "center" },
+    mockAdd: {
+      minHeight: 50,
+      borderTopLeftRadius: 26,
+      borderBottomLeftRadius: 26,
+      backgroundColor: theme.accent,
+      paddingLeft: 20,
+      paddingRight: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    mockAddText: { color: theme.onAccent, fontSize: 19, fontWeight: "800" },
+    mockUp: {
+      minHeight: 50,
+      width: 50,
+      borderTopRightRadius: 26,
+      borderBottomRightRadius: 26,
+      borderWidth: 3,
+      borderColor: theme.accent,
+      backgroundColor: theme.accent,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    mockArrow: { marginLeft: 6, marginTop: 17 },
+    mockTabs: {
+      height: 61,
+      backgroundColor: theme.raised,
+      flexDirection: "row",
+      justifyContent: "space-around",
+      alignItems: "center",
+    },
+    mockTab: { alignItems: "center", gap: 1 },
+    mockTabText: { color: theme.text, fontSize: 12, fontWeight: "800" },
+    emptyGuide: {
+      color: theme.muted,
+      fontSize: 16,
+      lineHeight: 25,
+      textAlign: "center",
+      marginTop: 25,
+      maxWidth: 310,
+    },
+    importLink: {
+      minHeight: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 10,
+      marginTop: 3,
+    },
+    importLinkText: {
+      color: theme.accentText,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    savedContent: { width: "100%", maxWidth: 560, paddingTop: 12, paddingBottom: 32, gap: 15 },
+    savedHeading: { color: theme.text, fontSize: 19, fontWeight: "800" },
+    savedDescription: { color: theme.muted, fontSize: 14, lineHeight: 22 },
+    cardList: { gap: 10, marginTop: 7 },
+    cardRow: {
+      minHeight: 80,
+      borderRadius: 18,
+      backgroundColor: theme.surface,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 13,
+    },
+    savedIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardName: { color: theme.text, fontSize: 16, lineHeight: 23, fontWeight: "800" },
+    cardNumber: { color: theme.muted, fontSize: 13, lineHeight: 19, fontVariant: ["tabular-nums"] },
+    primaryAction: {
+      minHeight: 50,
+      borderRadius: 25,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 18,
+      marginTop: 6,
+    },
+    primaryActionText: { color: theme.onAccent, fontSize: 16, fontWeight: "800" },
+  });
+}
+
+function useCardsStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

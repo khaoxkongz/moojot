@@ -9,6 +9,8 @@ import { HomeIcon } from "@/components/ui/home-icon";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
@@ -30,12 +32,6 @@ import { walletsQueryOptions } from "@/features/wallets/query-options";
 import type { Category, FinanceTransaction, WalletFilterSelection } from "@/types/finance";
 import { formatBaht, isValidISODate, kindLabel, thaiDate, todayISO } from "@/utils/format";
 
-const navy = "#0B243B";
-const rowNavy = "#071D30";
-const slate = "#20384E";
-const yellow = "#FFDA60";
-const blue = "#2876EE";
-const muted = "#A5B3C2";
 const emptyRows: never[] = [];
 const defaultStreakSettings: StreakSettings = { mode: "recorded", enabled: true, resetAfter: "" };
 
@@ -54,6 +50,8 @@ function latestJotLabel(rows: FinanceTransaction[]) {
 }
 
 function TimelineRow({ item, category }: { item: FinanceTransaction; category?: Category }) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const needsCategory = item.kind !== "transfer" && !item.categoryId;
   return (
     <Pressable
@@ -67,7 +65,7 @@ function TimelineRow({ item, category }: { item: FinanceTransaction; category?: 
         {category ? (
           <Text style={styles.categoryEmoji}>{category.icon}</Text>
         ) : (
-          <HomeIcon name="edit" size={22} color="#FFFFFF" />
+          <HomeIcon name="edit" size={22} color={theme.text} />
         )}
       </View>
       <View style={styles.transactionCopy}>
@@ -78,7 +76,7 @@ function TimelineRow({ item, category }: { item: FinanceTransaction; category?: 
           {item.title}
         </Text>
       </View>
-      <Text selectable style={[styles.transactionAmount, item.kind === "income" && { color: "#99E3C5" }]}>
+      <Text selectable style={[styles.transactionAmount, item.kind === "income" && { color: theme.successText }]}>
         {item.kind === "income" ? "+" : ""}
         {amountLabel(item.amountSatang)}
       </Text>
@@ -97,6 +95,8 @@ function DayGroup({
   categories: Map<string, Category>;
   showSkeleton?: boolean;
 }) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const today = date === todayISO();
   const expense = items.filter((item) => item.kind === "expense").reduce((sum, item) => sum + item.amountSatang, 0);
   const income = items.filter((item) => item.kind === "income").reduce((sum, item) => sum + item.amountSatang, 0);
@@ -104,11 +104,11 @@ function DayGroup({
   return (
     <View style={styles.dayGroup}>
       <View style={styles.dayRail}>
-        <View style={[styles.dayAccent, { backgroundColor: today ? yellow : "#FFFFFF" }]} />
-        <Text style={[styles.dayName, today && { color: yellow }]}>
+        <View style={[styles.dayAccent, { backgroundColor: today ? theme.accent : theme.text }]} />
+        <Text style={[styles.dayName, today && { color: theme.accentText }]}>
           {today ? "วันนี้" : thaiDate(date, { weekday: "short" })}
         </Text>
-        <Text style={[styles.dayNumber, today && { color: yellow }]}>{Number(date.slice(-2))}</Text>
+        <Text style={[styles.dayNumber, today && { color: theme.accentText }]}>{Number(date.slice(-2))}</Text>
       </View>
       <View style={styles.dayContents}>
         <View style={styles.daySubtotal}>
@@ -133,6 +133,8 @@ function DayGroup({
 }
 
 export default function HomeScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { deletedId } = useLocalSearchParams<{ deletedId?: string }>();
@@ -406,7 +408,7 @@ export default function HomeScreen() {
                 onPress={() => router.push("/search")}
                 style={styles.topAction}
               >
-                <HomeIcon name="search" color="#FFFFFF" size={25} />
+                <HomeIcon name="search" color={theme.text} size={25} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -416,13 +418,13 @@ export default function HomeScreen() {
                 }}
                 style={[styles.topAction, (filterOpen || appliedWalletFilter) && styles.topActionFiltered]}
               >
-                <HomeIcon name="wallet" color="#FFFFFF" size={25} />
+                <HomeIcon name="wallet" color={theme.text} size={25} />
               </Pressable>
             </View>
           </View>
           {appliedWalletFilter ? (
             <View style={styles.activeFilter}>
-              <HomeIcon name="filter" size={16} color={yellow} />
+              <HomeIcon name="filter" size={16} color={theme.accentText} />
               <Text style={styles.activeFilterText}>กำลังแสดง {transactions.length} รายการจากตัวกรอง</Text>
               <Pressable
                 accessibilityRole="button"
@@ -458,7 +460,7 @@ export default function HomeScreen() {
                   style={styles.speechLink}
                 >
                   <Text style={styles.speechLinkText}>{pendingToday > 0 ? "เลือกหมวดต่อเนื่อง" : "เริ่มนำเข้า"}</Text>
-                  <HomeIcon name="chevronRight" size={17} color="#64ABFF" />
+                  <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
                 </Pressable>
               </>
             )}
@@ -471,7 +473,7 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.latestRow}>
-              <HomeIcon name="clock" size={17} color={muted} />
+              <HomeIcon name="clock" size={17} color={theme.muted} />
               <Text style={styles.latestText}>{latestJotLabel(recentTransactions)}</Text>
             </View>
           )}
@@ -488,9 +490,9 @@ export default function HomeScreen() {
                 onPress={() => setPeriodSelection({ signature, offset: offset - 1 })}
                 style={styles.monthArrow}
               >
-                <HomeIcon name="chevronLeft" color={blue} size={30} strokeWidth={2.7} />
+                <HomeIcon name="chevronLeft" color={theme.accentText} size={30} strokeWidth={2.7} />
               </Pressable>
-              <HomeIcon name="calendar" color={blue} size={22} />
+              <HomeIcon name="calendar" color={theme.accentText} size={22} />
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
@@ -507,7 +509,7 @@ export default function HomeScreen() {
                 onPress={() => setPeriodSelection({ signature, offset: offset + 1 })}
                 style={[styles.monthArrow, offset >= 0 && { opacity: 0.35 }]}
               >
-                <HomeIcon name="chevronRight" color={blue} size={30} strokeWidth={2.7} />
+                <HomeIcon name="chevronRight" color={theme.accentText} size={30} strokeWidth={2.7} />
               </Pressable>
             </View>
             <View style={styles.monthBottom}>
@@ -525,7 +527,7 @@ export default function HomeScreen() {
                 onPress={() => router.push("/summary")}
                 style={styles.summaryButton}
               >
-                <HomeIcon name="chart" color="#FFFFFF" size={22} />
+                <HomeIcon name="chart" color={theme.text} size={22} />
                 <Text style={styles.summaryButtonText}>ดูสรุป</Text>
               </Pressable>
             </View>
@@ -537,7 +539,7 @@ export default function HomeScreen() {
             </Text>
           ) : null}
           {loading ? (
-            <ActivityIndicator color={yellow} style={styles.loading} />
+            <ActivityIndicator color={theme.accentText} style={styles.loading} />
           ) : error ? (
             <View style={styles.messagePanel}>
               <Text selectable style={styles.errorText}>
@@ -554,9 +556,9 @@ export default function HomeScreen() {
           ) : isReadingSlips && grouped.length === 0 ? (
             <View style={styles.dayGroup}>
               <View style={styles.dayRail}>
-                <View style={[styles.dayAccent, { backgroundColor: yellow }]} />
-                <Text style={[styles.dayName, { color: yellow }]}>วันนี้</Text>
-                <Text style={[styles.dayNumber, { color: yellow }]}>{new Date().getDate()}</Text>
+                <View style={[styles.dayAccent, { backgroundColor: theme.accent }]} />
+                <Text style={[styles.dayName, { color: theme.accentText }]}>วันนี้</Text>
+                <Text style={[styles.dayNumber, { color: theme.accentText }]}>{new Date().getDate()}</Text>
               </View>
               <View style={styles.dayContents}>
                 <TimelineSkeletonRow />
@@ -630,7 +632,7 @@ export default function HomeScreen() {
               }}
               style={styles.addOption}
             >
-              <HomeIcon name="edit" color={blue} size={20} />
+              <HomeIcon name="edit" color={theme.accentText} size={20} />
               <Text style={styles.addOptionText}>จดรายการเอง</Text>
             </Pressable>
             <Pressable
@@ -663,279 +665,282 @@ export default function HomeScreen() {
           onPress={() => setAddOpen((value) => !value)}
           style={({ pressed }) => [styles.addButton, { opacity: pressed ? 0.84 : 1 }]}
         >
-          <HomeIcon name={addOpen ? "chevronUp" : "plus"} color="#FFFFFF" size={26} strokeWidth={2.8} />
+          <HomeIcon name={addOpen ? "chevronUp" : "plus"} color={theme.onAccent} size={26} strokeWidth={2.8} />
           <Text style={styles.addButtonText}>{addOpen ? "ปิดเมนู" : "จดเพิ่ม"}</Text>
           <View style={styles.addDivider} />
-          <HomeIcon name="chevronUp" color="#FFFFFF" size={23} strokeWidth={2.8} />
+          <HomeIcon name="chevronUp" color={theme.onAccent} size={23} strokeWidth={2.8} />
         </Pressable>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: navy },
-  content: { width: "100%", maxWidth: 680, alignSelf: "center" },
-  topBar: {
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  streakPill: {
-    height: 43,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: slate,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  streakEmoji: { fontSize: 24 },
-  streakText: { color: "#FFFFFF", fontSize: 17, fontWeight: "800" },
-  topActions: { flexDirection: "row", gap: 9 },
-  topAction: {
-    width: 43,
-    height: 43,
-    borderRadius: 24,
-    backgroundColor: slate,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topActionFiltered: { borderWidth: 2, borderColor: yellow },
-  activeFilter: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  activeFilterText: { color: "#FFFFFF", flex: 1, fontSize: 12 },
-  clearFilter: { color: yellow, fontSize: 12, fontWeight: "800" },
-  speechBubble: {
-    marginTop: 23,
-    marginLeft: 58,
-    marginRight: 16,
-    paddingHorizontal: 17,
-    paddingVertical: 17,
-    minHeight: 108,
-    borderRadius: 19,
-    backgroundColor: slate,
-  },
-  speechTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
-  speechBody: { color: yellow, fontSize: 14, marginTop: 4, fontWeight: "600" },
-  speechLink: {
-    alignSelf: "flex-start",
-    marginTop: 11,
-    flexDirection: "row",
-    gap: 3,
-    alignItems: "center",
-  },
-  speechLinkText: { color: "#64ABFF", fontSize: 14, fontWeight: "800" },
-  speechTail: {
-    position: "absolute",
-    right: 60,
-    bottom: -13,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 13,
-    borderLeftColor: "transparent",
-    borderTopWidth: 14,
-    borderTopColor: slate,
-  },
-  flowCardSlot: {
-    marginLeft: 58,
-    marginRight: 16,
-    marginTop: 10,
-    marginBottom: 8,
-    height: 70,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  latestRow: {
-    marginLeft: 58,
-    marginRight: 16,
-    marginTop: 68,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  latestText: { color: muted, fontSize: 12 },
-  monthCard: {
-    marginLeft: 58,
-    minHeight: 156,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: yellow,
-    paddingHorizontal: 17,
-    paddingTop: 13,
-    paddingBottom: 17,
-  },
-  mascot: { position: "absolute", right: 18, top: -65, zIndex: 2 },
-  monthNav: { flexDirection: "row", alignItems: "center", gap: 9, paddingRight: 6 },
-  monthArrow: { width: 24, height: 34, justifyContent: "center" },
-  monthLabel: { color: blue, fontSize: 17, fontWeight: "900", flexShrink: 1 },
-  rangeMonthLabel: { fontSize: 13 },
-  monthBottom: { marginTop: 19, flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  monthCaption: { color: "#263442", fontSize: 13 },
-  monthAmount: {
-    color: "#172338",
-    fontSize: 27,
-    fontWeight: "900",
-    letterSpacing: 0.4,
-    fontVariant: ["tabular-nums"],
-  },
-  summaryButton: {
-    paddingHorizontal: 13,
-    height: 42,
-    borderRadius: 25,
-    backgroundColor: blue,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  summaryButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
-  dayGroup: { flexDirection: "row", backgroundColor: navy, marginBottom: 8 },
-  dayRail: { width: 58, paddingTop: 17, alignItems: "center", backgroundColor: navy },
-  dayAccent: { position: "absolute", top: 0, left: 0, width: 4, height: 76 },
-  dayName: { color: "#FFFFFF", fontSize: 13 },
-  dayNumber: { color: "#FFFFFF", fontSize: 21, fontWeight: "800", marginTop: 2 },
-  dayContents: { flex: 1 },
-  daySubtotal: {
-    height: 76,
-    backgroundColor: slate,
-    alignItems: "flex-end",
-    justifyContent: "center",
-    paddingRight: 17,
-  },
-  daySubtotalTitle: { color: muted, fontSize: 13 },
-  daySubtotalAmount: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
-  },
-  transaction: {
-    minHeight: 86,
-    backgroundColor: rowNavy,
-    paddingLeft: 18,
-    paddingRight: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-    overflow: "hidden",
-  },
-  uncategorizedCorner: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 15,
-    borderRightWidth: 15,
-    borderTopColor: blue,
-    borderRightColor: "transparent",
-  },
-  categoryCircle: {
-    width: 37,
-    height: 37,
-    borderRadius: 21,
-    backgroundColor: slate,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryEmoji: { fontSize: 19 },
-  transactionCopy: { flex: 1, minWidth: 0, gap: 2 },
-  transactionKind: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
-  transactionTitle: { color: "#E2E9F0", fontSize: 14 },
-  transactionAmount: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
-  },
-  loading: { marginTop: 35 },
-  messagePanel: {
-    marginLeft: 58,
-    marginTop: 8,
-    marginRight: 16,
-    padding: 21,
-    borderRadius: 15,
-    backgroundColor: slate,
-    gap: 4,
-  },
-  errorText: { color: "#FFB5B5", fontSize: 13 },
-  emptyTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
-  emptyBody: { color: muted, fontSize: 12, lineHeight: 18 },
-  floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },
-  addMenu: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 17,
-    paddingVertical: 5,
-    minWidth: 190,
-    shadowColor: "#000000",
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  addOption: {
-    minHeight: 46,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  addOptionEmoji: { fontSize: 20 },
-  addOptionText: { color: navy, fontSize: 14, fontWeight: "800" },
-  addButton: {
-    backgroundColor: blue,
-    borderRadius: 32,
-    minWidth: 158,
-    height: 55,
-    paddingHorizontal: 17,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    shadowColor: "#000000",
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  addButtonText: { color: "#FFFFFF", fontSize: 19, fontWeight: "900" },
-  addDivider: {
-    width: 1,
-    height: 25,
-    backgroundColor: "rgba(255,255,255,.55)",
-    marginHorizontal: 1,
-  },
-  undoToast: {
-    position: "absolute",
-    bottom: 84,
-    left: 16,
-    right: 16,
-    minHeight: 54,
-    maxWidth: 648,
-    alignSelf: "center",
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: "#A9B8D0",
-    backgroundColor: "#EAF1FC",
-    paddingHorizontal: 17,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    zIndex: 5,
-    shadowColor: "#000000",
-    shadowOpacity: 0.17,
-    shadowRadius: 8,
-    elevation: 7,
-  },
-  undoToastRaised: { bottom: 236 },
-  undoToastText: { color: "#253448", fontSize: 15, flex: 1 },
-  undoAction: { paddingVertical: 10, paddingLeft: 8 },
-  undoActionText: { color: "#0866D8", fontSize: 15, fontWeight: "800" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    content: { width: "100%", maxWidth: 680, alignSelf: "center" },
+    topBar: {
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    streakPill: {
+      height: 43,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: theme.raised,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    streakEmoji: { fontSize: 24 },
+    streakText: { color: theme.text, fontSize: 17, fontWeight: "800" },
+    topActions: { flexDirection: "row", gap: 9 },
+    topAction: {
+      width: 43,
+      height: 43,
+      borderRadius: 24,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    topActionFiltered: { borderWidth: 2, borderColor: theme.accent },
+    activeFilter: {
+      marginHorizontal: 16,
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    activeFilterText: { color: theme.text, flex: 1, fontSize: 12 },
+    clearFilter: { color: theme.accentText, fontSize: 12, fontWeight: "800" },
+    speechBubble: {
+      marginTop: 23,
+      marginLeft: 58,
+      marginRight: 16,
+      paddingHorizontal: 17,
+      paddingVertical: 17,
+      minHeight: 108,
+      borderRadius: 19,
+      backgroundColor: theme.raised,
+    },
+    speechTitle: { color: theme.text, fontSize: 18, fontWeight: "900" },
+    speechBody: { color: theme.accentText, fontSize: 14, marginTop: 4, fontWeight: "600" },
+    speechLink: {
+      alignSelf: "flex-start",
+      marginTop: 11,
+      flexDirection: "row",
+      gap: 3,
+      alignItems: "center",
+    },
+    speechLinkText: { color: theme.accentText, fontSize: 14, fontWeight: "800" },
+    speechTail: {
+      position: "absolute",
+      right: 60,
+      bottom: -13,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 13,
+      borderLeftColor: "transparent",
+      borderTopWidth: 14,
+      borderTopColor: theme.raised,
+    },
+    flowCardSlot: {
+      marginLeft: 58,
+      marginRight: 16,
+      marginTop: 10,
+      marginBottom: 8,
+      height: 70,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    latestRow: {
+      marginLeft: 58,
+      marginRight: 16,
+      marginTop: 68,
+      marginBottom: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+    },
+    latestText: { color: theme.muted, fontSize: 12 },
+    monthCard: {
+      marginLeft: 58,
+      minHeight: 156,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      backgroundColor: theme.accent,
+      paddingHorizontal: 17,
+      paddingTop: 13,
+      paddingBottom: 17,
+    },
+    mascot: { position: "absolute", right: 18, top: -65, zIndex: 2 },
+    monthNav: { flexDirection: "row", alignItems: "center", gap: 9, paddingRight: 6 },
+    monthArrow: { width: 24, height: 34, justifyContent: "center" },
+    monthLabel: { color: theme.onAccent, fontSize: 17, fontWeight: "900", flexShrink: 1 },
+    rangeMonthLabel: { fontSize: 13 },
+    monthBottom: { marginTop: 19, flexDirection: "row", alignItems: "flex-end", gap: 8 },
+    monthCaption: { color: theme.onAccent, fontSize: 13 },
+    monthAmount: {
+      color: theme.onAccent,
+      fontSize: 27,
+      fontWeight: "900",
+      letterSpacing: 0.4,
+      fontVariant: ["tabular-nums"],
+    },
+    summaryButton: {
+      paddingHorizontal: 13,
+      height: 42,
+      borderRadius: 25,
+      backgroundColor: theme.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+    },
+    summaryButtonText: { color: theme.onAccent, fontSize: 14, fontWeight: "900" },
+    dayGroup: { flexDirection: "row", backgroundColor: theme.background, marginBottom: 8 },
+    dayRail: { width: 58, paddingTop: 17, alignItems: "center", backgroundColor: theme.background },
+    dayAccent: { position: "absolute", top: 0, left: 0, width: 4, height: 76 },
+    dayName: { color: theme.text, fontSize: 13 },
+    dayNumber: { color: theme.text, fontSize: 21, fontWeight: "800", marginTop: 2 },
+    dayContents: { flex: 1 },
+    daySubtotal: {
+      height: 76,
+      backgroundColor: theme.raised,
+      alignItems: "flex-end",
+      justifyContent: "center",
+      paddingRight: 17,
+    },
+    daySubtotalTitle: { color: theme.muted, fontSize: 13 },
+    daySubtotalAmount: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: "800",
+      fontVariant: ["tabular-nums"],
+    },
+    transaction: {
+      minHeight: 86,
+      backgroundColor: theme.surface,
+      paddingLeft: 18,
+      paddingRight: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 11,
+      overflow: "hidden",
+    },
+    uncategorizedCorner: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: 0,
+      height: 0,
+      borderTopWidth: 15,
+      borderRightWidth: 15,
+      borderTopColor: theme.accentText,
+      borderRightColor: "transparent",
+    },
+    categoryCircle: {
+      width: 37,
+      height: 37,
+      borderRadius: 21,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    categoryEmoji: { fontSize: 19 },
+    transactionCopy: { flex: 1, minWidth: 0, gap: 2 },
+    transactionKind: { color: theme.text, fontSize: 16, fontWeight: "900" },
+    transactionTitle: { color: theme.text, fontSize: 14 },
+    transactionAmount: {
+      color: theme.text,
+      fontSize: 17,
+      fontWeight: "800",
+      fontVariant: ["tabular-nums"],
+    },
+    loading: { marginTop: 35 },
+    messagePanel: {
+      marginLeft: 58,
+      marginTop: 8,
+      marginRight: 16,
+      padding: 21,
+      borderRadius: 15,
+      backgroundColor: theme.raised,
+      gap: 4,
+    },
+    errorText: { color: theme.dangerText, fontSize: 13 },
+    emptyTitle: { color: theme.text, fontSize: 16, fontWeight: "800" },
+    emptyBody: { color: theme.muted, fontSize: 12, lineHeight: 18 },
+    floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },
+    addMenu: {
+      backgroundColor: theme.text,
+      borderRadius: 17,
+      paddingVertical: 5,
+      minWidth: 190,
+      shadowColor: theme.text,
+      shadowOpacity: 0.18,
+      shadowRadius: 18,
+      elevation: 8,
+    },
+    addOption: {
+      minHeight: 46,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    addOptionEmoji: { fontSize: 20 },
+    addOptionText: { color: theme.background, fontSize: 14, fontWeight: "800" },
+    addButton: {
+      backgroundColor: theme.accent,
+      borderRadius: 32,
+      minWidth: 158,
+      height: 55,
+      paddingHorizontal: 17,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
+      shadowColor: theme.text,
+      shadowOpacity: 0.22,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    addButtonText: { color: theme.onAccent, fontSize: 19, fontWeight: "900" },
+    addDivider: {
+      width: 1,
+      height: 25,
+      backgroundColor: theme.onAccent,
+      opacity: 0.4,
+      marginHorizontal: 1,
+    },
+    undoToast: {
+      position: "absolute",
+      bottom: 84,
+      left: 16,
+      right: 16,
+      minHeight: 54,
+      maxWidth: 648,
+      alignSelf: "center",
+      borderRadius: 11,
+      borderWidth: 1,
+      borderColor: theme.muted,
+      backgroundColor: theme.raised,
+      paddingHorizontal: 17,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+      zIndex: 5,
+      shadowColor: theme.text,
+      shadowOpacity: 0.17,
+      shadowRadius: 8,
+      elevation: 7,
+    },
+    undoToastRaised: { bottom: 236 },
+    undoToastText: { color: theme.text, fontSize: 15, flex: 1 },
+    undoAction: { paddingVertical: 10, paddingLeft: 8 },
+    undoActionText: { color: theme.accentText, fontSize: 15, fontWeight: "800" },
+  });
+}

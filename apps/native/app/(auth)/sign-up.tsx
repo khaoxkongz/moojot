@@ -7,7 +7,7 @@ import { z } from "zod";
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
 import { Text, TextInput } from "@/components/ui/typography";
 import { Footer, Page } from "@/features/onboarding/components/onboarding-controls";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { normalizeEmail } from "@/utils/email-identity";
 
@@ -17,9 +17,9 @@ const signUpSchema = z.object({
   password: z.string().min(8, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"),
 });
 
-const inputStyle = { backgroundColor: color.dark, color: color.white, padding: 16 };
-
 export default function SignUpRoute() {
+  const theme = useAppTheme();
+  const inputStyle = { backgroundColor: theme.surface, color: theme.text, padding: 16 };
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
@@ -53,7 +53,7 @@ export default function SignUpRoute() {
   });
 
   return (
-    <Page backgroundColor={color.navy}>
+    <Page backgroundColor={theme.background}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
@@ -62,8 +62,8 @@ export default function SignUpRoute() {
         >
           <View style={{ alignItems: "center", paddingTop: 20, gap: 8 }}>
             <OnboardingIllustration variant="logo" size={130} />
-            <Text style={{ color: color.white, fontSize: 32, fontWeight: "900" }}>หมูจด</Text>
-            <Text style={{ color: color.muted, fontSize: 17 }}>สมัครสมาชิกด้วยอีเมล</Text>
+            <Text style={{ color: theme.text, fontSize: 32, fontWeight: "900" }}>หมูจด</Text>
+            <Text style={{ color: theme.muted, fontSize: 17 }}>สมัครสมาชิกด้วยอีเมล</Text>
           </View>
 
           <form.Field name="name">
@@ -78,7 +78,7 @@ export default function SignUpRoute() {
                   if (error) setError(null);
                 }}
                 placeholder="ชื่อของคุณ"
-                placeholderTextColor="#7890A5"
+                placeholderTextColor={theme.muted}
                 style={inputStyle}
               />
             )}
@@ -99,7 +99,7 @@ export default function SignUpRoute() {
                   if (error) setError(null);
                 }}
                 placeholder="name@example.com"
-                placeholderTextColor="#7890A5"
+                placeholderTextColor={theme.muted}
                 style={inputStyle}
               />
             )}
@@ -121,24 +121,24 @@ export default function SignUpRoute() {
                   if (!registered) void form.handleSubmit();
                 }}
                 placeholder="รหัสผ่านอย่างน้อย 8 ตัวอักษร"
-                placeholderTextColor="#7890A5"
+                placeholderTextColor={theme.muted}
                 style={inputStyle}
               />
             )}
           </form.Field>
           {error ? (
-            <Text accessibilityRole="alert" selectable style={{ color: "#FFC4C4", fontSize: 15 }}>
+            <Text accessibilityRole="alert" selectable style={{ color: theme.dangerText, fontSize: 15 }}>
               {error}
             </Text>
           ) : null}
           {notice ? (
-            <Text selectable style={{ color: color.white }}>
+            <Text selectable style={{ color: theme.text }}>
               {notice}
             </Text>
           ) : null}
           <Link href="/sign-in" replace asChild>
             <Pressable accessibilityRole="link" style={{ alignSelf: "center", padding: 12 }}>
-              <Text style={{ color: "#79B9FF", fontSize: 16, fontWeight: "700" }}>มีบัญชีแล้ว? เข้าสู่ระบบ</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "700" }}>มีบัญชีแล้ว? เข้าสู่ระบบ</Text>
             </Pressable>
           </Link>
         </ScrollView>

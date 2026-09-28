@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, useWindowDimensions, View } f
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { CarrotIcon } from "@/features/streak/components/carrot-icon";
 import { streakMutationOptions } from "@/features/streak/mutation-options";
@@ -15,15 +16,6 @@ import { computeStreakHighlights, type StreakRun } from "@/features/streak/strea
 import type { DailyActivity, StreakCountMode } from "@/features/streak/types";
 import { thaiDate, todayISO } from "@/utils/format";
 
-const colors = {
-  yellow: "#FFDA60",
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  blue: "#1778F7",
-  white: "#FFFFFF",
-  muted: "#A7B8C9",
-};
 const emptyRows: never[] = [];
 
 function goBack() {
@@ -68,6 +60,7 @@ function WeekDay({
   enabled: boolean;
   resetAfter: string;
 }) {
+  const theme = useAppTheme();
   const recorded = isRecordedDay(activity);
   const active = enabled && date > resetAfter && isRecordedDay(activity, mode);
   const pending = recorded && (activity?.pendingCategoryCount ?? 0) > 0;
@@ -92,7 +85,7 @@ function WeekDay({
       <Text
         numberOfLines={1}
         style={{
-          color: date === today ? colors.yellow : colors.muted,
+          color: date === today ? theme.accentText : theme.muted,
           fontSize: 12,
           fontWeight: date === today ? "800" : "500",
         }}
@@ -110,12 +103,12 @@ function WeekDay({
               width: 16,
               height: 16,
               borderRadius: 8,
-              backgroundColor: colors.blue,
+              backgroundColor: theme.accent,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: colors.white, fontSize: 10, fontWeight: "900", lineHeight: 13 }}>!</Text>
+            <Text style={{ color: theme.onAccent, fontSize: 10, fontWeight: "900", lineHeight: 13 }}>!</Text>
           </View>
         ) : null}
       </View>
@@ -136,6 +129,7 @@ function StreakRow({
   pending?: boolean;
   onPress?: () => void;
 }) {
+  const theme = useAppTheme();
   return (
     <Pressable
       accessibilityRole={onPress ? "button" : undefined}
@@ -148,19 +142,19 @@ function StreakRow({
         alignItems: "center",
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#547089",
+        borderBottomColor: theme.border,
         paddingVertical: 9,
       }}
     >
       <CarrotReward size={48} />
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text numberOfLines={1} style={{ color: colors.white, fontSize: 17, fontWeight: "700" }}>
+        <Text numberOfLines={1} style={{ color: theme.text, fontSize: 17, fontWeight: "700" }}>
           {title}
         </Text>
         <Text
           numberOfLines={1}
           style={{
-            color: pending ? "#53A9FF" : colors.muted,
+            color: pending ? theme.accentText : theme.muted,
             fontSize: 13,
             fontWeight: pending ? "700" : "400",
           }}
@@ -172,7 +166,7 @@ function StreakRow({
         <Text
           selectable
           style={{
-            color: colors.white,
+            color: theme.text,
             fontSize: 30,
             lineHeight: 34,
             fontWeight: "900",
@@ -181,7 +175,7 @@ function StreakRow({
         >
           {days}
         </Text>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>วัน</Text>
+        <Text style={{ color: theme.muted, fontSize: 12 }}>วัน</Text>
       </View>
     </Pressable>
   );
@@ -192,6 +186,7 @@ function formatRunDate(run: StreakRun | null) {
 }
 
 export default function StreakStatsScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
 
@@ -311,7 +306,7 @@ export default function StreakStatsScreen() {
             : "น้องหมูอิ่มแล้ววันนี้";
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.navy }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
@@ -327,7 +322,7 @@ export default function StreakStatsScreen() {
           style={{
             height: heroHeight,
             paddingTop: insets.top,
-            backgroundColor: colors.yellow,
+            backgroundColor: theme.accent,
             zIndex: 1,
           }}
         >
@@ -354,9 +349,9 @@ export default function StreakStatsScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: colors.dark, fontSize: 40, lineHeight: 45 }}>‹</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 40, lineHeight: 45 }}>‹</Text>
             </Pressable>
-            <Text numberOfLines={1} style={{ color: colors.dark, fontSize: 20, fontWeight: "900" }}>
+            <Text numberOfLines={1} style={{ color: theme.onAccent, fontSize: 20, fontWeight: "900" }}>
               ให้อาหารน้องหมู
             </Text>
             <Pressable
@@ -374,7 +369,7 @@ export default function StreakStatsScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ color: colors.dark, fontSize: 32, lineHeight: 40, fontWeight: "900" }}>⋮</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 32, lineHeight: 40, fontWeight: "900" }}>⋮</Text>
             </Pressable>
           </View>
           <Image
@@ -402,13 +397,13 @@ export default function StreakStatsScreen() {
         >
           {loading ? (
             <View style={{ minHeight: 230, justifyContent: "center", alignItems: "center", gap: 13 }}>
-              <ActivityIndicator color={colors.yellow} size="large" />
-              <Text style={{ color: colors.muted }}>กำลังดูสถิติ…</Text>
+              <ActivityIndicator color={theme.accentText} size="large" />
+              <Text style={{ color: theme.muted }}>กำลังดูสถิติ…</Text>
             </View>
           ) : loadError ? (
-            <View style={{ padding: 20, borderRadius: 18, backgroundColor: colors.slate, gap: 11 }}>
-              <Text style={{ color: colors.white, fontSize: 18, fontWeight: "800" }}>โหลดสถิติไม่สำเร็จ</Text>
-              <Text selectable style={{ color: colors.muted }}>
+            <View style={{ padding: 20, borderRadius: 18, backgroundColor: theme.raised, gap: 11 }}>
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: "800" }}>โหลดสถิติไม่สำเร็จ</Text>
+              <Text selectable style={{ color: theme.muted }}>
                 {loadError}
               </Text>
               <Pressable
@@ -416,16 +411,16 @@ export default function StreakStatsScreen() {
                   for (const query of queries) void query.refetch();
                 }}
               >
-                <Text style={{ color: colors.yellow, fontWeight: "800" }}>ลองอีกครั้ง</Text>
+                <Text style={{ color: theme.accentText, fontWeight: "800" }}>ลองอีกครั้ง</Text>
               </Pressable>
               <Pressable accessibilityRole="button" onPress={goBack}>
-                <Text style={{ color: colors.yellow, fontWeight: "800" }}>กลับหน้าแรก</Text>
+                <Text style={{ color: theme.accentText, fontWeight: "800" }}>กลับหน้าแรก</Text>
               </Pressable>
             </View>
           ) : (
             <>
               {refreshError ? (
-                <Text selectable style={{ color: "#FFD0C8", padding: 12 }}>
+                <Text selectable style={{ color: theme.dangerText, padding: 12 }}>
                   {refreshError.message}
                 </Text>
               ) : null}
@@ -437,11 +432,11 @@ export default function StreakStatsScreen() {
                   gap: 9,
                   paddingHorizontal: 12,
                   borderRadius: 13,
-                  backgroundColor: colors.slate,
+                  backgroundColor: theme.raised,
                 }}
               >
                 <CarrotIcon size={25} />
-                <Text numberOfLines={1} style={{ flex: 1, color: colors.white, fontSize: 13, fontWeight: "700" }}>
+                <Text numberOfLines={1} style={{ flex: 1, color: theme.text, fontSize: 13, fontWeight: "700" }}>
                   {todayLabel}
                 </Text>
                 <Pressable
@@ -454,19 +449,21 @@ export default function StreakStatsScreen() {
                     minWidth: 87,
                     paddingHorizontal: 9,
                     borderRadius: 17,
-                    backgroundColor: status === "fed" ? "#49627A" : colors.blue,
+                    backgroundColor: status === "fed" ? theme.raised : theme.accent,
                     alignItems: "center",
                     justifyContent: "center",
                     opacity: pressed || feeding ? 0.72 : 1,
                   })}
                 >
-                  <Text style={{ color: colors.white, fontSize: 12, fontWeight: "900" }}>
+                  <Text
+                    style={{ color: status === "fed" ? theme.text : theme.onAccent, fontSize: 12, fontWeight: "900" }}
+                  >
                     {feeding ? "กำลังให้…" : actionLabel}
                   </Text>
                 </Pressable>
               </View>
               {feedError ? (
-                <Text selectable style={{ color: "#FFC6B8", fontSize: 12, paddingTop: 6 }}>
+                <Text selectable style={{ color: theme.dangerText, fontSize: 12, paddingTop: 6 }}>
                   {feedError}
                 </Text>
               ) : null}
@@ -484,7 +481,7 @@ export default function StreakStatsScreen() {
                     />
                   ))}
                 </View>
-                <Text selectable style={{ paddingTop: 10, color: colors.yellow, fontSize: 15, textAlign: "right" }}>
+                <Text selectable style={{ paddingTop: 10, color: theme.accentText, fontSize: 15, textAlign: "right" }}>
                   {thaiDate(today, { day: "numeric", month: "short" })}
                 </Text>
               </View>
@@ -506,7 +503,7 @@ export default function StreakStatsScreen() {
                   paddingTop: 16,
                 }}
               >
-                <Text style={{ color: colors.muted, fontSize: 12 }}>แครอตสะสม {carrots}</Text>
+                <Text style={{ color: theme.muted, fontSize: 12 }}>แครอตสะสม {carrots}</Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={"สถิติสูงสุด " + stats.longest + " วัน ดูรายละเอียด"}
@@ -516,9 +513,9 @@ export default function StreakStatsScreen() {
                     minWidth: 184,
                     paddingHorizontal: 15,
                     borderRadius: 23,
-                    backgroundColor: colors.slate,
+                    backgroundColor: theme.raised,
                     borderWidth: 1,
-                    borderColor: "#4B6680",
+                    borderColor: theme.border,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
@@ -527,9 +524,7 @@ export default function StreakStatsScreen() {
                   })}
                 >
                   <CarrotReward size={27} />
-                  <Text style={{ color: colors.white, fontSize: 15, fontWeight: "800" }}>
-                    สถิติสูงสุด: {stats.longest} ›
-                  </Text>
+                  <Text style={{ color: theme.text, fontSize: 15, fontWeight: "800" }}>สถิติสูงสุด: {stats.longest} ›</Text>
                 </Pressable>
               </View>
             </>
@@ -551,10 +546,10 @@ export default function StreakStatsScreen() {
               top: insets.top + 65,
               right: 5,
               width: Math.min(width - 35, 270),
-              backgroundColor: "#FFF9FF",
+              backgroundColor: theme.surface,
               borderRadius: 17,
               borderWidth: 1,
-              borderColor: "#CDD9E8",
+              borderColor: theme.border,
               overflow: "hidden",
               boxShadow: "0 3px 7px rgba(0,0,0,.18)",
             }}
@@ -573,10 +568,10 @@ export default function StreakStatsScreen() {
                 paddingHorizontal: 18,
               }}
             >
-              <Text style={{ color: colors.blue, fontSize: 22 }}>⚙</Text>
-              <Text style={{ color: colors.blue, fontSize: 16, fontWeight: "800" }}>ปรับวิธีนับความต่อเนื่อง</Text>
+              <Text style={{ color: theme.accentText, fontSize: 22 }}>⚙</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>ปรับวิธีนับความต่อเนื่อง</Text>
             </Pressable>
-            <View style={{ height: 1, backgroundColor: "#D4DFE9" }} />
+            <View style={{ height: 1, backgroundColor: theme.border }} />
             <Pressable
               accessibilityRole="button"
               onPress={() => {
@@ -591,8 +586,8 @@ export default function StreakStatsScreen() {
                 paddingHorizontal: 18,
               }}
             >
-              <Text style={{ color: colors.blue, fontSize: 22 }}>ⓘ</Text>
-              <Text style={{ color: colors.blue, fontSize: 16, fontWeight: "800" }}>เรียนรู้เพิ่มเติม</Text>
+              <Text style={{ color: theme.accentText, fontSize: 22 }}>ⓘ</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>เรียนรู้เพิ่มเติม</Text>
             </Pressable>
           </View>
         </View>
@@ -626,10 +621,10 @@ export default function StreakStatsScreen() {
               width: dialogWidth,
               borderRadius: 25,
               overflow: "hidden",
-              backgroundColor: colors.slate,
+              backgroundColor: theme.raised,
             }}
           >
-            <View style={{ height: 165, backgroundColor: colors.yellow }}>
+            <View style={{ height: 165, backgroundColor: theme.accent }}>
               <Image
                 source={require("../../../assets/generated/streak-record.png")}
                 contentFit="contain"
@@ -651,13 +646,13 @@ export default function StreakStatsScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: colors.dark, fontSize: 31, lineHeight: 36 }}>×</Text>
+                <Text style={{ color: theme.onAccent, fontSize: 31, lineHeight: 36 }}>×</Text>
               </Pressable>
             </View>
             <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 22, gap: 22 }}>
               <Text
                 style={{
-                  color: colors.white,
+                  color: theme.text,
                   fontSize: 21,
                   fontWeight: "900",
                   textAlign: "center",
@@ -667,22 +662,20 @@ export default function StreakStatsScreen() {
               </Text>
               <View style={{ flexDirection: "row", gap: 14 }}>
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ color: colors.muted, fontSize: 14 }}>เลือกหมวดครบ</Text>
-                  <Text selectable style={{ color: colors.white, fontSize: 24, fontWeight: "900" }}>
+                  <Text style={{ color: theme.muted, fontSize: 14 }}>เลือกหมวดครบ</Text>
+                  <Text selectable style={{ color: theme.text, fontSize: 24, fontWeight: "900" }}>
                     {highlights.categorized.longest?.days ?? 0} วัน
                   </Text>
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  <Text style={{ color: theme.muted, fontSize: 12 }}>
                     {formatRunDate(highlights.categorized.longest)}
                   </Text>
                 </View>
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ color: colors.muted, fontSize: 14 }}>จดรายรับรายจ่าย</Text>
-                  <Text selectable style={{ color: colors.white, fontSize: 24, fontWeight: "900" }}>
+                  <Text style={{ color: theme.muted, fontSize: 14 }}>จดรายรับรายจ่าย</Text>
+                  <Text selectable style={{ color: theme.text, fontSize: 24, fontWeight: "900" }}>
                     {highlights.recorded.longest?.days ?? 0} วัน
                   </Text>
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>
-                    {formatRunDate(highlights.recorded.longest)}
-                  </Text>
+                  <Text style={{ color: theme.muted, fontSize: 12 }}>{formatRunDate(highlights.recorded.longest)}</Text>
                 </View>
               </View>
               <Pressable
@@ -691,12 +684,12 @@ export default function StreakStatsScreen() {
                 style={{
                   minHeight: 47,
                   borderRadius: 24,
-                  backgroundColor: colors.blue,
+                  backgroundColor: theme.accent,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: colors.white, fontSize: 16, fontWeight: "900" }}>โอเคหมูจด</Text>
+                <Text style={{ color: theme.onAccent, fontSize: 16, fontWeight: "900" }}>โอเคหมูจด</Text>
               </Pressable>
             </View>
           </View>

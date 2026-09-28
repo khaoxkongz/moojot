@@ -4,9 +4,10 @@ import { View, useWindowDimensions } from "react-native";
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
 import { Text } from "@/components/ui/typography";
 import { Footer, Header, Page } from "@/features/onboarding/components/onboarding-controls";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingGreetingRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const illustrationSize = Math.min(width * 0.78, 330);
@@ -23,8 +24,8 @@ export default function OnboardingGreetingRoute() {
           gap: 18,
         }}
       >
-        <Text style={{ color: color.ink, fontSize: 34, fontWeight: "900", textAlign: "center" }}>สวัสดีพี่มนุษย์!</Text>
-        <Text style={{ color: color.ink, fontSize: 23, textAlign: "center" }}>ยินดีที่ได้รู้จักกันนะ</Text>
+        <Text style={{ color: theme.text, fontSize: 34, fontWeight: "900", textAlign: "center" }}>สวัสดีพี่มนุษย์!</Text>
+        <Text style={{ color: theme.text, fontSize: 23, textAlign: "center" }}>ยินดีที่ได้รู้จักกันนะ</Text>
         <OnboardingIllustration variant="welcome" size={illustrationSize} />
       </View>
       <Footer label="สวัสดี หมูจด!" onPress={() => router.push("/onboarding/terms")} />

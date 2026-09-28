@@ -1,10 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { useIsFocused } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useMemo, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text } from "@/components/ui/typography";
 import { planningMutationOptions } from "@/features/planning/mutation-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
@@ -21,17 +23,6 @@ type CalendarPreferences = {
   fortnightAnchor: string;
   monthStartDay: number;
   openPeriod: OpenPeriod;
-};
-
-const colors = {
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  yellow: "#FFDA60",
-  blue: "#1677F5",
-  lightBlue: "#4CA6FF",
-  muted: "#A9B9CA",
-  white: "#FFFFFF",
 };
 
 const weekdays = ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"];
@@ -93,6 +84,7 @@ function defaults(): CalendarPreferences {
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
+  const styles = useLocalStyles();
   return (
     <View style={styles.sectionHeading}>
       <Text style={styles.sectionHeadingText}>{children}</Text>
@@ -111,6 +103,7 @@ function FieldRow({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const styles = useLocalStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -141,6 +134,7 @@ function RadioRow({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const styles = useLocalStyles();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -169,6 +163,7 @@ function WheelPicker({
   selected: number;
   onSelect: (value: number) => void;
 }) {
+  const styles = useLocalStyles();
   const scroll = useRef<ScrollView>(null);
   const positioned = useRef(false);
   const selectedIndex = Math.max(
@@ -234,6 +229,8 @@ function WheelPicker({
 }
 
 export default function CalendarSettingsScreen() {
+  const styles = useLocalStyles();
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const [resetToken, setResetToken] = useState(0);
@@ -396,7 +393,7 @@ export default function CalendarSettingsScreen() {
                 </Text>
               </Pressable>
             ) : (
-              <ActivityIndicator color={colors.blue} size="large" />
+              <ActivityIndicator color={theme.accentText} size="large" />
             )}
           </View>
         ) : (
@@ -642,206 +639,213 @@ export default function CalendarSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.navy },
-  resetButton: { minWidth: 46, minHeight: 52, alignItems: "center", justifyContent: "center" },
-  resetText: { color: colors.blue, fontSize: 17, fontWeight: "800" },
-  loading: { flex: 1, alignItems: "center", justifyContent: "center" },
-  scrollContent: { paddingBottom: 18 },
-  contentWidth: { width: "100%", maxWidth: 680, alignSelf: "center" },
-  sectionHeading: {
-    minHeight: 49,
-    justifyContent: "center",
-    paddingHorizontal: 17,
-    backgroundColor: colors.navy,
-  },
-  sectionHeadingText: { color: colors.white, fontSize: 18, fontWeight: "800" },
-  fieldRow: {
-    minHeight: 58,
-    backgroundColor: colors.dark,
-    paddingHorizontal: 17,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  fieldLabel: { color: colors.muted, fontSize: 16, flexShrink: 1 },
-  fieldValueGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 6,
-    flex: 1,
-  },
-  fieldValue: { color: colors.white, fontSize: 16, flexShrink: 1, textAlign: "right" },
-  chevron: { color: colors.white, fontSize: 27, lineHeight: 31, marginTop: -7 },
-  rowGap: { height: 16, backgroundColor: colors.navy },
-  radioGroup: { backgroundColor: colors.dark },
-  radioRow: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 17,
-    paddingHorizontal: 20,
-  },
-  radioCircle: {
-    width: 29,
-    height: 29,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioSelected: { backgroundColor: colors.blue },
-  radioCheck: { color: colors.white, fontSize: 21, lineHeight: 25, fontWeight: "900" },
-  radioLabel: { color: colors.white, fontSize: 17 },
-  periodCaption: { color: colors.muted, fontSize: 15, paddingHorizontal: 17, paddingTop: 16 },
-  message: {
-    color: "#79D9AE",
-    fontSize: 13,
-    lineHeight: 19,
-    paddingHorizontal: 17,
-    paddingTop: 12,
-  },
-  error: { color: "#FFBFC0", fontSize: 13, lineHeight: 19, paddingHorizontal: 17, paddingTop: 12 },
-  footer: { backgroundColor: colors.navy, paddingTop: 10, alignItems: "center" },
-  saveButton: {
-    width: "64%",
-    maxWidth: 300,
-    minHeight: 52,
-    borderRadius: 999,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveText: { color: colors.white, fontSize: 19, fontWeight: "800" },
-  pressed: { opacity: 0.7 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, .65)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  pickerPanel: {
-    width: "100%",
-    maxWidth: 420,
-    backgroundColor: colors.slate,
-    borderRadius: 13,
-    overflow: "hidden",
-    transform: [{ translateY: 6 }],
-  },
-  wheelPanel: { paddingTop: 0 },
-  wheelTitle: {
-    color: colors.white,
-    fontSize: 20,
-    lineHeight: 32,
-    fontWeight: "800",
-    marginTop: 22,
-    paddingHorizontal: 24,
-  },
-  wheel: { height: 245, marginTop: 29, position: "relative" },
-  wheelCompact: { height: 170 },
-  wheelHighlight: {
-    position: "absolute",
-    left: 24,
-    right: 24,
-    top: 81,
-    height: 50,
-    backgroundColor: colors.yellow,
-    borderRadius: 12,
-  },
-  wheelContent: { paddingTop: 86, paddingBottom: 120 },
-  wheelItem: { height: WHEEL_ITEM_HEIGHT, justifyContent: "center", alignItems: "center" },
-  wheelItemText: { color: "#8394A6", fontSize: 19, lineHeight: 27, fontWeight: "700" },
-  wheelItemSelected: { color: "#142337", fontSize: 24, lineHeight: 32, fontWeight: "900" },
-  pickerActions: {
-    marginTop: "auto",
-    paddingHorizontal: 24,
-    paddingBottom: 27,
-    flexDirection: "row",
-    gap: 12,
-  },
-  pickerCancel: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pickerCancelText: { color: "#348DFA", fontSize: 18, fontWeight: "800" },
-  pickerSelect: {
-    flex: 1,
-    minHeight: 40,
-    borderRadius: 999,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pickerSelectText: { color: colors.white, fontSize: 18, fontWeight: "800" },
-  fortnightArt: { height: 98, backgroundColor: colors.yellow, alignItems: "center" },
-  fortnightClose: {
-    position: "absolute",
-    top: 10,
-    right: 16,
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-  },
-  fortnightCloseText: { color: colors.dark, fontSize: 34, lineHeight: 36, fontWeight: "300" },
-  questionPig: { position: "absolute", top: 19, width: 130, height: 130 },
-  fortnightBody: { flex: 1, paddingTop: 55 },
-  fortnightTitle: {
-    color: colors.white,
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  fortnightChoices: { paddingHorizontal: 19, paddingTop: 20, gap: 5 },
-  fortnightOption: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 12 },
-  fortnightOptionLabel: { color: colors.white, fontSize: 16, lineHeight: 21 },
-  fortnightOptionCaption: { color: colors.muted, fontSize: 13, lineHeight: 17 },
-  confirmCard: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 20,
-    overflow: "hidden",
-    backgroundColor: colors.slate,
-  },
-  confirmArt: {
-    minHeight: 142,
-    backgroundColor: colors.yellow,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmImage: { width: 142, height: 142 },
-  confirmBody: { paddingHorizontal: 18, paddingTop: 22, paddingBottom: 22, gap: 10 },
-  confirmTitle: { color: colors.white, fontSize: 21, fontWeight: "900", textAlign: "center" },
-  confirmCopy: { color: "#D7E1EA", fontSize: 16, lineHeight: 24, textAlign: "center" },
-  confirmActions: { flexDirection: "row", gap: 12, paddingTop: 17 },
-  cancelButton: {
-    flex: 1,
-    minHeight: 47,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.lightBlue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelText: { color: colors.lightBlue, fontSize: 16, fontWeight: "800" },
-  confirmButton: {
-    flex: 1,
-    minHeight: 47,
-    borderRadius: 999,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmButtonText: { color: colors.white, fontSize: 16, fontWeight: "800" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    resetButton: { minWidth: 46, minHeight: 52, alignItems: "center", justifyContent: "center" },
+    resetText: { color: theme.accentText, fontSize: 17, fontWeight: "800" },
+    loading: { flex: 1, alignItems: "center", justifyContent: "center" },
+    scrollContent: { paddingBottom: 18 },
+    contentWidth: { width: "100%", maxWidth: 680, alignSelf: "center" },
+    sectionHeading: {
+      minHeight: 49,
+      justifyContent: "center",
+      paddingHorizontal: 17,
+      backgroundColor: theme.background,
+    },
+    sectionHeadingText: { color: theme.text, fontSize: 18, fontWeight: "800" },
+    fieldRow: {
+      minHeight: 58,
+      backgroundColor: theme.surface,
+      paddingHorizontal: 17,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    fieldLabel: { color: theme.muted, fontSize: 16, flexShrink: 1 },
+    fieldValueGroup: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 6,
+      flex: 1,
+    },
+    fieldValue: { color: theme.text, fontSize: 16, flexShrink: 1, textAlign: "right" },
+    chevron: { color: theme.text, fontSize: 27, lineHeight: 31, marginTop: -7 },
+    rowGap: { height: 16, backgroundColor: theme.background },
+    radioGroup: { backgroundColor: theme.surface },
+    radioRow: {
+      minHeight: 56,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 17,
+      paddingHorizontal: 20,
+    },
+    radioCircle: {
+      width: 29,
+      height: 29,
+      borderRadius: 15,
+      borderWidth: 2,
+      borderColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    radioSelected: { backgroundColor: theme.accent },
+    radioCheck: { color: theme.onAccent, fontSize: 21, lineHeight: 25, fontWeight: "900" },
+    radioLabel: { color: theme.text, fontSize: 17 },
+    periodCaption: { color: theme.muted, fontSize: 15, paddingHorizontal: 17, paddingTop: 16 },
+    message: {
+      color: theme.successText,
+      fontSize: 13,
+      lineHeight: 19,
+      paddingHorizontal: 17,
+      paddingTop: 12,
+    },
+    error: { color: theme.dangerText, fontSize: 13, lineHeight: 19, paddingHorizontal: 17, paddingTop: 12 },
+    footer: { backgroundColor: theme.background, paddingTop: 10, alignItems: "center" },
+    saveButton: {
+      width: "64%",
+      maxWidth: 300,
+      minHeight: 52,
+      borderRadius: 999,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    saveText: { color: theme.onAccent, fontSize: 19, fontWeight: "800" },
+    pressed: { opacity: 0.7 },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, .65)",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+    },
+    pickerPanel: {
+      width: "100%",
+      maxWidth: 420,
+      backgroundColor: theme.raised,
+      borderRadius: 13,
+      overflow: "hidden",
+      transform: [{ translateY: 6 }],
+    },
+    wheelPanel: { paddingTop: 0 },
+    wheelTitle: {
+      color: theme.text,
+      fontSize: 20,
+      lineHeight: 32,
+      fontWeight: "800",
+      marginTop: 22,
+      paddingHorizontal: 24,
+    },
+    wheel: { height: 245, marginTop: 29, position: "relative" },
+    wheelCompact: { height: 170 },
+    wheelHighlight: {
+      position: "absolute",
+      left: 24,
+      right: 24,
+      top: 81,
+      height: 50,
+      backgroundColor: theme.accent,
+      borderRadius: 12,
+    },
+    wheelContent: { paddingTop: 86, paddingBottom: 120 },
+    wheelItem: { height: WHEEL_ITEM_HEIGHT, justifyContent: "center", alignItems: "center" },
+    wheelItemText: { color: theme.muted, fontSize: 19, lineHeight: 27, fontWeight: "700" },
+    wheelItemSelected: { color: theme.onAccent, fontSize: 24, lineHeight: 32, fontWeight: "900" },
+    pickerActions: {
+      marginTop: "auto",
+      paddingHorizontal: 24,
+      paddingBottom: 27,
+      flexDirection: "row",
+      gap: 12,
+    },
+    pickerCancel: {
+      flex: 1,
+      minHeight: 40,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pickerCancelText: { color: theme.accentText, fontSize: 18, fontWeight: "800" },
+    pickerSelect: {
+      flex: 1,
+      minHeight: 40,
+      borderRadius: 999,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pickerSelectText: { color: theme.onAccent, fontSize: 18, fontWeight: "800" },
+    fortnightArt: { height: 98, backgroundColor: theme.accent, alignItems: "center" },
+    fortnightClose: {
+      position: "absolute",
+      top: 10,
+      right: 16,
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 2,
+    },
+    fortnightCloseText: { color: theme.onAccent, fontSize: 34, lineHeight: 36, fontWeight: "300" },
+    questionPig: { position: "absolute", top: 19, width: 130, height: 130 },
+    fortnightBody: { flex: 1, paddingTop: 55 },
+    fortnightTitle: {
+      color: theme.text,
+      fontSize: 20,
+      lineHeight: 28,
+      fontWeight: "800",
+      textAlign: "center",
+    },
+    fortnightChoices: { paddingHorizontal: 19, paddingTop: 20, gap: 5 },
+    fortnightOption: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 12 },
+    fortnightOptionLabel: { color: theme.text, fontSize: 16, lineHeight: 21 },
+    fortnightOptionCaption: { color: theme.muted, fontSize: 13, lineHeight: 17 },
+    confirmCard: {
+      width: "100%",
+      maxWidth: 420,
+      borderRadius: 20,
+      overflow: "hidden",
+      backgroundColor: theme.raised,
+    },
+    confirmArt: {
+      minHeight: 142,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    confirmImage: { width: 142, height: 142 },
+    confirmBody: { paddingHorizontal: 18, paddingTop: 22, paddingBottom: 22, gap: 10 },
+    confirmTitle: { color: theme.text, fontSize: 21, fontWeight: "900", textAlign: "center" },
+    confirmCopy: { color: theme.muted, fontSize: 16, lineHeight: 24, textAlign: "center" },
+    confirmActions: { flexDirection: "row", gap: 12, paddingTop: 17 },
+    cancelButton: {
+      flex: 1,
+      minHeight: 47,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.accentText,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cancelText: { color: theme.accentText, fontSize: 16, fontWeight: "800" },
+    confirmButton: {
+      flex: 1,
+      minHeight: 47,
+      borderRadius: 999,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    confirmButtonText: { color: theme.onAccent, fontSize: 16, fontWeight: "800" },
+  });
+}
+
+function useLocalStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

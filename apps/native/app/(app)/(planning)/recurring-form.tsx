@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { Button, Card, Field, Pill, SectionHeading } from "@/components/ui/moo-ui";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningMutationOptions } from "@/features/planning/mutation-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
@@ -51,6 +51,7 @@ function confirmDelete(onConfirm: () => void) {
 }
 
 export default function RecurringFormScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const {
     id,
@@ -290,18 +291,18 @@ export default function RecurringFormScreen() {
       <View style={{ width: "100%", maxWidth: 620, gap: 18 }}>
         <View style={{ alignItems: "center", gap: 5, paddingVertical: 7 }}>
           <Text style={{ fontSize: 42 }}>🔁</Text>
-          <Text style={{ color: palette.ink, fontSize: 20, fontWeight: "900" }}>
+          <Text style={{ color: theme.text, fontSize: 20, fontWeight: "900" }}>
             {existing ? "แก้ไขรายการจดซ้ำ" : "ตั้งครั้งเดียว จดให้ทุกเดือน"}
           </Text>
-          <Text style={{ color: palette.muted, fontSize: 13, textAlign: "center" }}>
+          <Text style={{ color: theme.muted, fontSize: 13, textAlign: "center" }}>
             เหมาะกับเงินเดือน ค่าเช่า ค่าบริการ หรือรายการประจำ
           </Text>
         </View>
         {loading ? (
-          <ActivityIndicator color={palette.pink} style={{ paddingVertical: 35 }} />
+          <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 35 }} />
         ) : loadError ? (
           <Card>
-            <Text selectable style={{ color: palette.red }}>
+            <Text selectable style={{ color: theme.dangerText }}>
               {loadError}
             </Text>
             <Button
@@ -325,7 +326,7 @@ export default function RecurringFormScreen() {
                     form.setFieldValue("kind", value);
                     form.setFieldValue("categoryId", null);
                   }}
-                  color={value === "income" ? palette.green : value === "transfer" ? "#697C8A" : palette.pink}
+                  color={value === "income" ? theme.successText : value === "transfer" ? theme.muted : theme.accentText}
                 />
               ))}
             </View>
@@ -404,14 +405,14 @@ export default function RecurringFormScreen() {
                 }}
               >
                 <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={{ color: palette.ink, fontWeight: "800", fontSize: 14 }}>เปิดใช้งาน</Text>
-                  <Text style={{ color: palette.muted, fontSize: 12 }}>ปิดไว้ก่อนได้โดยไม่ต้องลบกฎนี้</Text>
+                  <Text style={{ color: theme.text, fontWeight: "800", fontSize: 14 }}>เปิดใช้งาน</Text>
+                  <Text style={{ color: theme.muted, fontSize: 12 }}>ปิดไว้ก่อนได้โดยไม่ต้องลบกฎนี้</Text>
                 </View>
                 <Switch
                   value={isActive}
                   onValueChange={(value) => form.setFieldValue("isActive", value)}
-                  trackColor={{ true: palette.pink, false: palette.line }}
-                  thumbColor="#FFFFFF"
+                  trackColor={{ true: theme.accent, false: theme.border }}
+                  thumbColor={theme.surface}
                 />
               </View>
             </Card>
@@ -433,7 +434,7 @@ export default function RecurringFormScreen() {
               </Card>
             ) : (
               <Card>
-                <Text style={{ color: palette.muted, fontSize: 13, lineHeight: 20 }}>
+                <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 20 }}>
                   การย้ายเงินระหว่างบัญชีของตัวเองจะไม่รวมในยอดรายรับรายจ่าย
                 </Text>
               </Card>
@@ -466,7 +467,7 @@ export default function RecurringFormScreen() {
               </form.Field>
               {tags.length ? (
                 <View style={{ gap: 9 }}>
-                  <Text style={{ color: palette.ink, fontSize: 14, fontWeight: "700" }}>แท็ก</Text>
+                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "700" }}>แท็ก</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {tags.map((tag) => (
                       <Pill
@@ -487,12 +488,12 @@ export default function RecurringFormScreen() {
               ) : null}
             </Card>
             {existing ? (
-              <Text style={{ color: palette.muted, fontSize: 12, textAlign: "center", lineHeight: 18 }}>
+              <Text style={{ color: theme.muted, fontSize: 12, textAlign: "center", lineHeight: 18 }}>
                 การแก้ไขกฎนี้จะมีผลกับรายการที่จดครั้งถัดไป รายการเดิมยังคงอยู่
               </Text>
             ) : null}
             {error || queryError || missingRule ? (
-              <Text selectable style={{ color: palette.red, textAlign: "center", fontSize: 13 }}>
+              <Text selectable style={{ color: theme.dangerText, textAlign: "center", fontSize: 13 }}>
                 {error ?? queryError ?? "ไม่พบรายการจดซ้ำนี้"}
               </Text>
             ) : null}
@@ -503,7 +504,7 @@ export default function RecurringFormScreen() {
             />
             {existing ? (
               <Pressable onPress={remove} disabled={saving} style={{ alignItems: "center", padding: 14 }}>
-                <Text style={{ color: palette.red, fontWeight: "800" }}>ลบกฎจดซ้ำนี้</Text>
+                <Text style={{ color: theme.dangerText, fontWeight: "800" }}>ลบกฎจดซ้ำนี้</Text>
               </Pressable>
             ) : null}
           </>

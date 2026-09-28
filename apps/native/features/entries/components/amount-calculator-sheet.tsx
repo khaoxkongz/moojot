@@ -1,12 +1,9 @@
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text } from "@/components/ui/typography";
 import { useState } from "react";
 import { Modal, Pressable, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path, Rect } from "react-native-svg";
-
-const blue = "#0D71F4";
-const ink = "#171E2B";
-const functionBackground = "#F0F5FB";
 
 type Operator = "+" | "−" | "×" | "÷";
 
@@ -49,34 +46,37 @@ function calculate(left: number, right: number, operator: Operator): string | nu
 }
 
 function PasteIcon() {
+  const theme = useAppTheme();
   return (
     <Svg width={23} height={25} viewBox="0 0 24 26" fill="none">
-      <Rect x={3} y={4} width={16} height={19} rx={2} stroke={blue} strokeWidth={1.7} />
+      <Rect x={3} y={4} width={16} height={19} rx={2} stroke={theme.accentText} strokeWidth={1.7} />
       <Path
         d="M8 4.5V3a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M10 10h11v13H10z"
-        fill="#EAF2FC"
-        stroke={blue}
+        fill={theme.raised}
+        stroke={theme.accentText}
         strokeWidth={1.7}
         strokeLinejoin="round"
       />
-      <Path d="M13 14h5m-5 4h5" stroke={blue} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M13 14h5m-5 4h5" stroke={theme.accentText} strokeWidth={1.5} strokeLinecap="round" />
     </Svg>
   );
 }
 
 function BackspaceIcon() {
+  const theme = useAppTheme();
   return (
     <Svg width={28} height={25} viewBox="0 0 30 26" fill="none">
-      <Path d="M11 3h16v20H11L2 13l9-10Z" stroke={ink} strokeWidth={1.8} strokeLinejoin="round" />
-      <Path d="m17 9 6 8m0-8-6 8" stroke={ink} strokeWidth={1.8} strokeLinecap="round" />
+      <Path d="M11 3h16v20H11L2 13l9-10Z" stroke={theme.text} strokeWidth={1.8} strokeLinejoin="round" />
+      <Path d="m17 9 6 8m0-8-6 8" stroke={theme.text} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
 
 function CheckIcon() {
+  const theme = useAppTheme();
   return (
     <Svg width={30} height={25} viewBox="0 0 32 27" fill="none">
-      <Path d="m3 14 8 8L29 3" stroke="white" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="m3 14 8 8L29 3" stroke={theme.onAccent} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -93,6 +93,7 @@ function CalculatorContents({
   onClose,
   readClipboard,
 }: AmountCalculatorSheetProps) {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
@@ -295,7 +296,7 @@ function CalculatorContents({
             alignSelf: "center",
             width: "100%",
             maxWidth: 680,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.surface,
             borderTopLeftRadius: 9,
             borderTopRightRadius: 9,
             overflow: "hidden",
@@ -304,7 +305,7 @@ function CalculatorContents({
           <View
             style={{
               minHeight: 49,
-              backgroundColor: "#EAF2FC",
+              backgroundColor: theme.raised,
               paddingHorizontal: 16,
               flexDirection: "row",
               alignItems: "center",
@@ -324,20 +325,20 @@ function CalculatorContents({
               }}
             >
               <PasteIcon />
-              <Text style={{ color: "#0B61CB", fontSize: 17, fontWeight: "700" }}>วาง</Text>
+              <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "700" }}>วาง</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={done}
               style={{ minHeight: 46, justifyContent: "center", paddingHorizontal: 2 }}
             >
-              <Text style={{ color: "#0B61CB", fontSize: 17, fontWeight: "700" }}>เสร็จ</Text>
+              <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "700" }}>เสร็จ</Text>
             </Pressable>
           </View>
           {error ? (
             <Text
               accessibilityRole="alert"
-              style={{ color: "#D93B47", fontSize: 12, textAlign: "center", paddingTop: 5 }}
+              style={{ color: theme.dangerText, fontSize: 12, textAlign: "center", paddingTop: 5 }}
             >
               {error}
             </Text>
@@ -369,8 +370,8 @@ function CalculatorContents({
                         justifyContent: "center",
                         borderRadius: 9,
                         borderWidth: isFunction || isDone ? 0 : 1,
-                        borderColor: "#DEE0E5",
-                        backgroundColor: isDone ? blue : isFunction ? functionBackground : "#FFFFFF",
+                        borderColor: theme.border,
+                        backgroundColor: isDone ? theme.accent : isFunction ? theme.raised : theme.surface,
                         opacity: pressed ? 0.72 : 1,
                       })}
                     >
@@ -379,11 +380,11 @@ function CalculatorContents({
                       ) : key === "✓" ? (
                         <CheckIcon />
                       ) : key === "=" ? (
-                        <Text style={{ color: "#FFFFFF", fontSize: 28, fontWeight: "500" }}>=</Text>
+                        <Text style={{ color: theme.onAccent, fontSize: 28, fontWeight: "500" }}>=</Text>
                       ) : (
                         <Text
                           style={{
-                            color: ink,
+                            color: theme.text,
                             fontSize: key === "AC" ? 19 : 23,
                             fontWeight: key === "AC" ? "700" : "500",
                           }}

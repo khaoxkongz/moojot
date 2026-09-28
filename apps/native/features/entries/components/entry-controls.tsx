@@ -4,7 +4,8 @@ import { CategoryGlyph } from "@/components/ui/category-glyph";
 import { Text, TextInput } from "@/components/ui/typography";
 import { EntryIcon } from "@/features/entries/components/entry-icon";
 import { dateLabel } from "@/features/entries/date";
-import { colors, styles } from "@/features/entries/entry-styles";
+import { useEntryStyles } from "@/features/entries/entry-styles";
+import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, Tag, TransactionKind } from "@/types/finance";
 import { kindLabel } from "@/utils/format";
 
@@ -15,6 +16,8 @@ export function EntryKindTabs({
   kind: TransactionKind;
   onChange: (kind: TransactionKind) => void;
 }) {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   return (
     <View style={styles.kindTabs}>
       {(["expense", "income", "transfer"] as const).map((value) => {
@@ -31,11 +34,9 @@ export function EntryKindTabs({
             <EntryIcon
               name={value === "expense" ? "up" : value === "income" ? "down" : "transfer"}
               size={23}
-              color={selected ? colors.white : colors.ink}
+              color={selected ? theme.text : theme.text}
             />
-            <Text style={[styles.kindTabText, { color: selected ? colors.white : colors.ink }]}>
-              {kindLabel(value)}
-            </Text>
+            <Text style={[styles.kindTabText, { color: selected ? theme.text : theme.text }]}>{kindLabel(value)}</Text>
           </Pressable>
         );
       })}
@@ -44,6 +45,7 @@ export function EntryKindTabs({
 }
 
 export function EntryDateRow({ value, onPress }: { value: string; onPress: () => void }) {
+  const styles = useEntryStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -72,6 +74,8 @@ export function EntryAmountCard({
   history: string | null;
   onPress: () => void;
 }) {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   const displayAmount =
     amount && Number(amount.replace(/,/g, "")) > 0
       ? Number(amount.replace(/,/g, "")).toLocaleString("th-TH", { maximumFractionDigits: 2 })
@@ -87,7 +91,7 @@ export function EntryAmountCard({
       <EntryIcon
         name={kind === "expense" ? "up" : kind === "income" ? "down" : "transfer"}
         size={44}
-        color={kind === "expense" ? colors.red : kind === "income" ? colors.green : colors.yellow}
+        color={kind === "expense" ? theme.dangerText : kind === "income" ? theme.successText : theme.accent}
       />
       <View style={styles.amountTextBlock}>
         {active && history ? <Text style={styles.amountHistory}>{history}</Text> : null}
@@ -115,6 +119,7 @@ export function EntryCategoryRow({
   tags: Tag[];
   onPress: () => void;
 }) {
+  const styles = useEntryStyles();
   const tagLabel = tags.map((tag) => "#" + tag.name).join(" ");
   const label = [category?.name ?? "เลือกหมวดหมู่ / แท็ก", tagLabel].filter(Boolean).join(" ");
   return (
@@ -153,9 +158,11 @@ export function EntryNoteCard({
   onFocus: () => void;
   onBlur: () => void;
 }) {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   return (
     <View style={[styles.noteCard, focused && styles.focusedCard]}>
-      <EntryIcon name="note" size={30} color={focused ? colors.blue : value ? colors.white : colors.lightBlue} />
+      <EntryIcon name="note" size={30} color={focused ? theme.accent : value ? theme.text : theme.accentText} />
       <TextInput
         accessibilityLabel="เพิ่มโน้ต"
         value={value}
@@ -163,8 +170,8 @@ export function EntryNoteCard({
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder="เพิ่มโน้ต"
-        placeholderTextColor={colors.lightBlue}
-        selectionColor={colors.blue}
+        placeholderTextColor={theme.accentText}
+        selectionColor={theme.accent}
         returnKeyType="done"
         style={styles.noteInput}
       />
@@ -173,6 +180,7 @@ export function EntryNoteCard({
 }
 
 export function EntryTransferHint() {
+  const styles = useEntryStyles();
   return (
     <Text style={styles.transferHint}>
       รายการย้ายเงิน ไม่นับเป็นรายจ่าย/รายรับ{"\n"}ใช้จัดการย้ายเงินข้ามบัญชี เติมเงินวอลเล็ต จ่ายหนี้
@@ -181,6 +189,7 @@ export function EntryTransferHint() {
 }
 
 export function EntryRecurringRow({ onPress }: { onPress: () => void }) {
+  const styles = useEntryStyles();
   return (
     <View style={styles.extraCard}>
       <Text style={styles.extraHeading}>เพิ่มเติม</Text>
@@ -203,6 +212,7 @@ export function EntrySaveButton({
   bottom: number;
   onPress: () => void;
 }) {
+  const styles = useEntryStyles();
   return (
     <Pressable
       accessibilityRole="button"

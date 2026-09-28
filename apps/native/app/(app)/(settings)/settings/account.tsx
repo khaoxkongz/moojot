@@ -1,7 +1,7 @@
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useIsFocused } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text, TextInput } from "@/components/ui/typography";
 import { useOnboarding } from "@/context/onboarding";
 import { SettingsPage } from "@/features/settings/components/settings-page";
@@ -21,16 +23,6 @@ import { settingsMutationOptions } from "@/features/settings/mutation-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { authClient } from "@/lib/auth-client";
 import { clearLocalSlipImages } from "@/lib/local-slip-assets";
-
-const color = {
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  white: "#FFFFFF",
-  muted: "#A9B9C9",
-  blue: "#1978F2",
-  yellow: "#FFDA60",
-};
 
 const months = [
   "มกราคม",
@@ -87,9 +79,10 @@ function consentLabel(value: ConsentChoice): string {
 }
 
 function Icon({ name, size = 26 }: { name: IconName; size?: number }) {
+  const theme = useAppTheme();
   const common = {
     fill: "none",
-    stroke: color.muted,
+    stroke: theme.muted,
     strokeWidth: 1.8,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
@@ -121,8 +114,8 @@ function Icon({ name, size = 26 }: { name: IconName; size?: number }) {
           <Path d="M19 3v6h5M9 14h8M9 19h11M9 24h7" {...common} />
           <Path
             d="m18 16 8-8 2 2-8 8-3 1Z"
-            fill={color.dark}
-            stroke={color.muted}
+            fill={theme.surface}
+            stroke={theme.muted}
             strokeWidth={1.6}
             strokeLinejoin="round"
           />
@@ -141,9 +134,9 @@ function Icon({ name, size = 26 }: { name: IconName; size?: number }) {
       shape = (
         <>
           <Rect x={4} y={3} width={22} height={24} rx={1} {...common} />
-          <Circle cx={9} cy={10} r={0.8} fill={color.muted} />
-          <Circle cx={9} cy={17} r={0.8} fill={color.muted} />
-          <Circle cx={9} cy={23} r={0.8} fill={color.muted} />
+          <Circle cx={9} cy={10} r={0.8} fill={theme.muted} />
+          <Circle cx={9} cy={17} r={0.8} fill={theme.muted} />
+          <Circle cx={9} cy={23} r={0.8} fill={theme.muted} />
           <Line x1={13} y1={10} x2={21} y2={10} {...common} />
           <Line x1={13} y1={17} x2={21} y2={17} {...common} />
           <Line x1={13} y1={23} x2={21} y2={23} {...common} />
@@ -176,6 +169,7 @@ function Icon({ name, size = 26 }: { name: IconName; size?: number }) {
 }
 
 function SectionTitle({ children }: { children: string }) {
+  const styles = useLocalStyles();
   return (
     <View style={styles.sectionTitle}>
       <Text style={styles.sectionTitleText}>{children}</Text>
@@ -196,6 +190,7 @@ function Row({
   edit?: boolean;
   onPress: () => void;
 }) {
+  const styles = useLocalStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -220,6 +215,7 @@ function Row({
 }
 
 function SheetFrame({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  const styles = useLocalStyles();
   return (
     <Modal animationType="fade" transparent visible onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined} style={styles.overlay}>
@@ -244,6 +240,8 @@ function SheetFrame({ title, children, onClose }: { title: string; children: Rea
 }
 
 export default function AccountSettingsScreen() {
+  const styles = useLocalStyles();
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
 
   const { signOut: endSession } = useOnboarding();
@@ -434,7 +432,10 @@ export default function AccountSettingsScreen() {
                 </Text>
               </Pressable>
             ) : (
-              <ActivityIndicator color={color.blue} style={{ paddingVertical: 35, backgroundColor: color.dark }} />
+              <ActivityIndicator
+                color={theme.accentText}
+                style={{ paddingVertical: 35, backgroundColor: theme.surface }}
+              />
             )
           ) : (
             <>
@@ -463,7 +464,10 @@ export default function AccountSettingsScreen() {
           <SectionTitle>ความยินยอม</SectionTitle>
           {loading ? (
             loadError ? null : (
-              <ActivityIndicator color={color.blue} style={{ paddingVertical: 35, backgroundColor: color.dark }} />
+              <ActivityIndicator
+                color={theme.accentText}
+                style={{ paddingVertical: 35, backgroundColor: theme.surface }}
+              />
             )
           ) : (
             <>
@@ -549,7 +553,7 @@ export default function AccountSettingsScreen() {
                 }}
                 keyboardType="numbers-and-punctuation"
                 placeholder="วว/ดด/ปปปป (ค.ศ.)"
-                placeholderTextColor="#73899E"
+                placeholderTextColor={theme.muted}
                 style={styles.input}
               />
             ) : null}
@@ -723,122 +727,129 @@ export default function AccountSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.navy },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 80 },
-  sectionTitle: {
-    minHeight: 76,
-    backgroundColor: color.navy,
-    justifyContent: "flex-end",
-    paddingHorizontal: 17,
-    paddingTop: 20,
-    paddingBottom: 18,
-  },
-  sectionTitleText: { color: color.white, fontSize: 18, lineHeight: 24, fontWeight: "800" },
-  row: {
-    minHeight: 57,
-    backgroundColor: color.dark,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 17,
-    gap: 11,
-  },
-  rowIcon: { width: 27, alignItems: "center" },
-  rowLabel: { flex: 1, color: color.muted, fontSize: 17, lineHeight: 24 },
-  rowValue: {
-    maxWidth: "39%",
-    color: color.white,
-    fontSize: 17,
-    lineHeight: 24,
-    textAlign: "right",
-  },
-  note: {
-    minHeight: 105,
-    backgroundColor: color.navy,
-    paddingHorizontal: 24,
-    paddingTop: 17,
-    paddingBottom: 13,
-    gap: 2,
-  },
-  noteText: { color: color.muted, fontSize: 15, lineHeight: 23 },
-  inlineError: { color: "#FFB5B5", fontSize: 14, textAlign: "center", padding: 20 },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, .58)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-  },
-  dialog: {
-    backgroundColor: color.slate,
-    width: "100%",
-    maxWidth: 440,
-    borderRadius: 20,
-    padding: 19,
-    gap: 15,
-  },
-  dialogHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  dialogTitle: { color: color.white, fontSize: 20, lineHeight: 27, fontWeight: "800", flex: 1 },
-  closeText: { color: color.white, fontSize: 31, lineHeight: 31 },
-  dialogCopy: { color: "#D5DFEA", fontSize: 15, lineHeight: 25 },
-  dialogError: { color: "#FFB5B5", fontSize: 14, lineHeight: 20 },
-  input: {
-    minHeight: 50,
-    borderRadius: 12,
-    backgroundColor: color.white,
-    color: "#172337",
-    fontSize: 17,
-    paddingHorizontal: 14,
-  },
-  saveButton: {
-    minHeight: 50,
-    backgroundColor: color.blue,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveText: { color: color.white, fontSize: 17, fontWeight: "800" },
-  consentChoices: { flexDirection: "row", gap: 10 },
-  consentChoice: {
-    flex: 1,
-    minHeight: 49,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#7894AC",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-  },
-  consentChoiceSelected: { borderColor: color.blue, backgroundColor: color.dark },
-  consentChoiceText: { color: color.white, fontSize: 16, fontWeight: "700" },
-  radio: {
-    width: 21,
-    height: 21,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: color.muted,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioSelected: { borderColor: color.blue },
-  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: color.blue },
-  clearButton: { alignSelf: "center", paddingHorizontal: 15, paddingVertical: 6 },
-  clearText: { color: "#79B8FF", fontSize: 14, fontWeight: "700" },
-  clearDataButton: {
-    minHeight: 49,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#7894AC",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  clearDataText: { color: "#E1ECF4", fontSize: 16, fontWeight: "800" },
-  dialogNotice: { color: "#9BE6B5", fontSize: 14, lineHeight: 20 },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: 80 },
+    sectionTitle: {
+      minHeight: 76,
+      backgroundColor: theme.background,
+      justifyContent: "flex-end",
+      paddingHorizontal: 17,
+      paddingTop: 20,
+      paddingBottom: 18,
+    },
+    sectionTitleText: { color: theme.text, fontSize: 18, lineHeight: 24, fontWeight: "800" },
+    row: {
+      minHeight: 57,
+      backgroundColor: theme.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 17,
+      gap: 11,
+    },
+    rowIcon: { width: 27, alignItems: "center" },
+    rowLabel: { flex: 1, color: theme.muted, fontSize: 17, lineHeight: 24 },
+    rowValue: {
+      maxWidth: "39%",
+      color: theme.text,
+      fontSize: 17,
+      lineHeight: 24,
+      textAlign: "right",
+    },
+    note: {
+      minHeight: 105,
+      backgroundColor: theme.background,
+      paddingHorizontal: 24,
+      paddingTop: 17,
+      paddingBottom: 13,
+      gap: 2,
+    },
+    noteText: { color: theme.muted, fontSize: 15, lineHeight: 23 },
+    inlineError: { color: theme.dangerText, fontSize: 14, textAlign: "center", padding: 20 },
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, .58)",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 16,
+    },
+    dialog: {
+      backgroundColor: theme.raised,
+      width: "100%",
+      maxWidth: 440,
+      borderRadius: 20,
+      padding: 19,
+      gap: 15,
+    },
+    dialogHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    dialogTitle: { color: theme.text, fontSize: 20, lineHeight: 27, fontWeight: "800", flex: 1 },
+    closeText: { color: theme.text, fontSize: 31, lineHeight: 31 },
+    dialogCopy: { color: theme.muted, fontSize: 15, lineHeight: 25 },
+    dialogError: { color: theme.dangerText, fontSize: 14, lineHeight: 20 },
+    input: {
+      minHeight: 50,
+      borderRadius: 12,
+      backgroundColor: theme.surface,
+      color: theme.text,
+      fontSize: 17,
+      paddingHorizontal: 14,
+    },
+    saveButton: {
+      minHeight: 50,
+      backgroundColor: theme.accent,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    saveText: { color: theme.onAccent, fontSize: 17, fontWeight: "800" },
+    consentChoices: { flexDirection: "row", gap: 10 },
+    consentChoice: {
+      flex: 1,
+      minHeight: 49,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.muted,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 9,
+    },
+    consentChoiceSelected: { borderColor: theme.accent, backgroundColor: theme.surface },
+    consentChoiceText: { color: theme.text, fontSize: 16, fontWeight: "700" },
+    radio: {
+      width: 21,
+      height: 21,
+      borderRadius: 11,
+      borderWidth: 2,
+      borderColor: theme.muted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    radioSelected: { borderColor: theme.accent },
+    radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: theme.accent },
+    clearButton: { alignSelf: "center", paddingHorizontal: 15, paddingVertical: 6 },
+    clearText: { color: theme.accentText, fontSize: 14, fontWeight: "700" },
+    clearDataButton: {
+      minHeight: 49,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.muted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    clearDataText: { color: theme.raised, fontSize: 16, fontWeight: "800" },
+    dialogNotice: { color: theme.successText, fontSize: 14, lineHeight: 20 },
+  });
+}
+
+function useLocalStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

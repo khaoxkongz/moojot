@@ -25,7 +25,8 @@ import {
 } from "@/features/entries/components/entry-controls";
 import { EntryExitDialog } from "@/features/entries/components/entry-exit-dialog";
 import { blankEntryDraft, entryDraftError, entryInputFromDraft, hasEntryChanges } from "@/features/entries/entry-draft";
-import { colors, styles } from "@/features/entries/entry-styles";
+import { useEntryStyles } from "@/features/entries/entry-styles";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { authClient } from "@/lib/auth-client";
 import { withLocalSlipImage } from "@/lib/local-slip-assets";
@@ -46,6 +47,8 @@ export default function CreateEntryRoute() {
 }
 
 function CreateEntryScreen() {
+  const styles = useEntryStyles();
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -246,7 +249,7 @@ function CreateEntryScreen() {
         tagIds={draft.tagIds}
         onCategoryChange={(categoryId) => form.setFieldValue("categoryId", categoryId)}
         onTagIdsChange={(tagIds) => form.setFieldValue("tagIds", tagIds)}
-        onCreateTag={(name) => createTagMutation.mutateAsync({ name, color: colors.blue })}
+        onCreateTag={(name) => createTagMutation.mutateAsync({ name, color: theme.accent })}
         onManageCategories={() => router.push("/categories")}
         onClose={() => setPickerOpen(false)}
       />

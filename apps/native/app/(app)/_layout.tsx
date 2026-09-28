@@ -1,16 +1,17 @@
 import { Stack } from "expo-router/stack";
 
 import { fontFaces } from "@/constants/fonts";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function AppLayout() {
+  const theme = useAppTheme();
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: palette.background },
-        headerTintColor: palette.ink,
+        headerStyle: { backgroundColor: theme.background },
+        headerTintColor: theme.text,
         headerTitleStyle: { fontFamily: fontFaces.extraBold },
-        contentStyle: { backgroundColor: palette.background },
+        contentStyle: { backgroundColor: theme.background },
         headerShadowVisible: false,
       }}
     >
@@ -25,7 +26,7 @@ export default function AppLayout() {
         options={{
           headerShown: false,
           presentation: "fullScreenModal",
-          contentStyle: { backgroundColor: "#0B243B" },
+          contentStyle: { backgroundColor: theme.background },
         }}
       />
       <Stack.Screen
@@ -33,12 +34,12 @@ export default function AppLayout() {
         options={{
           headerShown: false,
           presentation: "fullScreenModal",
-          contentStyle: { backgroundColor: "#0B243B" },
+          contentStyle: { backgroundColor: theme.background },
         }}
       />
       <Stack.Screen
         name="(entries)/search"
-        options={{ headerShown: false, contentStyle: { backgroundColor: "#0B243B" } }}
+        options={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}
       />
       <Stack.Screen name="(imports)/import" options={{ title: "นำเข้ารายการ", presentation: "modal" }} />
       <Stack.Screen name="(imports)/review" options={{ title: "ตรวจรายการก่อนบันทึก", presentation: "modal" }} />
