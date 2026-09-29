@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { createHomeScan, type HomeActivity, type HomeScanDisplay } from "./home-scan";
 import { MAX_IMAGE_BYTES } from "./image";
 import type { PhotoAccess } from "./photo-access";
 import { createSlipScanSession, type SlipScanPorts } from "./scan-session";
@@ -32,6 +33,15 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+/** Let pending requests and timers run. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+
+/** A server that answers only by failing once its request is aborted. */
+const answerOnlyAbort = (signal?: AbortSignal) =>
+  new Promise<AutoImportOutcome>((_resolve, reject) =>
+    signal?.addEventListener("abort", () => reject(new AutoImportRequestError({ kind: "cancelled" })))
+  );
+
 function harness(
   options: {
     photos?: Photo[];
@@ -39,7 +49,7 @@ function harness(
     /** Photo permission at the start of each round; a function lets it change between rounds. */
     access?: PhotoAccess | (() => PhotoAccess);
     pageSize?: number;
-    respond?: (input: AutoImportInput) => Promise<AutoImportOutcome> | AutoImportOutcome;
+    respond?: (input: AutoImportInput, signal?: AbortSignal) => Promise<AutoImportOutcome> | AutoImportOutcome;
     bindImage?: SlipScanPorts["bindImage"];
     refreshLedger?: SlipScanPorts["refreshLedger"];
     shrink?: SlipScanPorts["shrink"];
@@ -117,14 +127,14 @@ function harness(
         header: async () => JPEG,
         base64: async () => base64(JPEG),
       })),
-    send: async (input) => {
+    send: async (input, signal) => {
       sent.push(input);
       active++;
       peak = Math.max(peak, active);
       try {
         await new Promise((resolve) => setTimeout(resolve, 1));
         return options.respond
-          ? await options.respond(input)
+          ? await options.respond(input, signal)
           : { status: "created", transactionId: `tx-${nextId++}`, warnings: [] };
       } finally {
         active--;
@@ -150,6 +160,8 @@ function harness(
     session: createSlipScanSession(ports),
     /** The same app installation opened again: new session, same device storage. */
     reopen: () => createSlipScanSession(ports),
+    /** The library as later rounds find it: push to save a new photo. */
+    photos,
     store,
     clock,
     sent,
@@ -678,8 +690,48 @@ describe("slip scan session", () => {
     });
   });
 
-  describe("stopping", () => {
-    it("does not send a photo again while its request from a stopped round is still in flight", async () => {
+  describe("pausing and cancelling", () => {
+    /** Each request waits for its own release, so a test decides when every photo's answer arrives. */
+    const gatedResponses = () => {
+      const gates = new Map<string, ReturnType<typeof deferred<void>>>();
+      const gate = (assetId: string) => {
+        if (!gates.has(assetId)) gates.set(assetId, deferred<void>());
+        return gates.get(assetId)!;
+      };
+      return {
+        release: (...assetIds: string[]) => assetIds.forEach((assetId) => gate(assetId).resolve()),
+        respond: async (input: AutoImportInput): Promise<AutoImportOutcome> => {
+          await gate(input.assetId).promise;
+          return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
+        },
+      };
+    };
+
+    it("stops scheduling photos at once, lets requests in flight save, and resumes the rest on the next round", async () => {
+      const { release, respond } = gatedResponses();
+      const run = harness({
+        photos: [photo("a"), photo("b", "K PLUS", 2), photo("c", "K PLUS", 3), photo("d", "K PLUS", 4)],
+        respond,
+      });
+      const states: boolean[] = [];
+      run.session.subscribe(() => states.push(run.session.getState().scanning));
+
+      const paused = run.session.request({ accountId: "alice", trigger: "home" });
+      await settle();
+      run.session.pause();
+      expect(run.session.getState().scanning).toBe(false);
+      release("a", "b", "c", "d");
+
+      expect(await paused).toMatchObject({ status: "paused", created: 2 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b"]);
+      expect(run.bindings.map((binding) => binding.transactionId)).toEqual(["tx-a", "tx-b"]);
+      expect(busyRuns(states)).toEqual([true, false]);
+
+      await run.session.request({ accountId: "alice", trigger: "home" });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b", "c", "d"]);
+    });
+
+    it("does not send a photo again while its request from a paused round is still in flight", async () => {
       const gate = deferred<void>();
       const run = harness({
         photos: [photo("a"), photo("b", "K PLUS", 2), photo("c", "K PLUS", 3)],
@@ -688,16 +740,78 @@ describe("slip scan session", () => {
           return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
         },
       });
-      const stopped = run.session.request({ accountId: "alice", trigger: "home" });
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      run.session.stop();
+      const paused = run.session.request({ accountId: "alice", trigger: "home" });
+      await settle();
+      run.session.pause();
       const next = run.session.request({ accountId: "alice", trigger: "home" });
-      await new Promise((resolve) => setTimeout(resolve, 5));
+      await settle();
       gate.resolve();
-      await Promise.all([stopped, next]);
+      await Promise.all([paused, next]);
 
       expect(run.sent.filter((input) => input.assetId === "a")).toHaveLength(1);
       expect(run.bindings.map((binding) => binding.transactionId).sort()).toEqual(["tx-a", "tx-b", "tx-c"]);
+    });
+
+    it("keeps reading after a pause and return until the photo still in flight is answered", async () => {
+      const { release, respond } = gatedResponses();
+      const run = harness({ photos: [photo("a"), photo("b", "K PLUS", 2)], respond });
+      const states: boolean[] = [];
+      run.session.subscribe(() => states.push(run.session.getState().scanning));
+
+      void run.session.request({ accountId: "alice", trigger: "home" });
+      await settle();
+      run.session.pause();
+      release("b");
+      let finished = false;
+      const next = run.session.request({ accountId: "alice", trigger: "home" }).then((round) => {
+        finished = true;
+        return round;
+      });
+      await settle();
+      expect(finished).toBe(false);
+      expect(run.session.getState().scanning).toBe(true);
+
+      release("a");
+      await next;
+      expect(run.session.getState().scanning).toBe(false);
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b"]);
+      expect(busyRuns(states)).toEqual([true, false, true, false]);
+    });
+
+    it("never lets a paused round's late finish end the reading state of the round after it", async () => {
+      const { release, respond } = gatedResponses();
+      const run = harness({ photos: [photo("a")], respond });
+      const paused = run.session.request({ accountId: "alice", trigger: "home" });
+      await settle();
+      run.session.pause();
+      run.photos.push(photo("b", "K PLUS", 2));
+      const next = run.session.request({ accountId: "alice", trigger: "refresh" });
+      await settle();
+
+      release("a");
+      await paused;
+      expect(run.session.getState().scanning).toBe(true);
+      release("b");
+      await next;
+      expect(run.session.getState()).toMatchObject({ scanning: false, lastRound: { trigger: "refresh" } });
+    });
+
+    it("cancelling aborts requests in flight, and the next round sends the same asset ID again", async () => {
+      const run = harness({
+        photos: [photo("a")],
+        respond: (input, signal) =>
+          run.sent.length > 1
+            ? { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] }
+            : answerOnlyAbort(signal),
+      });
+      const cancelled = run.session.request({ accountId: "alice", trigger: "home" });
+      await settle();
+      run.session.cancel();
+      expect(run.session.getState().scanning).toBe(false);
+      expect(await cancelled).toMatchObject({ status: "cancelled", created: 0 });
+
+      expect(await run.session.request({ accountId: "alice", trigger: "home" })).toMatchObject({ created: 1 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "a"]);
     });
 
     it("sends a cancelled photo again on the next round without waiting, and a saved answer then binds it", async () => {
@@ -716,6 +830,22 @@ describe("slip scan session", () => {
       await session.request({ accountId: "alice", trigger: "home" });
       expect(sent).toHaveLength(2);
       expect(bindings).toEqual([{ accountId: "alice", transactionId: "tx-a", uri: "file:///photos/a" }]);
+    });
+
+    it("stops before the next photo once full photo access is lost during a round", async () => {
+      let access: PhotoAccess = "all";
+      const run = harness({
+        access: () => access,
+        photos: [photo("a"), photo("b", "K PLUS", 2), photo("c", "K PLUS", 3), photo("d", "K PLUS", 4)],
+        respond: (input) => {
+          access = "limited";
+          return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
+        },
+      });
+      const round = await run.session.request({ accountId: "alice", trigger: "home" });
+      expect(round).toMatchObject({ status: "no-access", created: 2 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b"]);
+      expect(run.session.getState()).toMatchObject({ scanning: false, access: "limited" });
     });
   });
 
@@ -1043,6 +1173,255 @@ describe("slip scan session", () => {
       clock.now = now + 30 * second;
       await reopened.session.request({ accountId: "alice", trigger: "home" });
       expect(reopened.sent.map((input) => input.assetId)).toEqual(["slip"]);
+    });
+  });
+
+  describe("Home activity", () => {
+    const away: HomeActivity = { accountId: "alice", sessionId: "s1", focused: false, appActive: true };
+    const onHome: HomeActivity = { ...away, focused: true };
+    const backgrounded: HomeActivity = { ...onHome, appActive: false };
+
+    function home(options: Parameters<typeof harness>[0] = {}) {
+      const run = harness(options);
+      const homeScan = createHomeScan(run.session);
+      const displays: HomeScanDisplay[] = [homeScan.getState()];
+      homeScan.subscribe(() => displays.push(homeScan.getState()));
+      /**
+       * How the display changed from the start, repeats collapsed: "R" reading (with animation), "A" animation only,
+       * "-" idle.
+       */
+      const shown = () =>
+        displays
+          .map((display) => (display.reading ? "R" : display.animating ? "A" : "-"))
+          .filter((mark, index, all) => mark !== all[index - 1])
+          .join("");
+      /** A pull on iOS: the refresh point is reached while the finger is still down. */
+      const holdPull = () => {
+        homeScan.pullStart();
+        expect(homeScan.pullReady()).toBeNull();
+      };
+      return { ...run, homeScan, shown, holdPull };
+    }
+
+    it("starts a round only once a signed-in account has Home focused in the active app", async () => {
+      const run = home({ photos: [photo("a")] });
+      expect(run.homeScan.update({ ...onHome, accountId: null, sessionId: null })).toBeNull();
+      expect(run.homeScan.update(away)).toBeNull();
+      expect(run.homeScan.update(backgrounded)).toBeNull();
+      expect(run.sent).toHaveLength(0);
+
+      expect(await run.homeScan.update(onHome)).toMatchObject({ trigger: "foreground", status: "completed" });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a"]);
+      expect(run.homeScan.update(onHome)).toBeNull();
+      expect(run.shown()).toBe("-R-");
+    });
+
+    it("reads a slip saved in another app when the app becomes active again, without resending earlier ones", async () => {
+      const run = home({ photos: [photo("a")] });
+      expect(await run.homeScan.update(onHome)).toMatchObject({ trigger: "home" });
+      run.homeScan.update(backgrounded);
+      run.photos.push(photo("from-bank", "Krungthai NEXT", 0));
+
+      expect(await run.homeScan.update(onHome)).toMatchObject({ trigger: "foreground", created: 1 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "from-bank"]);
+    });
+
+    it.each([
+      ["leaving Home", away],
+      ["the app leaving the foreground or the screen locking", backgrounded],
+    ])("pauses on %s and resumes the remaining photos on return", async (_, left) => {
+      const gates = new Map([
+        ["a", deferred<void>()],
+        ["b", deferred<void>()],
+      ]);
+      const run = home({
+        photos: [photo("a"), photo("b", "K PLUS", 2), photo("c", "K PLUS", 3), photo("d", "K PLUS", 4)],
+        respond: async (input) => {
+          await gates.get(input.assetId)?.promise;
+          return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
+        },
+      });
+      const first = run.homeScan.update(onHome);
+      await settle();
+      expect(run.homeScan.update(left)).toBeNull();
+      expect(run.homeScan.getState().reading).toBe(false);
+      for (const gate of gates.values()) gate.resolve();
+      expect(await first).toMatchObject({ status: "paused", created: 2 });
+      expect(run.sent).toHaveLength(2);
+
+      await run.homeScan.update(onHome);
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b", "c", "d"]);
+      expect(run.bindings).toHaveLength(4);
+      expect(run.shown()).toBe("-R-R-");
+    });
+
+    it("does not send a photo before its retry time because the app came back to the foreground", async () => {
+      const clock = { now };
+      let busy = true;
+      const run = home({
+        clock,
+        random: () => 0,
+        photos: [photo("a")],
+        respond: () => {
+          if (busy) throw new AutoImportRequestError({ kind: "response", code: "BUSY", status: 429 });
+          return { status: "created", transactionId: "tx-a", warnings: [] };
+        },
+      });
+      await run.homeScan.update(onHome);
+      busy = false;
+      clock.now += 29_000;
+      run.homeScan.update(backgrounded);
+      expect(await run.homeScan.update(onHome)).toMatchObject({ deferred: 1, created: 0 });
+      expect(run.sent).toHaveLength(1);
+
+      clock.now += 1_000;
+      run.homeScan.update(backgrounded);
+      expect(await run.homeScan.update(onHome)).toMatchObject({ created: 1 });
+      expect(run.sent).toHaveLength(2);
+    });
+
+    it("shares one round between Home entry and a refresh released close together", async () => {
+      const gate = deferred<void>();
+      const run = home({
+        photos: [photo("a"), photo("b", "K PLUS", 2)],
+        respond: async (input) => {
+          await gate.promise;
+          return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
+        },
+      });
+      const entered = run.homeScan.update(onHome);
+      await settle();
+      run.homeScan.pullStart();
+      run.homeScan.pullReady();
+      const refreshed = run.homeScan.pullEnd(80);
+      expect(refreshed).not.toBeNull();
+      expect(run.homeScan.getState().reading).toBe(true);
+      gate.resolve();
+
+      expect(await refreshed).toBe(await entered);
+      expect(run.sent).toHaveLength(2);
+      expect(run.shown()).toBe("-R-");
+    });
+
+    it("animates a held pull on an idle Home without requesting a round, and reads once it is released", async () => {
+      const run = home({ photos: [photo("a")] });
+      await run.homeScan.update(onHome);
+      run.photos.push(photo("b", "K PLUS", 0));
+
+      run.holdPull();
+      expect(run.homeScan.getState()).toMatchObject({ reading: false, animating: true });
+      await settle();
+      expect(run.sent).toHaveLength(1);
+
+      expect(await run.homeScan.pullEnd(80)).toMatchObject({ trigger: "refresh", created: 1 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["a", "b"]);
+      expect(run.shown()).toBe("-R-AR-");
+    });
+
+    it("requests nothing when a held pull is pushed back before release", async () => {
+      const run = home({ photos: [photo("a")] });
+      await run.homeScan.update(onHome);
+      run.photos.push(photo("b", "K PLUS", 0));
+
+      run.holdPull();
+      expect(run.homeScan.pullEnd(0)).toBeNull();
+      expect(run.homeScan.pullEnd(80)).toBeNull();
+      await settle();
+      expect(run.sent).toHaveLength(1);
+      expect(run.homeScan.getState()).toMatchObject({ reading: false, animating: false });
+      expect(run.shown()).toBe("-R-A-");
+    });
+
+    it("reads at once when the refresh point is only reported on release, as on Android", async () => {
+      const run = home({ photos: [photo("a")] });
+      await run.homeScan.update(onHome);
+      run.photos.push(photo("b", "K PLUS", 0));
+      expect(await run.homeScan.pullReady()).toMatchObject({ trigger: "refresh", created: 1 });
+    });
+
+    it.each([
+      ["held and released", 80],
+      ["held and cancelled", 0],
+    ])("leaves a round already reading untouched while a pull is %s", async (_, distance) => {
+      const gate = deferred<void>();
+      const run = home({
+        photos: [photo("a"), photo("b", "K PLUS", 2), photo("c", "K PLUS", 3)],
+        respond: async (input) => {
+          await gate.promise;
+          return { status: "created", transactionId: `tx-${input.assetId}`, warnings: [] };
+        },
+      });
+      const entered = run.homeScan.update(onHome);
+      await settle();
+      run.holdPull();
+      expect(run.homeScan.getState()).toMatchObject({ reading: true, animating: true });
+      void run.homeScan.pullEnd(distance);
+      expect(run.homeScan.getState()).toMatchObject({ reading: true, animating: true });
+      gate.resolve();
+
+      expect(await entered).toMatchObject({ status: "completed", created: 3 });
+      expect(run.sent).toHaveLength(3);
+      expect(run.shown()).toBe("-R-");
+    });
+
+    it("ends a released pull without reading when photo access is not full, and sends nothing", async () => {
+      const run = home({ access: "limited", photos: [photo("a")] });
+      expect(await run.homeScan.update(onHome)).toMatchObject({ status: "no-access" });
+      run.holdPull();
+      expect(await run.homeScan.pullEnd(80)).toMatchObject({ status: "no-access" });
+      expect(run.sent).toHaveLength(0);
+      expect(run.homeScan.getState()).toMatchObject({ reading: false, animating: false, access: "limited" });
+      expect(run.shown()).toBe("-A-");
+    });
+
+    it("ends every exit path with Home idle", async () => {
+      const run = home({ photos: [photo("a")], libraryError: new Error("library unavailable") });
+      expect(await run.homeScan.update(onHome)).toMatchObject({ status: "error" });
+      run.holdPull();
+      expect(await run.homeScan.pullEnd(80)).toMatchObject({ status: "error" });
+      expect(run.homeScan.getState()).toMatchObject({ reading: false, animating: false });
+
+      const empty = home();
+      expect(await empty.homeScan.update(onHome)).toMatchObject({ status: "completed", discovered: 0 });
+      expect(empty.homeScan.getState()).toMatchObject({ reading: false, animating: false });
+    });
+
+    it("cancels the signed-out account's requests and never reads for it again", async () => {
+      const run = home({
+        photos: [photo("a"), photo("b", "K PLUS", 2)],
+        respond: (_input, signal) => answerOnlyAbort(signal),
+      });
+      const alice = run.homeScan.update(onHome);
+      await settle();
+      expect(run.homeScan.update({ ...onHome, accountId: null, sessionId: null })).toBeNull();
+      expect(run.homeScan.getState().reading).toBe(false);
+      expect(await alice).toMatchObject({ status: "cancelled", created: 0 });
+      expect(run.homeScan.pullReady()).toBeNull();
+      expect(run.sent).toHaveLength(2);
+    });
+
+    it("switching accounts keeps the previous account's late answer out of the new account's Home", async () => {
+      const gate = deferred<void>();
+      const run = home({
+        photos: [photo("a")],
+        respond: async (input) => {
+          const request = run.sent.length;
+          if (request === 1) await gate.promise;
+          return { status: "created", transactionId: `tx-${request}-${input.assetId}`, warnings: [] };
+        },
+      });
+      const alice = run.homeScan.update(onHome);
+      await settle();
+      const bob = run.homeScan.update({ ...onHome, accountId: "bob", sessionId: "s2" });
+      expect(bob).not.toBeNull();
+      expect(await bob).toMatchObject({ accountId: "bob", created: 1 });
+      gate.resolve();
+      await alice;
+
+      expect(run.homeScan.getState()).toMatchObject({ reading: false, animating: false });
+      expect(run.bindings.filter((binding) => binding.accountId === "bob")).toEqual([
+        { accountId: "bob", transactionId: "tx-2-a", uri: "file:///photos/a" },
+      ]);
     });
   });
 });

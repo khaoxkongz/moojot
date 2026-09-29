@@ -9,6 +9,7 @@ import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
 import { countSlipPhotos } from "../../native/features/slips/auto-import/discovery";
 import { createImportedTransactionLookup } from "../../native/features/slips/auto-import/ledger-identity";
+import { createHomeScan } from "../../native/features/slips/auto-import/home-scan";
 import type { PhotoAccess } from "../../native/features/slips/auto-import/photo-access";
 import { createSlipScanSession, type SlipScanPorts } from "../../native/features/slips/auto-import/scan-session";
 import { createAutoImportTransport } from "../../native/features/slips/auto-import/transport";
@@ -34,6 +35,8 @@ let ownerId: string;
 const images: Record<string, Buffer> = {};
 const modelInputs: string[] = [];
 const modelOutput = new Map<string, Effect.Effect<string | undefined, ImportError>>();
+/** While set, Gemini holds every answer until it resolves, keeping requests in flight at the server. */
+let modelHold: Promise<void> | null = null;
 const requests: { path: string; csrf: string | null; cookie: string | null }[] = [];
 const AUTO_IMPORT = "/rpc/import/slip/auto-import";
 const autoImports = () => requests.filter((request) => request.path === AUTO_IMPORT);
@@ -90,7 +93,9 @@ beforeAll(async () => {
       extract: (input) =>
         Effect.suspend(() => {
           modelInputs.push(input.fileBase64);
-          return modelOutput.get(input.fileBase64) ?? Effect.succeed(undefined);
+          const output = modelOutput.get(input.fileBase64) ?? Effect.succeed(undefined);
+          const hold = modelHold;
+          return hold ? Effect.promise(() => hold).pipe(Effect.andThen(output)) : output;
         }),
     })
   );
@@ -112,6 +117,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  modelHold = null;
   modelInputs.length = 0;
   requests.length = 0;
   await database.db.financeTransaction.deleteMany();
@@ -410,4 +416,31 @@ it("counts photos in onboarding without importing, pauses without full access, a
   });
   expect(autoImports()).toHaveLength(2);
   expect(await database.db.financeTransaction.count({ where: { userId: ownerId, source: "slip" } })).toBe(2);
+});
+
+it("keeps slips the server was reading when Home is left, and saves the rest on return without a second row", async () => {
+  let release!: () => void;
+  modelHold = new Promise((resolve) => (release = resolve));
+  const { session, bindings } = scanSession({ photos: ["ph://receipt", "ph://receipt-jpeg", "ph://blank"] });
+  const homeScan = createHomeScan(session);
+  const onHome = { accountId: ownerId, sessionId: "s1", focused: true, appActive: true };
+
+  const left = homeScan.update(onHome);
+  for (let wait = 0; modelInputs.length < 2 && wait < 200; wait++)
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  expect(modelInputs).toHaveLength(2);
+  homeScan.update({ ...onHome, focused: false });
+  expect(homeScan.getState()).toMatchObject({ reading: false, animating: false });
+  release();
+
+  // Both requests already at the server finish and are kept; the third photo is not started.
+  expect(await left).toMatchObject({ status: "paused", created: 2 });
+  expect(autoImports()).toHaveLength(2);
+  expect(bindings).toHaveLength(2);
+
+  const returned = await homeScan.update(onHome);
+  expect(returned).toMatchObject({ status: "completed", created: 0, skipped: 1 });
+  expect(autoImports()).toHaveLength(3);
+  expect(await database.db.financeTransaction.count()).toBe(2);
+  expect(bindings).toHaveLength(2);
 });

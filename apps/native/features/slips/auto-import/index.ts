@@ -9,6 +9,7 @@ import { setLocalSlipImage } from "@/lib/local-slip-assets";
 import { client, orpc, queryClient, rpcFetch, rpcHeaders } from "@/utils/orpc";
 import { getServerBaseUrl } from "@/utils/server-url";
 
+import { createHomeScan } from "./home-scan";
 import { MAX_IMAGE_BYTES, type LocalImage } from "./image";
 import { createImportedTransactionLookup } from "./ledger-identity";
 import { createSlipScanSession } from "./scan-session";
@@ -88,6 +89,9 @@ export const slipScanSession = createSlipScanSession({
   },
 });
 
-export function useSlipScanState() {
-  return useSyncExternalStore(slipScanSession.subscribe, slipScanSession.getState);
+/** When Home reads slips, and what it shows while it does. */
+export const homeScan = createHomeScan(slipScanSession);
+
+export function useHomeScanDisplay() {
+  return useSyncExternalStore(homeScan.subscribe, homeScan.getState);
 }

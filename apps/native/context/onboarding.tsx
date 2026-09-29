@@ -4,6 +4,7 @@ import { createContext, use } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
+import { slipScanSession } from "@/features/slips/auto-import";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
@@ -75,6 +76,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         signOut: async () => {
           const result = await authClient.signOut();
           if (result.error) throw new Error(result.error.message);
+          // Slip requests in flight carry the old sign-in; none may finish for the next account on this device.
+          slipScanSession.cancel();
           queryClient.clear();
         },
       }}

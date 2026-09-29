@@ -4,7 +4,8 @@ import { createScanMemory, type AssetRecord, type ScanMemoryStorage } from "./sc
 import type { PhotoAccess } from "./photo-access";
 import { AutoImportRequestError, type AutoImportTransport } from "./transport";
 
-export type ScanTrigger = "home" | "refresh";
+/** Entering Home, the app becoming active again while Home is focused, or a released pull-to-refresh. */
+export type ScanTrigger = "home" | "foreground" | "refresh";
 
 /** Device, network and storage boundaries used by one scan session. */
 export interface SlipScanPorts extends PhotoLibrary {
@@ -39,7 +40,11 @@ export interface ScanFailure {
   retryAt: number | null;
 }
 
-export type ScanRoundStatus = "completed" | "no-access" | "unauthorized" | "cancelled" | "error";
+/**
+ * `paused`: stopped scheduling photos, and requests already sent were allowed to finish.
+ * `cancelled`: requests in flight were aborted too, which does not mean the server did not save them.
+ */
+export type ScanRoundStatus = "completed" | "no-access" | "unauthorized" | "paused" | "cancelled" | "error";
 
 export interface ScanRound {
   accountId: string;
@@ -99,18 +104,24 @@ export function createSlipScanSession(ports: SlipScanPorts) {
   const listeners = new Set<() => void>();
   /** Per account, the sign-in session the server rejected with 401. Sending resumes once a different one is used. */
   const rejectedSessions = new Map<string, string | null>();
-  /** Per account, photos being imported, including by a stopped round whose requests are still settling. */
-  const inFlight = new Map<string, Set<string>>();
+  /** Per account, photos being imported, including by a paused round whose requests are still settling. */
+  const inFlight = new Map<string, Map<string, Promise<void>>>();
   const memory = createScanMemory(ports.store, (event, cause) => log(event, { error: errorName(cause) }));
   let state: SlipScanState = { scanning: false, access: null, lastRound: null };
   type ActiveRound = {
     accountId: string;
     sessionId: string | null;
-    controller: AbortController;
+    /** Aborted to stop scheduling further photos. */
+    schedule: AbortController;
+    /** Aborted to also cancel requests in flight. */
+    requests: AbortController;
     round: ScanRound;
     done: Promise<ScanRound>;
   };
+  /** The round Home shows. Only this round may change the display state. */
   let current: ActiveRound | null = null;
+  /** Every round not yet finished, including paused ones whose requests are still settling. */
+  const unfinished = new Set<ActiveRound>();
 
   let refreshing: Promise<void> | null = null;
   let refreshAgain = false;
@@ -142,11 +153,12 @@ export function createSlipScanSession(ports: SlipScanPorts) {
   async function run(entry: ActiveRound): Promise<ScanRound> {
     const { round } = entry;
     const { accountId } = round;
-    const signal = entry.controller.signal;
+    const signal = entry.schedule.signal;
     const account = await memory.open(accountId);
     const { records } = account;
-    const busy = inFlight.get(accountId) ?? new Set<string>();
+    const busy = inFlight.get(accountId) ?? new Map<string, Promise<void>>();
     inFlight.set(accountId, busy);
+    const halted = () => round.status === "unauthorized" || round.status === "no-access";
     /** A temporary failure: the same asset ID is sent again once its wait has passed, on a later round. */
     const retryLater = (
       asset: PhotoAssetMetadata,
@@ -172,13 +184,12 @@ export function createSlipScanSession(ports: SlipScanPorts) {
       if (record) account.set(failure.assetId, record);
     };
 
-    async function importAsset(asset: PhotoAssetMetadata) {
-      busy.add(asset.id);
-      try {
-        await attemptImport(asset);
-      } finally {
-        busy.delete(asset.id);
-      }
+    function importAsset(asset: PhotoAssetMetadata) {
+      const task = attemptImport(asset).finally(() => {
+        if (busy.get(asset.id) === task) busy.delete(asset.id);
+      });
+      busy.set(asset.id, task);
+      return task;
     }
 
     async function attemptImport(asset: PhotoAssetMetadata) {
@@ -202,7 +213,8 @@ export function createSlipScanSession(ports: SlipScanPorts) {
 
       let outcome;
       try {
-        outcome = await ports.send({ assetId, ...upload }, signal);
+        // Pausing lets this request finish; only cancelling aborts it.
+        outcome = await ports.send({ assetId, ...upload }, entry.requests.signal);
       } catch (cause) {
         const error =
           cause instanceof AutoImportRequestError ? cause : new AutoImportRequestError({ kind: "network", cause });
@@ -323,8 +335,14 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         const record = records.get(assetId);
         return record?.kind === "saved" && !record.bound ? [{ assetId, transactionId: record.transactionId }] : [];
       });
+      /** Photos a paused round is still importing: this round waits for their answers instead of sending them again. */
+      const joined: Promise<void>[] = [];
       const queue = assets.filter((asset) => {
-        if (busy.has(asset.id)) return false;
+        const importing = busy.get(asset.id);
+        if (importing) {
+          joined.push(importing);
+          return false;
+        }
         const record = records.get(asset.id);
         if (
           record?.kind === "retry" &&
@@ -337,22 +355,49 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         return !isSettled(record, asset);
       });
       const worker = async () => {
-        while (queue.length && !signal.aborted && round.status !== "unauthorized") {
-          await importAsset(queue.shift()!);
+        while (queue.length && !signal.aborted && !halted()) {
+          // Access can be narrowed while the app stays open: no further photo is read once it is.
+          const access = await ports.photoAccess();
+          if (access !== "all") {
+            round.status = "no-access";
+            if (current === entry) setState({ access });
+          }
+          const asset = queue.shift();
+          if (!asset || signal.aborted || halted()) return;
+          await importAsset(asset);
         }
       };
       await Promise.all(Array.from({ length: MAX_CONCURRENT_IMPORTS }, worker));
-      if (round.status !== "unauthorized") {
+      await Promise.allSettled(joined);
+      if (!halted()) {
         await repairBindings(unbound);
         await resolveDuplicates(assets);
       }
-      if (round.status !== "unauthorized") round.status = signal.aborted ? "cancelled" : "completed";
+      if (!halted()) {
+        round.status = entry.requests.signal.aborted ? "cancelled" : signal.aborted ? "paused" : "completed";
+      }
     } catch (cause) {
       round.status = "error";
       log("scan-failed", { error: errorName(cause) });
     }
     await Promise.all([refreshing, account.flush()]);
     return round;
+  }
+
+  /** Stop the displayed round and release Home's reading state at once; its own late finish changes nothing shown. */
+  function detach() {
+    const entry = current;
+    if (!entry) return;
+    current = null;
+    entry.schedule.abort();
+    if (state.scanning) setState({ scanning: false });
+  }
+
+  function abortRounds(rounds: Iterable<ActiveRound>) {
+    for (const entry of rounds) {
+      entry.schedule.abort();
+      entry.requests.abort();
+    }
   }
 
   return {
@@ -376,9 +421,10 @@ export function createSlipScanSession(ports: SlipScanPorts) {
       sessionId?: string | null;
       trigger: ScanTrigger;
     }): Promise<ScanRound> {
-      if (current?.accountId === accountId && !current.controller.signal.aborted) return current.done;
-      current?.controller.abort();
-      const controller = new AbortController();
+      if (current?.accountId === accountId) return current.done;
+      // Another account's work stops entirely: its requests carry the previous sign-in.
+      abortRounds([...unfinished].filter((entry) => entry.accountId !== accountId));
+      detach();
       const round: ScanRound = {
         accountId,
         trigger,
@@ -390,11 +436,19 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         failed: 0,
         failures: [],
       };
-      const entry: ActiveRound = { accountId, sessionId, controller, round, done: Promise.resolve(round) };
+      const entry: ActiveRound = {
+        accountId,
+        sessionId,
+        schedule: new AbortController(),
+        requests: new AbortController(),
+        round,
+        done: Promise.resolve(round),
+      };
+      entry.requests.signal.addEventListener("abort", () => entry.schedule.abort(), { once: true });
       current = entry;
+      unfinished.add(entry);
       entry.done = run(entry).finally(() => {
-        if (current !== entry) return;
-        current = null;
+        unfinished.delete(entry);
         log("round", {
           trigger,
           status: round.status,
@@ -403,6 +457,8 @@ export function createSlipScanSession(ports: SlipScanPorts) {
           skipped: round.skipped,
           failed: round.failed,
         });
+        if (current !== entry) return;
+        current = null;
         setState({ scanning: false, lastRound: round });
       });
       return entry.done;
@@ -412,12 +468,22 @@ export function createSlipScanSession(ports: SlipScanPorts) {
      * no longer holds their identity.
      */
     async forget(accountId: string) {
-      if (current?.accountId === accountId) current.controller.abort();
+      if (current?.accountId === accountId) detach();
+      abortRounds([...unfinished].filter((entry) => entry.accountId === accountId));
       await memory.forget(accountId);
     },
-    /** Stop scheduling further photos; requests already sent are allowed to settle. */
-    stop() {
-      current?.controller.abort();
+    /**
+     * Stop scheduling further photos, for when Home is left or the app is no longer active. Requests already sent are
+     * allowed to finish and their results are kept; the next request resumes the rest and waits for those answers.
+     */
+    pause: detach,
+    /**
+     * Stop every round and abort requests in flight, for signing out. An aborted request may still have been saved:
+     * the next attempt for its asset ID is answered as a duplicate.
+     */
+    cancel() {
+      detach();
+      abortRounds(unfinished);
     },
   };
 }

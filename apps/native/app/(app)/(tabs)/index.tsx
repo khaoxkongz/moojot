@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useFocusEffect, useIsFocused, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -32,7 +32,7 @@ import { selectedHomePeriod, weekStartForDate, type CalendarPeriod } from "@/fea
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
-import { slipScanSession, useSlipScanState } from "@/features/slips/auto-import";
+import { homeScan, useHomeScanDisplay } from "@/features/slips/auto-import";
 import { photoAccessPrompt } from "@/features/slips/auto-import/photo-access";
 import { requestPhotoAccess } from "@/features/slips/library-scan";
 import { streakQueryOptions } from "@/features/streak/query-options";
@@ -45,6 +45,14 @@ import type { Category, FinanceTransaction, WalletFilterSelection } from "@/type
 import { formatBaht, isValidISODate, kindLabel, thaiDate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
+
+function subscribeAppState(listener: () => void) {
+  const subscription = AppState.addEventListener("change", listener);
+  return () => subscription.remove();
+}
+// `inactive` covers the app switcher, system sheets and the moment the screen locks.
+const isAppActive = () => AppState.currentState !== "background" && AppState.currentState !== "inactive";
+
 const defaultStreakSettings: StreakSettings = { mode: "recorded", enabled: true, resetAfter: "" };
 
 function amountLabel(satang: number) {
@@ -155,7 +163,8 @@ export default function HomeScreen() {
   const { data: session } = authClient.useSession();
   const accountId = session?.user.id ?? null;
   const sessionId = session?.session.id ?? null;
-  const slipScan = useSlipScanState();
+  const slipScan = useHomeScanDisplay();
+  const appActive = useSyncExternalStore(subscribeAppState, isAppActive);
 
   const handledUndoId = useRef<string | null>(null);
 
@@ -175,7 +184,6 @@ export default function HomeScreen() {
     selectAllWalletSources(emptyWalletOptions)
   );
   const [addOpen, setAddOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   const restoreTransactionMutation = useMutation(entriesMutationOptions.restore());
 
@@ -310,21 +318,12 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const requestHomeRound = useCallback(
-    () => (accountId ? slipScanSession.request({ accountId, sessionId, trigger: "home" }) : null),
-    [accountId, sessionId]
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      void requestHomeRound();
-      // Coming back from Settings: check the photo permission again and start reading once it allows it.
-      const subscription = AppState.addEventListener("change", (next) => {
-        if (next === "active" && slipScanSession.getState().access !== "all") void requestHomeRound();
-      });
-      return () => subscription.remove();
-    }, [requestHomeRound])
-  );
+  // Reads while Home is in front of the active app, including after returning from a bank app, Settings or the lock
+  // screen, and pauses otherwise. Each round checks the photo permission again.
+  useEffect(() => {
+    void homeScan.update({ accountId, sessionId, focused: isFocused, appActive });
+  }, [accountId, sessionId, isFocused, appActive]);
+  useEffect(() => () => homeScan.leave(), []);
 
   const photoPrompt = photoAccessPrompt(slipScan.access);
   const allowPhotoAccess = async () => {
@@ -334,15 +333,14 @@ export default function HomeScreen() {
         return;
       }
       const access = await requestPhotoAccess();
-      const round = await requestHomeRound();
+      const round = await homeScan.recheck();
       // The prompt's return to the app can start a round before the answer is recorded; read again with the answer.
-      if (access === "all" && round?.status === "no-access") void requestHomeRound();
+      if (access === "all" && round?.status === "no-access") void homeScan.recheck();
     } catch (cause) {
       console.warn("[photo-access]", cause instanceof Error ? cause.name : typeof cause);
     }
   };
 
-  const showReadingBubble = slipScan.scanning || refreshing;
   const grouped = useMemo(() => {
     const map = new Map<string, FinanceTransaction[]>();
     for (const item of transactions) map.set(item.occurredOn, [...(map.get(item.occurredOn) ?? []), item]);
@@ -374,14 +372,13 @@ export default function HomeScreen() {
     setFilterOpen(false);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
+  const refetchHome = () => {
     for (const query of dataQueries) if (query.isEnabled) void query.refetch();
-    try {
-      if (accountId) await slipScanSession.request({ accountId, sessionId, trigger: "refresh" });
-    } finally {
-      setRefreshing(false);
-    }
+  };
+  // Only a released pull refreshes. iOS reports the refresh point while the finger is still down, so the drag events
+  // tell a held pull from a released one there; Android reports it on release.
+  const onRefresh = () => {
+    if (homeScan.pullReady()) refetchHome();
   };
 
   return (
@@ -389,13 +386,17 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={process.env.EXPO_OS === "ios" ? () => homeScan.pullStart() : undefined}
+        onScrollEndDrag={
+          process.env.EXPO_OS === "ios"
+            ? (event) => {
+                if (homeScan.pullEnd(-event.nativeEvent.contentOffset.y)) refetchHome();
+              }
+            : undefined
+        }
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={["transparent"]}
-          />
+          // Home shows reading and the pull itself; the native indicator never stays open.
+          <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
         }
         contentContainerStyle={{ paddingTop: Math.max(insets.top + 12, 28), paddingBottom: 145 }}
       >
@@ -451,7 +452,7 @@ export default function HomeScreen() {
           ) : null}
 
           <View style={styles.speechBubble}>
-            {showReadingBubble ? (
+            {slipScan.reading ? (
               <>
                 <Text style={styles.speechTitle}>หมูกำลังอ่านสลิปใหม่</Text>
                 <Text style={styles.speechBody}>เปิดแอปไว้ก่อนน้า</Text>
@@ -498,7 +499,7 @@ export default function HomeScreen() {
             <View style={styles.speechTail} />
           </View>
 
-          {showReadingBubble ? (
+          {slipScan.animating ? (
             <View style={styles.flowCardSlot}>
               <SlipFlowCards />
             </View>
@@ -584,7 +585,7 @@ export default function HomeScreen() {
                 <Text style={styles.errorText}>ลองอีกครั้ง</Text>
               </Pressable>
             </View>
-          ) : slipScan.scanning && grouped.length === 0 ? (
+          ) : slipScan.reading && grouped.length === 0 ? (
             <View style={styles.dayGroup}>
               <View style={styles.dayRail}>
                 <View style={[styles.dayAccent, { backgroundColor: theme.accent }]} />
@@ -621,7 +622,7 @@ export default function HomeScreen() {
                 date={date}
                 items={items}
                 categories={categoryById}
-                showSkeleton={slipScan.scanning && index === 0}
+                showSkeleton={slipScan.reading && index === 0}
               />
             ))
           )}
