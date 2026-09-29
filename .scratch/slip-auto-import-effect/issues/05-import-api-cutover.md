@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4ed613e` Implement authenticated slip auto-import with Effect; `a60fc6c` Document slip import validation and native follow-up
+**Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect; `304de8a` Document slip import validation and native follow-up
 
 - [ ] Import router ชี้ไป operation ใหม่เท่านั้น; old slip และ statement RPC URLs ได้ 404; ถอดโค้ด PDF, password/model override และ dependency ที่ไม่มีผู้ใช้ใน API/server แล้ว
 - [ ] server เลิก bypass session และ user identification สำหรับ import, ย้าย 14 MiB body guard ไป path ใหม่, เอา statement 28 MiB guard ออก และคง native development CORS กับ `no-store`/`nosniff`

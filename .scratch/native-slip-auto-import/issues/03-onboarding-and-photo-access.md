@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `bdd8474` Pause slip reading without full photo access and explain it on Home
+**Done in:** `b4beff1` Pause slip reading without full photo access and explain it on Home
 
 ## Acceptance criteria
 

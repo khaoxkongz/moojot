@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4ed613e` Implement authenticated slip auto-import with Effect
+**Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
 - [ ] Ledger เปิดการตรวจ identity ของผู้ใช้โดยไม่กรอง soft-deleted rows และไม่เปิดการอ่านข้อมูลข้ามผู้ใช้
 - [ ] ทางสร้าง `FinanceTransaction` เดิมยังเป็นเจ้าของการตรวจข้อมูล ผูก `userId` และใช้ unique `(userId, dedupeIdentity)` โดยไม่เปลี่ยนสัญญา Ledger ที่มีอยู่โดยไม่จำเป็น

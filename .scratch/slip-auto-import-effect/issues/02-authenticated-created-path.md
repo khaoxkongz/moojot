@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4ed613e` Implement authenticated slip auto-import with Effect
+**Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
 - [ ] `POST /rpc/import/slip/auto-import` ใช้ session เท่านั้นและตอบ 401 เมื่อไม่มี session; client เลือก user ID, dedupe key, source, category, model หรือ PDF options ไม่ได้
 - [ ] Input รับเพียง asset ID, base64 bytes และ MIME JPEG/PNG; asset ID, base64, ขนาดภาพ 10 MiB, signature/MIME และ HTTP JSON body 14 MiB ถูกตรวจตาม spec ก่อนเรียก Gemini; input ผิดได้ 400/413/415 พร้อม machine code ที่ตรงกรณี

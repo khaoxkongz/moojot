@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `3ad46d9` Move Home slip reading to the auto-import API
+**Done in:** `fe77a8c` Move Home slip reading to the auto-import API
 
 ## Acceptance criteria
 

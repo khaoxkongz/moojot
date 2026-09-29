@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4984e8e` Read slips while Home is in front and refresh only on release
+**Done in:** `a12f08b` Read slips while Home is in front and refresh only on release
 
 ## Acceptance criteria
 

@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4ed613e` Implement authenticated slip auto-import with Effect
+**Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
 - [ ] Effect Semaphore หนึ่งชุดต่อ server instance จำกัด Gemini สอง calls และคิว FIFO อีกสองคำขอหลัง input/dedupe preflight; คิวเต็มหรือรอเกิน 10 วินาทีได้ `BUSY` 429 กับ `Retry-After: 30`
 - [ ] Permit และที่คิวคืนเมื่อสำเร็จ, error, timeout หรือยกเลิก; client disconnect ระหว่างคิว/Gemini ยกเลิกงานและไม่เริ่มสร้างรายการใหม่

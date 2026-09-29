@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `d53a85c` Remember slip import outcomes per photo and retry on a schedule; review fixes in `e265cf0` Fix Home slip reading on the iPhone and stop rounds that never end
+**Done in:** `01dbc45` Remember slip import outcomes per photo and retry on a schedule; review fixes in `531dd7a` Fix Home slip reading on the iPhone and stop rounds that never end
 
 ## Acceptance criteria
 

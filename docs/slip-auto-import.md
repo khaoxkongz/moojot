@@ -80,7 +80,7 @@ Results on 2026-09-28:
 
 ## Standards
 
-Independent review of `03adbabf..4ed613e`: no actionable Standards findings.
+Independent review of `7084a6c7..aa8cc3b`: no actionable Standards findings.
 The new import code follows the documented Effect conventions: services and Layers
 own orchestration, reusable Effect functions use `Effect.fn`/`Effect.fnUntraced`,
 untrusted request and model structures use Schema, errors are tagged, and the route
@@ -89,7 +89,7 @@ Prisma pattern. No baseline code smell warrants a change.
 
 ## Spec
 
-Independent review of `03adbabf..4ed613e`: no Spec findings. The review checked strict
+Independent review of `7084a6c7..aa8cc3b`: no Spec findings. The review checked strict
 input/model validation, Ledger ownership and duplicate races, SDK configuration and
 retries, cancellation and deadline boundaries, queue capacity/FIFO behavior, and
 HTTP paths/privacy/headers. Native incompatibility is explicitly permitted by the spec.

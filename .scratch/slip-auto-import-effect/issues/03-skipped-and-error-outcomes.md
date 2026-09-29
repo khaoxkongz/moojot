@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** `4ed613e` Implement authenticated slip auto-import with Effect
+**Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
 - [ ] ไม่มี candidate ได้ `skipped: no_candidate`; candidate ที่จำนวนเงินไม่ใช่จำนวนเต็มบวกที่ปลอดภัยหรือวันที่ ISO ไม่ถูกต้องได้ `skipped: incomplete_candidate` พร้อมเหตุผลของฟิลด์; ไม่เขียนรายการในทั้งสองกรณี
 - [ ] ชื่อว่างใช้ “รายการจากสลิป” พร้อม warning; `issues` และคำเตือนจาก AI ถูกส่งกลับแม้สร้างสำเร็จ; ไม่มี `confidence`, candidate หรือ review state ในผลลัพธ์ใหม่
