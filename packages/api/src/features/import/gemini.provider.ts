@@ -1,17 +1,28 @@
 import { GoogleGenAI } from "@google/genai";
 import { Context, Effect, Layer, Schema } from "effect";
+import { geminiFailure } from "./gemini.error";
 import { ImportError } from "./import.error";
 import type { AutoImportInput } from "./import.schema";
-import { geminiFailure } from "./gemini.error";
 
+const GeminiSetting = Schema.Literals(["GEMINI_API_KEY", "GEMINI_MODEL"]);
+
+/** Names the setting that failed, never its value, so the key cannot reach logs. */
 export class GeminiConfigurationError extends Schema.TaggedError<GeminiConfigurationError>()(
   "GeminiConfigurationError",
-  {}
+  { setting: GeminiSetting, message: Schema.String }
 ) {}
 
-const GeminiConfiguration = Schema.Struct({
-  apiKey: Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{20,256}$/)),
-  model: Schema.String.check(Schema.isPattern(/^gemini-[a-z0-9][a-z0-9.-]{0,119}$/)),
+// Key formats vary by issuer (for example `AIza…` and `AQ.…`); Gemini checks the key itself on the first request.
+const geminiSettings = {
+  GEMINI_API_KEY: Schema.String.check(Schema.isPattern(/^[\x21-\x7E]{20,256}$/)),
+  GEMINI_MODEL: Schema.String.check(Schema.isPattern(/^gemini-[a-z0-9][a-z0-9.-]{0,119}$/)),
+};
+
+// The Schema issue is dropped because it can quote the rejected value.
+const decodeSetting = Effect.fnUntraced(function* (setting: typeof GeminiSetting.Type, value: unknown) {
+  return yield* Schema.decodeUnknownEffect(geminiSettings[setting])(value).pipe(
+    Effect.mapError(() => new GeminiConfigurationError({ setting, message: `${setting} is missing or malformed` }))
+  );
 });
 
 const prompt = `Extract at most one Thai personal-finance transaction from this bank slip image.
@@ -59,29 +70,30 @@ export class GeminiProvider extends Context.Service<
     return Layer.effect(
       GeminiProvider,
       Effect.gen(function* () {
-        const config = yield* Schema.decodeUnknownEffect(GeminiConfiguration)(configuration).pipe(
-          Effect.mapError(() => new GeminiConfigurationError({}))
-        );
-        const ai = new GoogleGenAI({ apiKey: config.apiKey, httpOptions: { retryOptions: { attempts: 1 } } });
-        const extract = Effect.fn("GeminiProvider.extract")((input: Pick<AutoImportInput, "fileBase64" | "mimeType">) =>
-          Effect.tryPromise({
-            try: async (signal) => {
-              const response = await ai.interactions.create(
-                {
-                  model: config.model,
-                  store: false,
-                  input: [
-                    { type: "text", text: prompt },
-                    { type: "image", data: input.fileBase64, mime_type: input.mimeType },
-                  ],
-                  response_format: { type: "text", mime_type: "application/json", schema: responseSchema },
-                },
-                { signal, retries: { strategy: "none" } }
-              );
-              return response.output_text ?? undefined;
-            },
-            catch: (cause) => cause,
-          }).pipe(Effect.catch(geminiFailure))
+        const apiKey = yield* decodeSetting("GEMINI_API_KEY", configuration.apiKey);
+        const model = yield* decodeSetting("GEMINI_MODEL", configuration.model);
+        const ai = new GoogleGenAI({ apiKey, httpOptions: { retryOptions: { attempts: 1 } } });
+        const extract = Effect.fn("GeminiProvider.extract")(
+          (input: Pick<AutoImportInput, "fileBase64" | "mimeType">) =>
+            Effect.tryPromise({
+              try: async (signal) => {
+                const response = await ai.interactions.create(
+                  {
+                    model,
+                    store: false,
+                    input: [
+                      { type: "text", text: prompt },
+                      { type: "image", data: input.fileBase64, mime_type: input.mimeType },
+                    ],
+                    response_format: { type: "text", mime_type: "application/json", schema: responseSchema },
+                  },
+                  { signal, retries: { strategy: "none" } }
+                );
+                return response.output_text ?? undefined;
+              },
+              catch: (cause) => cause,
+            }),
+          Effect.catch(geminiFailure)
         );
         return { extract };
       })

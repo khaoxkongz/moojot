@@ -1,13 +1,13 @@
 import { Clock, Context, Effect, Layer } from "effect";
+import { FinanceConflictError } from "../../shared/finance/error";
 import { LedgerService } from "../ledger/ledger.service";
+import { qualifyResponse } from "./candidate";
 import { GeminiProvider } from "./gemini.provider";
+import { validateImage } from "./image.validation";
 import { ImportError } from "./import.error";
 import { ImportOutcome } from "./import.schema";
-import { validateImage } from "./image.validation";
-import { qualifyResponse } from "./candidate";
-import { persistenceFailure } from "./persistence.error";
-import { FinanceConflictError } from "../../shared/finance/error";
 import { makeModelWork } from "./model-work";
+import { persistenceFailure } from "./persistence.error";
 
 const disconnect = Effect.fnUntraced(function* (signal?: AbortSignal) {
   return yield* Effect.callback<never>((resume) => {

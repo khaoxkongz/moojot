@@ -569,18 +569,44 @@ it("uses the configured model with store=false and a slip-only response schema",
 });
 
 it.each([
-  { apiKey: "", model: "gemini-test" },
-  { apiKey: "short", model: "gemini-test" },
-  { apiKey: "test-only-key-aaaaaaaaaaaaaaaaaaaa", model: "" },
-  { apiKey: "test-only-key-aaaaaaaaaaaaaaaaaaaa", model: " https://bad/model" },
-])("refuses to start the runtime with invalid local Gemini configuration %#", async (config) => {
-  const invalid = createAppRuntime(database.db, GeminiProvider.layer(config));
+  "AQ.test-only-key-aaaaaaaaaaaaaaaa",
+  "AIzaTestOnlyKey_aaaaaaaaaaaaaaaaaaa-aaaa",
+  "test-only-key+/=~!aaaaaaaaaaaaaaa",
+])("starts the runtime with a key made of any visible ASCII characters %#", async (apiKey) => {
+  const valid = createAppRuntime(database.db, GeminiProvider.layer({ apiKey, model: "gemini-test" }));
   try {
-    await expect(invalid.runPromise(Effect.void)).rejects.toMatchObject({ _tag: "GeminiConfigurationError" });
+    await expect(valid.runPromise(Effect.void)).resolves.toBeUndefined();
   } finally {
-    await invalid.dispose();
+    await valid.dispose();
   }
 });
+
+it.each([
+  [{ apiKey: "", model: "gemini-test" }, "GEMINI_API_KEY"],
+  [{ apiKey: "short", model: "gemini-test" }, "GEMINI_API_KEY"],
+  [{ apiKey: "test-only key with a space-aaaaaaaa", model: "gemini-test" }, "GEMINI_API_KEY"],
+  [{ apiKey: `test-only-key-${"a".repeat(243)}`, model: "gemini-test" }, "GEMINI_API_KEY"],
+  [{ apiKey: "test-only-key-aaaaaaaaaaaaaaaaaaaa", model: "" }, "GEMINI_MODEL"],
+  [{ apiKey: "test-only-key-aaaaaaaaaaaaaaaaaaaa", model: " https://bad/model" }, "GEMINI_MODEL"],
+] as const)(
+  "refuses to start the runtime with invalid local Gemini configuration %#, naming the setting without its value",
+  async (config, setting) => {
+    const invalid = createAppRuntime(database.db, GeminiProvider.layer(config));
+    try {
+      const error = await invalid.runPromise(Effect.void).then(
+        () => expect.unreachable("the runtime started"),
+        (cause: unknown) => cause
+      );
+      expect(error).toMatchObject({ _tag: "GeminiConfigurationError", setting });
+      expect(String(error)).toContain(setting);
+      const rendered = `${String(error)} ${JSON.stringify(error)} ${(error as Error).stack}`;
+      if (config.apiKey.length > 0) expect(rendered).not.toContain(config.apiKey);
+      if (config.model.trim().length > 0) expect(rendered).not.toContain(config.model.trim());
+    } finally {
+      await invalid.dispose();
+    }
+  }
+);
 
 it.each([
   "/rpc/import/slip",

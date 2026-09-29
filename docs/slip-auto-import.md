@@ -18,11 +18,13 @@ native caller must use that wire path rather than assume `/import/autoImportSlip
 
 ## Configuration and operation
 
-- `GEMINI_API_KEY` must contain a locally valid key string. It is held by the shared
-  provider, never the request context.
+- `GEMINI_API_KEY` must be 20–256 visible ASCII characters with no whitespace, which
+  covers both `AIza…` and `AQ.…` keys. It is held by the shared provider, never the
+  request context.
 - `GEMINI_MODEL` defaults to the previous server model, `gemini-3.5-flash-lite`.
-  Missing or malformed configuration prevents runtime startup. Remote key/model
-  authorization is checked only when a request reaches Gemini.
+  Missing or malformed configuration prevents runtime startup with a
+  `GeminiConfigurationError` that names the failing setting but never its value.
+  Remote key/model authorization is checked only when a request reaches Gemini.
 - The model is called with `store: false` and SDK retries disabled. Two calls can
   run concurrently, with two FIFO waiting places and a ten-second queue deadline.
 - Image validation fully decodes JPEG/PNG with Sharp without converting the bytes
