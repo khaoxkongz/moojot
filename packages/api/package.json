@@ -19,7 +19,7 @@
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
     "effect": "^4.0.0-rc.117",
-    "pdf-parse": "2.4.5",
+    "sharp": "^0.35.5",
     "zod": "catalog:"
   },
   "devDependencies": {

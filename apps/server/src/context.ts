@@ -1,21 +1,21 @@
 import type { Context as ApiContext } from "@moojot/api/context";
 import type { Context as HonoContext } from "hono";
 
-import { ENV } from "./env.server";
-import { apiRuntime, auth, db } from "./services";
+import type { createAuth } from "@moojot/auth";
 
 export type CreateContextOptions = {
   context: HonoContext;
+  auth: ReturnType<typeof createAuth>;
+  db: ApiContext["db"];
+  runtime: ApiContext["runtime"];
 };
 
-export async function createContext({ context }: CreateContextOptions): Promise<ApiContext> {
-  const publicImportRequest = context.req.path === "/rpc/import/slip" || context.req.path === "/rpc/import/statement";
-  const session = publicImportRequest ? null : await auth.api.getSession({ headers: context.req.raw.headers });
+export async function createContext({ context, auth, db, runtime }: CreateContextOptions): Promise<ApiContext> {
+  const session = await auth.api.getSession({ headers: context.req.raw.headers });
   return {
     db,
-    runtime: apiRuntime,
+    runtime,
     session,
-    geminiApiKey: ENV.GEMINI_API_KEY,
   };
 }
 

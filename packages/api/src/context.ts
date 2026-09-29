@@ -6,5 +6,5 @@ export type Context = {
   session: Session | null;
   db: Database;
   runtime: AppRuntime;
-  geminiApiKey: string;
+  resHeaders?: Headers;
 };
