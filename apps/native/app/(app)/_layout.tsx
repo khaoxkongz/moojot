@@ -41,8 +41,6 @@ export default function AppLayout() {
         name="(entries)/search"
         options={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}
       />
-      <Stack.Screen name="(imports)/import" options={{ title: "นำเข้ารายการ", presentation: "modal" }} />
-      <Stack.Screen name="(imports)/review" options={{ title: "ตรวจรายการก่อนบันทึก", presentation: "modal" }} />
       <Stack.Screen name="(planning)/budget-form" options={{ title: "ตั้งงบประมาณ", presentation: "modal" }} />
       <Stack.Screen name="(planning)/recurring-form" options={{ title: "รายการจดซ้ำ", presentation: "modal" }} />
       <Stack.Screen name="(categories)/category-form" options={{ headerShown: false }} />

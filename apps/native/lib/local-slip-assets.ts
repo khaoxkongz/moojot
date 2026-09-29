@@ -127,15 +127,3 @@ export function clearLocalSlipImages(userId: string): Promise<void> {
     loads.delete(userId);
   });
 }
-
-export async function getExistingLocalSlipUris(userId: string): Promise<Set<string>> {
-  if (process.env.EXPO_OS === "web") {
-    return new Set(
-      Array.from(webImages.entries())
-        .filter(([key]) => key.startsWith(`${userId}:`))
-        .map(([, uri]) => uri)
-    );
-  }
-  const images = await imagesFor(userId);
-  return new Set(Object.values(images));
-}

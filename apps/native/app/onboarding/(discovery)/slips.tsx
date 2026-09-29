@@ -34,7 +34,7 @@ export default function OnboardingSlipsRoute() {
     setSlipScanBusy(true);
     setSlipScanError(null);
     try {
-      const result = await scanSlipAlbums("onboarding", requestPermission);
+      const result = await scanSlipAlbums(requestPermission);
       if (slipScanRun.current === run) setSlipScan(result);
     } catch (cause) {
       console.error("[slip-album-scan]", cause);
@@ -126,6 +126,9 @@ export default function OnboardingSlipsRoute() {
           >
             หมูจดนับรูปในอัลบั้มแอปธนาคาร{"\n"}ย้อนหลัง 30 วันบนเครื่องนี้
           </Text>
+          <Text style={{ color: theme.muted, fontSize: 15, textAlign: "center", marginTop: 10, lineHeight: 22 }}>
+            ขั้นนี้นับอย่างเดียว ยังไม่ส่งรูปไปไหน{"\n"}เมื่อเข้าหน้าแรก หมูจะให้ AI อ่านรูปเหล่านี้และจดสลิปให้อัตโนมัติ
+          </Text>
         </View>
         <ScrollView
           horizontal
@@ -160,7 +163,10 @@ export default function OnboardingSlipsRoute() {
         ) : slipScan?.status === "permission-required" ? (
           <View style={{ alignItems: "center", marginTop: 17, paddingHorizontal: 24, gap: 8 }}>
             <Text style={{ color: theme.text, textAlign: "center", fontSize: 15 }}>
-              อนุญาตให้เข้าถึงรูปภาพทั้งหมดเพื่อค้นหาอัลบั้มสลิป หมูจดไม่ส่งรูปไปยังเซิร์ฟเวอร์
+              อนุญาตให้เข้าถึงรูปภาพทั้งหมดเพื่อค้นหาและนับรูปในอัลบั้มสลิป
+            </Text>
+            <Text style={{ color: theme.muted, textAlign: "center", fontSize: 14 }}>
+              ข้ามได้ จดรายการเองได้ตามปกติ และอนุญาตภายหลังจากหน้าแรกได้
             </Text>
             <Pressable accessibilityRole="button" onPress={() => void refreshSlipScan(true)} style={{ padding: 9 }}>
               <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>อนุญาตและค้นหาสลิป</Text>
@@ -172,6 +178,9 @@ export default function OnboardingSlipsRoute() {
               {slipScan?.status === "limited"
                 ? "ต้องอนุญาตให้เข้าถึงรูปภาพทั้งหมด จึงจะค้นหาอัลบั้มได้"
                 : "ยังไม่ได้รับสิทธิ์เข้าถึงรูปภาพทั้งหมด"}
+            </Text>
+            <Text style={{ color: theme.muted, textAlign: "center", fontSize: 14 }}>
+              ไปต่อได้เลย จดรายการเองได้ตามปกติ และเปิดสิทธิ์ภายหลังจากหน้าแรกได้
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -236,7 +245,7 @@ export default function OnboardingSlipsRoute() {
             </Text>
             <Text style={{ color: theme.text, fontSize: 16, lineHeight: 25 }}>
               {slipInfo === "supported"
-                ? "หมูจดนับรูปทั้งหมดที่สร้างในช่วง 30 วันย้อนหลังจากอัลบั้ม Krungthai NEXT, K PLUS, Paotang และ TrueMoney โดยยังไม่ได้ตรวจว่าแต่ละภาพเป็นสลิปจริง และไม่ส่งภาพไปยังเซิร์ฟเวอร์ คุณเลือกนำเข้าสลิปเพื่อให้ AI อ่านรายการได้ภายหลัง"
+                ? "ขั้นนี้หมูจดนับรูปที่สร้างในช่วง 30 วันย้อนหลังจากอัลบั้ม Krungthai NEXT, K PLUS, Paotang และ TrueMoney บนเครื่องเท่านั้น จำนวนนี้ยังไม่ได้ตรวจว่าแต่ละภาพเป็นสลิปจริง และยังไม่ใช่รายการที่บันทึก เมื่อเข้าหน้าแรก หมูจดจะส่งรูปเหล่านี้ผ่านเซิร์ฟเวอร์หมูจดไปให้ Google Gemini อ่าน แล้วบันทึกรายการจากสลิปที่อ่านได้ครบให้อัตโนมัติ รูปที่ไม่ใช่สลิปหรือข้อมูลไม่ครบจะถูกข้าม"
                 : "ตรวจว่าในแอปรูปภาพมีอัลบั้มชื่อ Krungthai NEXT, K PLUS, Paotang หรือ TrueMoney และอนุญาตให้หมูจดเข้าถึงรูปภาพทั้งหมด รูปที่เก่ากว่า 30 วันจะไม่ถูกนับ"}
             </Text>
             <PrimaryButton label="เข้าใจแล้ว" onPress={() => setSlipInfo(null)} />

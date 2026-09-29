@@ -29,27 +29,29 @@ async function expoFetch(request: Request, init?: RequestInit) {
   });
 }
 
+/** Fetch used for authenticated RPC calls from this app. */
+export function rpcFetch(request: Request, init?: RequestInit) {
+  return expoFetch(request, {
+    ...init,
+    // Better Auth Expo forwards the session cookie manually on native.
+    credentials: Platform.OS === "web" ? "include" : "omit",
+  });
+}
+
+/** Session headers for authenticated RPC calls from this app. */
+export async function rpcHeaders(): Promise<Record<string, string>> {
+  if (Platform.OS === "web") {
+    return {};
+  }
+  const cookies = await authClient.getCookie();
+  return cookies ? { Cookie: cookies } : {};
+}
+
 export const link = new RPCLink({
   url: () => `${getServerBaseUrl()}/rpc`,
   plugins: [new SimpleCsrfProtectionLinkPlugin()],
-  fetch(request, init) {
-    return expoFetch(request, {
-      ...init,
-      // Better Auth Expo forwards the session cookie manually on native.
-      credentials: Platform.OS === "web" ? "include" : "omit",
-    });
-  },
-  async headers() {
-    if (Platform.OS === "web") {
-      return {};
-    }
-    const headers = new Map<string, string>();
-    const cookies = await authClient.getCookie();
-    if (cookies) {
-      headers.set("Cookie", cookies);
-    }
-    return Object.fromEntries(headers);
-  },
+  fetch: (request, init) => rpcFetch(request, init),
+  headers: rpcHeaders,
 });
 
 export const client: AppRouterClient = createORPCClient(link);

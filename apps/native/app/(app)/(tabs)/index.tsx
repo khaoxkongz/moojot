@@ -1,8 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useFocusEffect, useIsFocused, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HomeIcon } from "@/components/ui/home-icon";
@@ -12,6 +21,7 @@ import { Text } from "@/components/ui/typography";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
+import { authClient } from "@/lib/auth-client";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
@@ -22,7 +32,9 @@ import { selectedHomePeriod, weekStartForDate, type CalendarPeriod } from "@/fea
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
-import { scanAndProcessNewSlips } from "@/features/slips/auto-batch-scanner";
+import { homeScan, useHomeScanDisplay } from "@/features/slips/auto-import";
+import { photoAccessPrompt } from "@/features/slips/auto-import/photo-access";
+import { requestPhotoAccess } from "@/features/slips/library-scan";
 import { streakQueryOptions } from "@/features/streak/query-options";
 import { computeStreakStats } from "@/features/streak/streak";
 import type { StreakSettings } from "@/features/streak/types";
@@ -33,6 +45,14 @@ import type { Category, FinanceTransaction, WalletFilterSelection } from "@/type
 import { formatBaht, isValidISODate, kindLabel, thaiDate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
+
+function subscribeAppState(listener: () => void) {
+  const subscription = AppState.addEventListener("change", listener);
+  return () => subscription.remove();
+}
+// `inactive` covers the app switcher, system sheets and the moment the screen locks.
+const isAppActive = () => AppState.currentState !== "background" && AppState.currentState !== "inactive";
+
 const defaultStreakSettings: StreakSettings = { mode: "recorded", enabled: true, resetAfter: "" };
 
 function amountLabel(satang: number) {
@@ -140,6 +160,11 @@ export default function HomeScreen() {
   const { deletedId } = useLocalSearchParams<{ deletedId?: string }>();
 
   const { appliedWalletFilter, setAppliedWalletFilter } = useAppData();
+  const { data: session } = authClient.useSession();
+  const accountId = session?.user.id ?? null;
+  const sessionId = session?.session.id ?? null;
+  const slipScan = useHomeScanDisplay();
+  const appActive = useSyncExternalStore(subscribeAppState, isAppActive);
 
   const handledUndoId = useRef<string | null>(null);
 
@@ -159,9 +184,6 @@ export default function HomeScreen() {
     selectAllWalletSources(emptyWalletOptions)
   );
   const [addOpen, setAddOpen] = useState(false);
-  const [isReadingSlips, setIsReadingSlips] = useState(false);
-  const [readingDay, setReadingDay] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   const restoreTransactionMutation = useMutation(entriesMutationOptions.restore());
 
@@ -296,26 +318,28 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      void scanAndProcessNewSlips({
-        onStart: () => setIsReadingSlips(true),
-        onDayStart: ({ date }) => {
-          setIsReadingSlips(true);
-          setReadingDay(date);
-        },
-        onComplete: () => {
-          setIsReadingSlips(false);
-          setReadingDay(null);
-        },
-        onError: (cause) => {
-          console.warn("[auto-batch-scanner]", cause);
-          setIsReadingSlips(false);
-          setReadingDay(null);
-        },
-      });
-    }, [])
-  );
+  // Reads while Home is in front of the active app, including after returning from a bank app, Settings or the lock
+  // screen, and pauses otherwise. Each round checks the photo permission again.
+  useEffect(() => {
+    void homeScan.update({ accountId, sessionId, focused: isFocused, appActive });
+  }, [accountId, sessionId, isFocused, appActive]);
+  useEffect(() => () => homeScan.leave(), []);
+
+  const photoPrompt = photoAccessPrompt(slipScan.access);
+  const allowPhotoAccess = async () => {
+    try {
+      if (photoPrompt?.action === "settings") {
+        await Linking.openSettings();
+        return;
+      }
+      const access = await requestPhotoAccess();
+      const round = await homeScan.recheck();
+      // The prompt's return to the app can start a round before the answer is recorded; read again with the answer.
+      if (access === "all" && round?.status === "no-access") void homeScan.recheck();
+    } catch (cause) {
+      console.warn("[photo-access]", cause instanceof Error ? cause.name : typeof cause);
+    }
+  };
 
   const grouped = useMemo(() => {
     const map = new Map<string, FinanceTransaction[]>();
@@ -348,26 +372,13 @@ export default function HomeScreen() {
     setFilterOpen(false);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
+  const refetchHome = () => {
     for (const query of dataQueries) if (query.isEnabled) void query.refetch();
-    await scanAndProcessNewSlips({
-      onStart: () => setIsReadingSlips(true),
-      onDayStart: ({ date }) => {
-        setIsReadingSlips(true);
-        setReadingDay(date);
-      },
-      onComplete: () => {
-        setIsReadingSlips(false);
-        setReadingDay(null);
-      },
-      onError: (cause) => {
-        console.warn("[auto-batch-scanner]", cause);
-        setIsReadingSlips(false);
-        setReadingDay(null);
-      },
-    });
-    setRefreshing(false);
+  };
+  // Only a released pull refreshes. iOS reports the refresh point while the finger is still down, so the drag events
+  // tell a held pull from a released one there; Android reports it on release.
+  const onRefresh = () => {
+    if (homeScan.pullReady()) refetchHome();
   };
 
   return (
@@ -375,13 +386,17 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={process.env.EXPO_OS === "ios" ? () => homeScan.pullStart() : undefined}
+        onScrollEndDrag={
+          process.env.EXPO_OS === "ios"
+            ? (event) => {
+                if (homeScan.pullEnd(-event.nativeEvent.contentOffset.y)) refetchHome();
+              }
+            : undefined
+        }
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="transparent"
-            colors={["transparent"]}
-          />
+          // Home shows reading and the pull itself; the native indicator never stays open.
+          <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
         }
         contentContainerStyle={{ paddingTop: Math.max(insets.top + 12, 28), paddingBottom: 145 }}
       >
@@ -437,7 +452,7 @@ export default function HomeScreen() {
           ) : null}
 
           <View style={styles.speechBubble}>
-            {isReadingSlips || refreshing ? (
+            {slipScan.reading ? (
               <>
                 <Text style={styles.speechTitle}>หมูกำลังอ่านสลิปใหม่</Text>
                 <Text style={styles.speechBody}>เปิดแอปไว้ก่อนน้า</Text>
@@ -448,26 +463,43 @@ export default function HomeScreen() {
                   {autoToday > 0 ? `วันนี้หมูจดให้ ${autoToday} รายการ` : "วันนี้หมูพร้อมช่วยจด"}
                 </Text>
                 <Text style={styles.speechBody}>
-                  {pendingToday > 0
-                    ? `มี ${pendingToday} รายการรอเลือกหมวด`
-                    : (todayActivity?.transactionCount ?? 0) > 0
-                      ? "วันนี้เลือกหมวดครบแล้ว"
-                      : "เลือกสลิปหรือใบแจ้งยอดให้หมูช่วยอ่าน"}
+                  {photoPrompt
+                    ? photoPrompt.message
+                    : pendingToday > 0
+                      ? `มี ${pendingToday} รายการรอเลือกหมวด`
+                      : (todayActivity?.transactionCount ?? 0) > 0
+                        ? "วันนี้เลือกหมวดครบแล้ว"
+                        : slipScan.access === "unsupported"
+                          ? "แตะ “จดเพิ่ม” เพื่อจดรายการเอง"
+                          : "หมูอ่านสลิปใหม่ให้อัตโนมัติ"}
                 </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push(pendingToday > 0 ? "/pending-categories" : "/import")}
-                  style={styles.speechLink}
-                >
-                  <Text style={styles.speechLinkText}>{pendingToday > 0 ? "เลือกหมวดต่อเนื่อง" : "เริ่มนำเข้า"}</Text>
-                  <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
-                </Pressable>
+                {photoPrompt ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityHint={photoPrompt.hint}
+                    onPress={() => void allowPhotoAccess()}
+                    style={styles.speechLink}
+                  >
+                    <Text style={styles.speechLinkText}>{photoPrompt.label}</Text>
+                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
+                  </Pressable>
+                ) : null}
+                {pendingToday > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push("/pending-categories")}
+                    style={styles.speechLink}
+                  >
+                    <Text style={styles.speechLinkText}>เลือกหมวดต่อเนื่อง</Text>
+                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
+                  </Pressable>
+                ) : null}
               </>
             )}
             <View style={styles.speechTail} />
           </View>
 
-          {isReadingSlips || refreshing ? (
+          {slipScan.animating ? (
             <View style={styles.flowCardSlot}>
               <SlipFlowCards />
             </View>
@@ -553,7 +585,7 @@ export default function HomeScreen() {
                 <Text style={styles.errorText}>ลองอีกครั้ง</Text>
               </Pressable>
             </View>
-          ) : isReadingSlips && grouped.length === 0 ? (
+          ) : slipScan.reading && grouped.length === 0 ? (
             <View style={styles.dayGroup}>
               <View style={styles.dayRail}>
                 <View style={[styles.dayAccent, { backgroundColor: theme.accent }]} />
@@ -590,7 +622,7 @@ export default function HomeScreen() {
                 date={date}
                 items={items}
                 categories={categoryById}
-                showSkeleton={isReadingSlips && (readingDay ? date === readingDay : index === 0)}
+                showSkeleton={slipScan.reading && index === 0}
               />
             ))
           )}
@@ -634,28 +666,6 @@ export default function HomeScreen() {
             >
               <HomeIcon name="edit" color={theme.accentText} size={20} />
               <Text style={styles.addOptionText}>จดรายการเอง</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAddOpen(false);
-                router.push("/import?type=slip");
-              }}
-              style={styles.addOption}
-            >
-              <Text style={styles.addOptionEmoji}>🧾</Text>
-              <Text style={styles.addOptionText}>อ่านสลิป</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAddOpen(false);
-                router.push("/import?type=statement");
-              }}
-              style={styles.addOption}
-            >
-              <Text style={styles.addOptionEmoji}>💳</Text>
-              <Text style={styles.addOptionText}>ใบแจ้งยอด</Text>
             </Pressable>
           </View>
         ) : null}
@@ -890,7 +900,6 @@ function createStyles(theme: AppTheme) {
       alignItems: "center",
       gap: 10,
     },
-    addOptionEmoji: { fontSize: 20 },
     addOptionText: { color: theme.background, fontSize: 14, fontWeight: "800" },
     addButton: {
       backgroundColor: theme.accent,

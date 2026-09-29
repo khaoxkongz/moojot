@@ -18,11 +18,13 @@ native caller must use that wire path rather than assume `/import/autoImportSlip
 
 ## Configuration and operation
 
-- `GEMINI_API_KEY` must contain a locally valid key string. It is held by the shared
-  provider, never the request context.
+- `GEMINI_API_KEY` must be 20–256 visible ASCII characters with no whitespace, which
+  covers both `AIza…` and `AQ.…` keys. It is held by the shared provider, never the
+  request context.
 - `GEMINI_MODEL` defaults to the previous server model, `gemini-3.5-flash-lite`.
-  Missing or malformed configuration prevents runtime startup. Remote key/model
-  authorization is checked only when a request reaches Gemini.
+  Missing or malformed configuration prevents runtime startup with a
+  `GeminiConfigurationError` that names the failing setting but never its value.
+  Remote key/model authorization is checked only when a request reaches Gemini.
 - The model is called with `store: false` and SDK retries disabled. Two calls can
   run concurrently, with two FIFO waiting places and a ten-second queue deadline.
 - Image validation fully decodes JPEG/PNG with Sharp without converting the bytes
@@ -100,11 +102,12 @@ This is an intentional API cutover. The removed `/rpc/import/slip` and
 `/rpc/import/statement` operations return 404. Historical `source = statement` rows
 remain readable and unchanged.
 
-`apps/native/features/imports/client.ts` still calls `import.slip` and
-`import.statement` (lines 65 and 67 at cutover). Native typechecking and consequently
-the repository-wide type gate fail for those two removed operations. Home autoScan
-and import/review screens will not import until the separate native migration lands.
-No full application compatibility is claimed.
+At cutover, `apps/native/features/imports/client.ts` still called `import.slip` and
+`import.statement`, so native and repository-wide type checks failed. Native ticket 01
+(`.scratch/native-slip-auto-import/`) removed that client and the import/review screens;
+Home now scans through `apps/native/features/slips/auto-import/`, and both type gates
+pass. `apps/server/test/native-slip-auto-import.test.ts` drives the native transport
+and scan session against this route.
 
 The follow-up should send the original JPEG/PNG when below 10 MiB, resize only when
 needed, bind the local image after receiving `transactionId`, and count created,
@@ -112,6 +115,11 @@ skipped and failed requests independently. Retry BUSY, AI_RATE_LIMITED and 5xx/5
 on a later scan with the same asset ID: at least 30 seconds, exponential backoff
 with jitter capped at 15 minutes, honoring any longer valid `Retry-After`. Do not
 retry unchanged 401/400/413/415 inputs or skipped outcomes.
+
+The native app caps `Retry-After` at 24 hours. It also records any other 4xx (for example
+403, 404 or 409) as rejected. A photo it cannot read locally is retried with the same
+backoff for up to 10 attempts, then recorded as rejected. A rejected or skipped photo is
+sent again once, when its `modificationTime` changes.
 
 ## Live Gemini smoke test after deployment
 

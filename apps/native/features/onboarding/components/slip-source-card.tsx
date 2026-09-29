@@ -69,7 +69,7 @@ export function SlipSourceCard({ source }: { source: SlipSource }) {
   return (
     <View
       accessible
-      accessibilityLabel={`${source.name}, ${source.count === undefined ? "ยังไม่มีผลการสแกน" : `${source.count} สลิป`} ใน 30 วันย้อนหลัง`}
+      accessibilityLabel={`${source.name}, ${source.count === undefined ? "ยังไม่มีผลการสแกน" : `${source.count} รูป`} ใน 30 วันย้อนหลัง`}
       style={{
         width: 158,
         height: 182,
@@ -86,7 +86,7 @@ export function SlipSourceCard({ source }: { source: SlipSource }) {
         <SlipSourceLogo id={source.id} />
         <Text style={{ color: theme.text, fontSize: 18, lineHeight: 24, fontWeight: "800" }}>{source.name}</Text>
         {source.count === undefined ? null : (
-          <Text style={{ color: theme.muted, fontSize: 18, fontWeight: "700" }}>{source.count} สลิป</Text>
+          <Text style={{ color: theme.muted, fontSize: 18, fontWeight: "700" }}>{source.count} รูป</Text>
         )}
       </View>
       <Text style={{ color: theme.muted, fontSize: 14 }}>30 วันย้อนหลัง</Text>

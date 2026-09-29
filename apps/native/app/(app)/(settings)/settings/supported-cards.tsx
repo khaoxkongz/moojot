@@ -14,16 +14,12 @@ export default function SupportedCardsSettingsScreen() {
   return (
     <SettingsPage title="บัตรเครดิตที่หมูจดได้">
       <SettingsScroll>
-        <SettingsPanel title="ใบแจ้งยอดที่นำเข้าได้">
+        <SettingsPanel title="จดรายการบัตรเครดิต">
           <Text style={settingsPageStyles.copy}>
-            หมูจดรับไฟล์ PDF และให้ Gemini ช่วยแยกรายการ ความสามารถในการอ่านแต่ละผู้ให้บริการขึ้นอยู่กับรูปแบบ PDF ที่ใช้
+            จดรายจ่ายจากบัตรเครดิตเองได้ทุกบัตร รายการจากใบแจ้งยอดที่เคยบันทึกไว้ยังดูและแก้ไขได้ตามปกติ
           </Text>
-          <Text style={settingsPageStyles.caption}>แอปยังไม่มีรายชื่อผู้ให้บริการบัตรที่รับประกันการอ่านได้ทุกไฟล์</Text>
+          <Text style={settingsPageStyles.caption}>ตอนนี้หมูจดยังไม่อ่านไฟล์ใบแจ้งยอด PDF</Text>
         </SettingsPanel>
-        <SettingsAction
-          label="ลองนำเข้าใบแจ้งยอด PDF"
-          onPress={() => router.push({ pathname: "/import", params: { type: "statement" } })}
-        />
         <SettingsAction label="จดรายการเอง" onPress={() => router.push("/entry")} secondary />
       </SettingsScroll>
     </SettingsPage>

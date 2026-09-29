@@ -1,9 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { listTransactions } from "@/features/entries/data";
 import { loadPendingCategories } from "@/features/entries/pending-categories";
 import type { TransactionFilters, TransactionInput } from "@/types/finance";
-import { orpc } from "@/utils/orpc";
+import { client, orpc } from "@/utils/orpc";
 
 export const entriesQueryOptions = {
   detail: (id: string) => orpc.ledger.getTransaction.queryOptions({ input: { id } }),
@@ -11,7 +10,8 @@ export const entriesQueryOptions = {
   pendingCategories: () =>
     queryOptions({
       queryKey: ["finance", "entries", "pending-categories"],
-      queryFn: () => loadPendingCategories(listTransactions),
+      // Only kinds and categories are needed, so no local slip images are attached.
+      queryFn: () => loadPendingCategories((filters) => client.ledger.listTransactions(filters)),
     }),
   duplicates: (input: TransactionInput) => orpc.ledger.detectDuplicates.queryOptions({ input }),
   recentSearches: () => orpc.financePreferences.getRecentSearches.queryOptions(),

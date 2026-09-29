@@ -1,17 +1,14 @@
 import { router } from "expo-router";
 
-import { Text } from "@/components/ui/typography";
 import {
   SettingsAction,
   SettingsBullet,
   SettingsPage,
   SettingsPanel,
   SettingsScroll,
-  useSettingsPageStyles,
 } from "@/features/settings/components/settings-page";
 
 export default function GuideSettingsScreen() {
-  const settingsPageStyles = useSettingsPageStyles();
   return (
     <SettingsPage title="แนะนำการใช้งาน">
       <SettingsScroll>
@@ -22,10 +19,6 @@ export default function GuideSettingsScreen() {
         </SettingsPanel>
         <SettingsAction label="เริ่มจดรายการ" onPress={() => router.push("/entry")} />
         <SettingsAction label="ดูหน้าสรุป" onPress={() => router.push("/summary")} secondary />
-        <SettingsPanel title="นำเข้าสลิปและใบแจ้งยอด">
-          <Text style={settingsPageStyles.copy}>เลือกไฟล์ที่ต้องการอ่าน ให้ Gemini ช่วยแยกรายการ แล้วตรวจและแก้ไขก่อนบันทึก</Text>
-          <SettingsAction label="ไปหน้านำเข้า" onPress={() => router.push("/import")} secondary />
-        </SettingsPanel>
       </SettingsScroll>
     </SettingsPage>
   );

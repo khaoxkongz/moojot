@@ -21,6 +21,7 @@ import { useOnboarding } from "@/context/onboarding";
 import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
+import { slipScanSession } from "@/features/slips/auto-import";
 import { authClient } from "@/lib/auth-client";
 import { clearLocalSlipImages } from "@/lib/local-slip-assets";
 
@@ -377,6 +378,8 @@ export default function AccountSettingsScreen() {
       setError(null);
       await resetUserDataMutation.mutateAsync();
       await clearLocalSlipImages(session?.user.id || "");
+      // The server no longer holds these photos' identity, so they may be read again.
+      if (session?.user.id) await slipScanSession.forget(session.user.id);
       if (activeEmail) await setSettingMutation.mutateAsync({ key: "profile_email", value: activeEmail });
       setNotice(`ล้างข้อมูลของ ${activeEmail ?? "บัญชีนี้"} บนเซิร์ฟเวอร์แล้ว`);
     } catch (cause) {
@@ -674,12 +677,10 @@ export default function AccountSettingsScreen() {
 
         {sheet === "privacy" ? (
           <SheetFrame title="ข้อมูลส่วนบุคคล" onClose={() => setSheet(null)}>
+            <Text style={styles.dialogCopy}>รายการและข้อมูลโปรไฟล์ที่คุณบันทึกจะถูกเก็บบนเซิร์ฟเวอร์หมูจดและผูกกับอีเมลบัญชีที่ใช้งานอยู่</Text>
             <Text style={styles.dialogCopy}>
-              รายการและข้อมูลโปรไฟล์ที่คุณบันทึกจะถูกเก็บบนเซิร์ฟเวอร์หมูจดและผูกกับอีเมลบัญชีที่ใช้งานอยู่ คุณเป็นผู้เลือกไฟล์ที่จะนำเข้า
-            </Text>
-            <Text style={styles.dialogCopy}>
-              ไฟล์ที่คุณเลือกนำเข้าจะถูกส่งผ่านเซิร์ฟเวอร์หมูจดไปยัง Google Gemini 3.8 Flash เพื่อวิเคราะห์รายการ
-              คุณต้องตรวจและยืนยันผลก่อนบันทึกเป็นธุรกรรม
+              เมื่อให้สิทธิ์เข้าถึงรูปภาพทั้งหมด หน้าแรกจะส่งรูปย้อนหลัง 30 วันจากอัลบั้มแอปธนาคารที่รองรับผ่านเซิร์ฟเวอร์หมูจดไปให้ Google Gemini
+              อ่าน แล้วบันทึกรายการจากสลิปที่อ่านได้ครบให้อัตโนมัติ คุณแก้ไขหรือลบรายการได้ภายหลัง
             </Text>
           </SheetFrame>
         ) : null}
