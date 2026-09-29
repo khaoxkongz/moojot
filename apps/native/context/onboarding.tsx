@@ -1,0 +1,94 @@
+import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { createContext, use } from "react";
+import { ActivityIndicator, Pressable, View } from "react-native";
+
+import { Text } from "@/components/ui/typography";
+import { palette } from "@/constants/moo-theme";
+import { authClient } from "@/lib/auth-client";
+import { orpc, queryClient } from "@/utils/orpc";
+
+type OnboardingContextValue = {
+  isComplete: boolean;
+  signOut: () => Promise<void>;
+};
+
+const OnboardingContext = createContext<OnboardingContextValue | null>(null);
+
+export function OnboardingProvider({ children }: { children: ReactNode }) {
+  const { data: session, isPending: isSessionPending } = authClient.useSession();
+
+  const userId = session?.user.id ?? null;
+
+  const {
+    data,
+    isError,
+    error,
+    refetch,
+    isPending: isOnboardingPending,
+  } = useQuery(orpc.financePreferences.hasCompletedOnboarding.queryOptions({ enabled: Boolean(userId) }));
+
+  if (isSessionPending || (Boolean(userId) && isOnboardingPending)) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFDA60",
+          padding: 24,
+          gap: 18,
+        }}
+      >
+        <Text style={{ color: palette.ink, fontSize: 36, fontWeight: "900" }}>หมูจด</Text>
+        {isError ? (
+          <>
+            <Text
+              accessibilityRole="alert"
+              selectable
+              style={{ color: palette.ink, textAlign: "center", fontSize: 16 }}
+            >
+              โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error.message}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="ลองโหลดข้อมูลอีกครั้ง"
+              onPress={() => refetch()}
+              style={{
+                borderRadius: 999,
+                backgroundColor: "#1978F2",
+                paddingHorizontal: 32,
+                paddingVertical: 12,
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 17, fontWeight: "800" }}>ลองอีกครั้ง</Text>
+            </Pressable>
+          </>
+        ) : (
+          <ActivityIndicator color="#1978F2" size="large" accessibilityLabel="กำลังเตรียมหมูจด" />
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <OnboardingContext.Provider
+      value={{
+        isComplete: Boolean(data),
+        signOut: async () => {
+          const result = await authClient.signOut();
+          if (result.error) throw new Error(result.error.message);
+          queryClient.clear();
+        },
+      }}
+    >
+      {children}
+    </OnboardingContext.Provider>
+  );
+}
+
+export function useOnboarding(): OnboardingContextValue {
+  const context = use(OnboardingContext);
+  if (!context) throw new Error("useOnboarding must be used inside OnboardingProvider");
+  return context;
+}

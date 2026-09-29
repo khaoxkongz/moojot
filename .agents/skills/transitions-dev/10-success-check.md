@@ -102,8 +102,7 @@ The `:root` defaults below match the live tuning on [transitions.dev](https://tr
     t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
 }
 .t-success-check[data-state="in"] svg path {
-  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms)
-    forwards;
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms) forwards;
 }
 
 @keyframes t-check-fade {

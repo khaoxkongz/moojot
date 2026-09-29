@@ -80,9 +80,7 @@ The `@media (prefers-reduced-motion: reduce)` guard at the bottom of the snippet
 // Same close-then-cleanup pattern as the dropdown — modals scale from
 // --modal-scale up to 1, then on close dip to --modal-scale-close.
 const modal = document.querySelector(".t-modal");
-const closeMs =
-  parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")) ||
-  150;
+const closeMs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--modal-close-dur")) || 150;
 
 function openModal() {
   modal.classList.remove("is-closing");

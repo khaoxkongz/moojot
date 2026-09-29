@@ -34,11 +34,7 @@ function ProductItem({ product }: { product: Product }) {
 
   return (
     <View>
-      <Image
-        source={{ uri: thumbnailUrl }}
-        style={{ width: 100, height: 100 }}
-        contentFit="cover"
-      />
+      <Image source={{ uri: thumbnailUrl }} style={{ width: 100, height: 100 }} contentFit="cover" />
       <Text>{product.name}</Text>
     </View>
   );

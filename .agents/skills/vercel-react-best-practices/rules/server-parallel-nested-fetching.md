@@ -22,9 +22,7 @@ If one `getChat(id)` out of 100 is extremely slow, the authors of the other 99 c
 **Correct (each item chains its own nested fetch):**
 
 ```tsx
-const chatAuthors = await Promise.all(
-  chatIds.map((id) => getChat(id).then((chat) => getUser(chat.author))),
-);
+const chatAuthors = await Promise.all(chatIds.map((id) => getChat(id).then((chat) => getUser(chat.author))));
 ```
 
 Each item independently chains `getChat` → `getUser`, so a slow chat doesn't block author fetches for the others.

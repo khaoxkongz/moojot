@@ -198,10 +198,7 @@ Loaders run on the server, so you can access secrets and server-only resources d
 // app/dashboard.tsx
 import { type LoaderFunction } from "expo-server";
 
-export const loader: LoaderFunction<{ balance: any; isAuthenticated: boolean }> = async (
-  request,
-  params,
-) => {
+export const loader: LoaderFunction<{ balance: any; isAuthenticated: boolean }> = async (request, params) => {
   const data = await fetch("https://api.stripe.com/v1/balance", {
     headers: {
       Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,

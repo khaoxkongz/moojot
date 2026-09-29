@@ -28,9 +28,7 @@ function ListItem({ item }: { item: Item }) {
 }
 
 function Feed({ items }: { items: Item[] }) {
-  return (
-    <LegendList data={items} renderItem={({ item }) => <ListItem item={item} />} recycleItems />
-  );
+  return <LegendList data={items} renderItem={({ item }) => <ListItem item={item} />} recycleItems />;
 }
 ```
 

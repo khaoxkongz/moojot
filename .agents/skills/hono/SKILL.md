@@ -401,7 +401,7 @@ app.get("/", (c) => {
   return c.html(
     <Layout>
       <UserCard name="Alice" />
-    </Layout>,
+    </Layout>
   );
 });
 ```

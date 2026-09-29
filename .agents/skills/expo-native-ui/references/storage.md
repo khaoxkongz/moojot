@@ -64,7 +64,7 @@ import { storage } from "@/utils/storage";
 export function useStorage<T>(key: string, defaultValue: T): [T, (value: T) => void] {
   const value = useSyncExternalStore(
     (cb) => storage.subscribe(key, cb),
-    () => storage.get(key, defaultValue),
+    () => storage.get(key, defaultValue)
   );
 
   return [value, (newValue: T) => storage.set(key, newValue)];
@@ -77,9 +77,7 @@ Usage:
 function Settings() {
   const [theme, setTheme] = useStorage("theme", "light");
 
-  return (
-    <Switch value={theme === "dark"} onValueChange={(dark) => setTheme(dark ? "dark" : "light")} />
-  );
+  return <Switch value={theme === "dark"} onValueChange={(dark) => setTheme(dark ? "dark" : "light")} />;
 }
 ```
 

@@ -165,17 +165,14 @@ import { createAxiomDrain } from "evlog/axiom";
 import { createFsDrain } from "evlog/fs";
 
 export default defineNitroPlugin((nitroApp) => {
-  const auditSink = auditOnly(
-    signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
-    { await: true },
-  );
+  const auditSink = auditOnly(signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }), { await: true });
   const main = createAxiomDrain({ dataset: "logs" });
 
   nitroApp.hooks.hook(
     "evlog:enrich",
     auditEnricher({
       tenantId: (ctx) => ctx.headers?.["x-tenant-id"],
-    }),
+    })
   );
   nitroApp.hooks.hook("evlog:drain", async (ctx) => {
     await Promise.all([main(ctx), auditSink(ctx)]);
@@ -236,7 +233,7 @@ export const refundInvoice = withAudit(
   async ({ id }, ctx) => {
     if (!ctx.actor) throw new AuditDeniedError("Anonymous refund denied");
     return db.invoices.refund(id);
-  },
+  }
 );
 ```
 
@@ -334,7 +331,7 @@ it("refunds the invoice and records an audit", async () => {
       action: "invoice.refund",
       target: { type: "invoice", id: "inv_889" },
       outcome: "success",
-    }),
+    })
   ).toBe(true);
 
   captured.restore();
@@ -349,7 +346,7 @@ it("denies refund for non-owners and records the denial", async () => {
     captured.toIncludeAuditOf({
       action: "invoice.refund",
       outcome: "denied",
-    }),
+    })
   ).toBe(true);
 
   captured.restore();

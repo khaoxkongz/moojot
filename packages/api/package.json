@@ -2,7 +2,8 @@
   "name": "@moojot/api",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./src/features/index.ts",
+    "./runtime": "./src/shared/runtime/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {
@@ -10,16 +11,19 @@
     "check-types": "tsc -b"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "@moojot/auth": "workspace:*",
     "@moojot/db": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "effect": "^4.0.0-rc.117",
+    "pdf-parse": "2.4.5",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@moojot/config": "workspace:*",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }

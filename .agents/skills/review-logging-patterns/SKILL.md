@@ -241,10 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <EvlogProvider
-          service="my-app"
-          transport={{ enabled: true, endpoint: "/api/evlog/ingest" }}
-        >
+        <EvlogProvider service="my-app" transport={{ enabled: true, endpoint: "/api/evlog/ingest" }}>
           {children}
         </EvlogProvider>
       </body>
@@ -287,10 +284,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Invalid payload" }, { status: 400 });
   }
   const { service: _, ...sanitized } = body;
-  console.log(
-    "[CLIENT LOG]",
-    JSON.stringify({ ...sanitized, service: "my-app", source: "client" }),
-  );
+  console.log("[CLIENT LOG]", JSON.stringify({ ...sanitized, service: "my-app", source: "client" }));
   return new Response(null, { status: 204 });
 }
 ```
@@ -520,7 +514,7 @@ app.use(
     keep: (ctx) => {
       if (ctx.duration && ctx.duration > 2000) ctx.shouldKeep = true;
     },
-  }),
+  })
 );
 ```
 
@@ -567,7 +561,7 @@ app.onError((error, c) => {
   const parsed = parseError(error);
   return c.json(
     { message: parsed.message, why: parsed.why, fix: parsed.fix, link: parsed.link },
-    parsed.status as ContentfulStatusCode,
+    parsed.status as ContentfulStatusCode
   );
 });
 ```
@@ -587,7 +581,7 @@ app.use(
     keep: (ctx) => {
       if (ctx.duration && ctx.duration > 2000) ctx.shouldKeep = true;
     },
-  }),
+  })
 );
 ```
 
@@ -683,7 +677,7 @@ app.use(
     keep: (ctx) => {
       if (ctx.duration && ctx.duration > 2000) ctx.shouldKeep = true;
     },
-  }),
+  })
 );
 ```
 

@@ -171,17 +171,15 @@ const pan = useMemo(
               },
               (finished) => {
                 if (finished) scheduleOnRN(onClose);
-              },
-            ),
+              }
+            )
           );
         } else {
-          translateY.set(
-            withSpring(0, { duration: 300, dampingRatio: 0.8, velocity: e.velocityY }),
-          );
+          translateY.set(withSpring(0, { duration: 300, dampingRatio: 0.8, velocity: e.velocityY }));
           scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Light); // it snapped home
         }
       }),
-  [onClose],
+  [onClose]
 );
 
 const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.get() }] }));
@@ -228,13 +226,13 @@ const pan = useMemo(
           x.set(
             withTiming(-WIDTH, { duration: 200, easing: EASE_OUT }, (f) => {
               if (f) scheduleOnRN(onDelete, id);
-            }),
+            })
           );
         } else {
           x.set(withSpring(0, { duration: 300, dampingRatio: 1, velocity: e.velocityX }));
         }
       }),
-  [onDelete, id],
+  [onDelete, id]
 );
 ```
 
@@ -356,10 +354,7 @@ Configure the native stack. Never rebuild a screen transition in JS: the native 
 
 ```jsx
 <Stack screenOptions={{ animation: reduced ? "fade" : "default" }}>
-  <Stack.Screen
-    name="settings"
-    options={{ animation: "slide_from_right", animationMatchesGesture: true }}
-  />
+  <Stack.Screen name="settings" options={{ animation: "slide_from_right", animationMatchesGesture: true }} />
   <Stack.Screen name="compose" options={{ presentation: "modal" }} />
   <Stack.Screen
     name="filter"
@@ -428,7 +423,7 @@ useAnimatedReaction(
       armed.set(isArmed);
       scheduleOnRN(Haptics.impactAsync, Haptics.ImpactFeedbackStyle.Light);
     }
-  },
+  }
 );
 ```
 

@@ -73,8 +73,7 @@ Stack multiple gradients by comma-separating them:
     style={{
       position: "absolute",
       inset: 0,
-      experimental_backgroundImage:
-        "linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 50%)",
+      experimental_backgroundImage: "linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 50%)",
     }}
   />
 </View>

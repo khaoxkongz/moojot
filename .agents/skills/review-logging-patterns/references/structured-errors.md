@@ -445,9 +445,7 @@ try {
     title: error.message,
     description: error.why,
     color: "error",
-    actions: error.link
-      ? [{ label: "Learn more", onClick: () => window.open(error.link) }]
-      : undefined,
+    actions: error.link ? [{ label: "Learn more", onClick: () => window.open(error.link) }] : undefined,
   });
 
   if (error.fix) console.info(`💡 Fix: ${error.fix}`);

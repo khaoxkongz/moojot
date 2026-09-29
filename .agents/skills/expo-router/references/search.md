@@ -96,9 +96,7 @@ export function useSearch(options: any = {}) {
 function SearchScreen() {
   const search = useSearch({ placeholder: "Search items..." });
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredItems = items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
 
   return <FlatList data={filteredItems} renderItem={({ item }) => <ItemRow item={item} />} />;
 }
@@ -149,7 +147,7 @@ function SearchScreen() {
 
   const filteredItems = useMemo(
     () => items.filter((item) => item.name.toLowerCase().includes(debouncedSearch.toLowerCase())),
-    [debouncedSearch],
+    [debouncedSearch]
   );
 
   return <FlatList data={filteredItems} />;

@@ -101,11 +101,7 @@ const users = await prisma.$queryRawUnsafe(`SELECT * FROM "${table}" WHERE id = 
 ### Parameterized unsafe query
 
 ```typescript
-const result = await prisma.$executeRawUnsafe(
-  'UPDATE "User" SET name = $1 WHERE id = $2',
-  "Alice",
-  1,
-);
+const result = await prisma.$executeRawUnsafe('UPDATE "User" SET name = $1 WHERE id = $2', "Alice", 1);
 ```
 
 ## SQL Injection Prevention

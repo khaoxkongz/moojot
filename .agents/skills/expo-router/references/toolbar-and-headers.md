@@ -67,9 +67,7 @@ export default function InboxScreen() {
             </Stack.Toolbar.Menu>
             <Stack.Toolbar.MenuAction icon="info.circle">About categories</Stack.Toolbar.MenuAction>
           </Stack.Toolbar.Menu>
-          <Stack.Toolbar.MenuAction icon="person.circle">
-            Show Contact Photos
-          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="person.circle">Show Contact Photos</Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
 

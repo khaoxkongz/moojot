@@ -1,13 +1,19 @@
 model User {
-  id            String    @id @map("_id")
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id                    String                 @id @map("_id")
+  name                  String
+  email                 String
+  emailVerified         Boolean                @default(false)
+  image                 String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  sessions              Session[]
+  accounts              Account[]
+  financeCategories     FinanceCategory[]
+  financeTags           FinanceTag[]
+  financeRecurringRules FinanceRecurringRule[]
+  financeTransactions   FinanceTransaction[]
+  financeBudgets        FinanceBudget[]
+  financeSettings       FinanceSetting[]
 
   @@unique([email])
   @@map("user")

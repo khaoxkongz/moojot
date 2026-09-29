@@ -8,5 +8,6 @@
     "outDir": "dist"
   },
   "include": ["src/**/*.ts"],
+  "exclude": ["src/features/tasks/**/*.ts"],
   "references": [{ "path": "../db" }, { "path": "../auth" }]
 }

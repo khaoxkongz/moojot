@@ -1,5 +1,3 @@
 import { defineNodeInstrumentation } from "evlog/next/instrumentation";
 
-export const { register, onRequestError } = defineNodeInstrumentation(
-  () => import("./src/lib/evlog"),
-);
+export const { register, onRequestError } = defineNodeInstrumentation(() => import("./src/lib/evlog"));

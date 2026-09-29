@@ -23,7 +23,7 @@ app.use(
     drain: async (ctx) => {
       await Promise.all([main(ctx), auditSink(ctx)]);
     },
-  }),
+  })
 );
 ```
 
@@ -48,7 +48,7 @@ app.use(
     drain: async (ctx) => {
       await Promise.all([main(ctx), auditSink(ctx)]);
     },
-  }),
+  })
 );
 ```
 
