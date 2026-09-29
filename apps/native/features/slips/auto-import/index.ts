@@ -1,4 +1,5 @@
-import { File, Paths } from "expo-file-system";
+import { Directory, File, Paths } from "expo-file-system";
+import { copyAsync } from "expo-file-system/legacy";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Asset } from "expo-media-library";
 import { useSyncExternalStore } from "react";
@@ -30,6 +31,23 @@ function localImage(uri: string): LocalImage {
     },
     base64: () => file.base64(),
   };
+}
+
+const originalsDirectory = new Directory(Paths.cache, "slip-originals");
+
+/**
+ * The photo's current bytes. On iOS, the file behind `Asset.getUri()` can only be read while the Photos request that
+ * located it is open, so the photo is copied into the cache through the Photos library instead, one file per asset,
+ * and the transaction keeps the lasting `ph://` reference.
+ */
+async function readOriginal(assetId: string): Promise<LocalImage> {
+  if (process.env.EXPO_OS !== "ios") return localImage(await new Asset(assetId).getUri());
+  const reference = `ph://${assetId}`;
+  if (!originalsDirectory.exists) originalsDirectory.create({ intermediates: true });
+  const copy = new File(originalsDirectory, encodeURIComponent(assetId));
+  if (copy.exists) copy.delete();
+  await copyAsync({ from: reference, to: copy.uri });
+  return { ...localImage(copy.uri), reference };
 }
 
 /** Re-encode as JPEG, reducing dimensions only as far as needed to fit the upload limit. */
@@ -65,7 +83,7 @@ export const slipScanSession = createSlipScanSession({
   },
   ...nativePhotoLibrary,
   photoAccess: readPhotoAccess,
-  readOriginal: async (assetId) => localImage(await new Asset(assetId).getUri()),
+  readOriginal,
   shrink,
   send: createAutoImportTransport({
     baseUrl: getServerBaseUrl,

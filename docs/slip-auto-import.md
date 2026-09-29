@@ -116,6 +116,11 @@ on a later scan with the same asset ID: at least 30 seconds, exponential backoff
 with jitter capped at 15 minutes, honoring any longer valid `Retry-After`. Do not
 retry unchanged 401/400/413/415 inputs or skipped outcomes.
 
+The native app caps `Retry-After` at 24 hours. It also records any other 4xx (for example
+403, 404 or 409) as rejected. A photo it cannot read locally is retried with the same
+backoff for up to 10 attempts, then recorded as rejected. A rejected or skipped photo is
+sent again once, when its `modificationTime` changes.
+
 ## Live Gemini smoke test after deployment
 
 Status: **not run**. This is separate from the deterministic acceptance gate and

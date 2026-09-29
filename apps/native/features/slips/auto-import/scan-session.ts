@@ -1,7 +1,7 @@
 import { discoverSlipPhotos, type PhotoAssetMetadata, type PhotoLibrary } from "./discovery";
 import { prepareSlipUpload, SlipImageError, type LocalImage } from "./image";
-import { createScanMemory, type AssetRecord, type ScanMemoryStorage } from "./scan-memory";
 import type { PhotoAccess } from "./photo-access";
+import { createScanMemory, type AssetRecord, type ScanMemoryStorage } from "./scan-memory";
 import { AutoImportRequestError, type AutoImportTransport } from "./transport";
 
 /** Entering Home, the app becoming active again while Home is focused, or a released pull-to-refresh. */
@@ -27,7 +27,34 @@ export interface SlipScanPorts extends PhotoLibrary {
   findImportedTransactions(assetIds: string[], signal?: AbortSignal): Promise<Map<string, string>>;
   bindImage(accountId: string, transactionId: string, uri: string): Promise<void>;
   refreshLedger(): Promise<void>;
+  /** How long a step may take before the round stops waiting for it, in milliseconds. */
+  deadlines?: Partial<ScanDeadlines>;
   log?(event: string, detail: Record<string, unknown>): void;
+}
+
+/**
+ * Native Photos calls have been seen to stop answering on a device. A round then gives up on the step instead of
+ * keeping Home reading: discovery ends the round as `error`, a photo read counts as unreadable and is tried again later,
+ * and the ledger refresh is left to finish on its own.
+ */
+export interface ScanDeadlines {
+  discovery: number;
+  read: number;
+  refresh: number;
+}
+
+const DEFAULT_DEADLINES: ScanDeadlines = { discovery: 60_000, read: 60_000, refresh: 30_000 };
+
+class DeadlineError extends Error {
+  override name = "DeadlineError";
+}
+
+function withinDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new DeadlineError()), ms);
+  });
+  return Promise.race([work, expired]).finally(() => clearTimeout(timer));
 }
 
 export interface ScanFailure {
@@ -68,8 +95,19 @@ export interface SlipScanState {
 const MAX_CONCURRENT_IMPORTS = 2;
 // Messages can carry local paths, so logs keep only the error class.
 const errorName = (cause: unknown) => (cause instanceof Error ? cause.name : typeof cause);
-// Input the server rejects will be rejected again unchanged, so it is not sent again automatically.
-const PERMANENT_STATUSES = new Set([400, 413, 415]);
+/** The error class plus a native module's machine-readable `code`, such as Expo's `ERR_*` codes. */
+const errorDetail = (cause: unknown) => {
+  const code = cause instanceof Error && "code" in cause && typeof cause.code === "string" ? cause.code : null;
+  return { error: errorName(cause), code };
+};
+/**
+ * A 4xx other than 429 (`BUSY`, `AI_RATE_LIMITED`) or a 408 timeout will be answered the same way for the same input,
+ * so it is not sent again automatically. 401 is handled separately, as a sign-in problem rather than a photo's.
+ */
+const isRejectedStatus = (status: number | null) =>
+  status !== null && status >= 400 && status < 500 && status !== 408 && status !== 429;
+/** Reading a photo is local, so it is tried generously, for example while an iCloud original downloads. */
+const UNREADABLE_ATTEMPT_LIMIT = 10;
 
 const RETRY_FLOOR_MS = 30_000;
 const RETRY_CEILING_MS = 15 * 60_000;
@@ -90,6 +128,17 @@ function retryDelay(attempts: number, random: number, retryAfterSeconds: number 
   return Math.max(backoff, requested);
 }
 
+function countFailures(failures: ScanFailure[]) {
+  const counts: Record<string, number> = {};
+  for (const { kind, code, status } of failures) {
+    const key = `${kind}:${code ?? status ?? "-"}`;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+const referenceOf = (image: LocalImage) => image.reference ?? image.uri;
+
 const retryAtOf = (record: AssetRecord | null) => (record?.kind === "retry" ? record.retryAt : null);
 
 /** Whether a remembered outcome still stands for the photo as discovered now. */
@@ -106,6 +155,7 @@ export function createSlipScanSession(ports: SlipScanPorts) {
   const rejectedSessions = new Map<string, string | null>();
   /** Per account, photos being imported, including by a paused round whose requests are still settling. */
   const inFlight = new Map<string, Map<string, Promise<void>>>();
+  const deadlines = { ...DEFAULT_DEADLINES, ...ports.deadlines };
   const memory = createScanMemory(ports.store, (event, cause) => log(event, { error: errorName(cause) }));
   let state: SlipScanState = { scanning: false, access: null, lastRound: null };
   type ActiveRound = {
@@ -194,19 +244,23 @@ export function createSlipScanSession(ports: SlipScanPorts) {
 
     async function attemptImport(asset: PhotoAssetMetadata) {
       const { id: assetId, modificationTime } = asset;
-      let uri: string;
+      let reference: string;
       let upload: Awaited<ReturnType<typeof prepareSlipUpload>>;
       try {
-        const original = await ports.readOriginal(assetId);
-        uri = original.uri;
-        upload = await prepareSlipUpload(original, ports.shrink);
+        [reference, upload] = await withinDeadline(
+          (async () => {
+            const original = await ports.readOriginal(assetId);
+            return [referenceOf(original), await prepareSlipUpload(original, ports.shrink)] as const;
+          })(),
+          deadlines.read
+        );
       } catch (cause) {
         const code = cause instanceof SlipImageError ? cause.code : "UNREADABLE_IMAGE";
+        if (!(cause instanceof SlipImageError)) log("read-failed", errorDetail(cause));
+        const rejected: AssetRecord = { kind: "rejected", code, status: null, modificationTime };
         // A photo that could not be read may be readable later, for example once it has downloaded to the device.
-        const record: AssetRecord =
-          code === "UNREADABLE_IMAGE"
-            ? retryLater(asset, { code, status: null }, null)
-            : { kind: "rejected", code, status: null, modificationTime };
+        const retry = code === "UNREADABLE_IMAGE" ? retryLater(asset, { code, status: null }, null) : null;
+        const record = retry && retry.attempts < UNREADABLE_ATTEMPT_LIMIT ? retry : rejected;
         fail({ assetId, kind: "image", code, status: null, retryAfter: null, retryAt: retryAtOf(record) }, record);
         return;
       }
@@ -219,6 +273,7 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         const error =
           cause instanceof AutoImportRequestError ? cause : new AutoImportRequestError({ kind: "network", cause });
         const { code, status } = error;
+        if (error.kind === "network") log("send-failed", errorDetail(error.cause));
         let record: AssetRecord | null;
         if (status === 401 || error.kind === "cancelled") {
           // Neither says anything about this photo: it stays eligible. A cancelled request may still have been saved,
@@ -228,10 +283,11 @@ export function createSlipScanSession(ports: SlipScanPorts) {
             round.status = "unauthorized";
             rejectedSessions.set(accountId, entry.sessionId);
           }
-        } else if (status !== null && PERMANENT_STATUSES.has(status)) {
+        } else if (isRejectedStatus(status)) {
           record = { kind: "rejected", code, status, modificationTime };
         } else {
-          // Includes network failures and timeouts, which may have been saved: the retry reuses the asset ID.
+          // 429, 5xx, network failures, timeouts and unreadable answers. The last three may have been saved: the retry
+          // reuses the asset ID, so the server answers it as a duplicate.
           record = retryLater(asset, { code, status }, error.retryAfter);
         }
         fail(
@@ -253,7 +309,7 @@ export function createSlipScanSession(ports: SlipScanPorts) {
       }
       round.created++;
       account.set(assetId, { kind: "saved", transactionId: outcome.transactionId, bound: false });
-      await bind(assetId, outcome.transactionId, uri);
+      await bind(assetId, outcome.transactionId, reference);
       requestRefresh();
     }
 
@@ -261,9 +317,10 @@ export function createSlipScanSession(ports: SlipScanPorts) {
      * Link the local photo to its saved transaction. The transaction is saved on the server either way: a failure here
      * never undoes or repeats that, and the remembered transaction ID lets a later round try again.
      */
-    async function bind(assetId: string, transactionId: string, uri?: string) {
+    async function bind(assetId: string, transactionId: string, reference?: string) {
       try {
-        await ports.bindImage(accountId, transactionId, uri ?? (await ports.readOriginal(assetId)).uri);
+        const lasting = reference ?? referenceOf(await withinDeadline(ports.readOriginal(assetId), deadlines.read));
+        await ports.bindImage(accountId, transactionId, lasting);
         account.set(assetId, { kind: "saved", transactionId, bound: true });
         return true;
       } catch (cause) {
@@ -327,7 +384,7 @@ export function createSlipScanSession(ports: SlipScanPorts) {
       rejectedSessions.delete(accountId);
       // Reading starts only past the permission and sign-in gates, so a round with nothing it may do never shows it.
       if (current === entry) setState({ scanning: true });
-      const { assets } = await discoverSlipPhotos(ports, ports.now());
+      const { assets } = await withinDeadline(discoverSlipPhotos(ports, ports.now()), deadlines.discovery);
       round.discovered = assets.length;
       account.retain(new Set(assets.map((asset) => asset.id)), ports.now());
       const startedAt = ports.now();
@@ -380,7 +437,10 @@ export function createSlipScanSession(ports: SlipScanPorts) {
       round.status = "error";
       log("scan-failed", { error: errorName(cause) });
     }
-    await Promise.all([refreshing, account.flush()]);
+    await Promise.all([
+      refreshing && withinDeadline(refreshing, deadlines.refresh).catch(() => log("refresh-timeout", {})),
+      account.flush(),
+    ]);
     return round;
   }
 
@@ -456,6 +516,8 @@ export function createSlipScanSession(ports: SlipScanPorts) {
           created: round.created,
           skipped: round.skipped,
           failed: round.failed,
+          // Counts per `kind:code-or-status`, so a device log shows why photos failed without their IDs.
+          failures: countFailures(round.failures),
         });
         if (current !== entry) return;
         current = null;

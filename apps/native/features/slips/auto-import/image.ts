@@ -4,7 +4,13 @@ export type SlipMimeType = "image/jpeg" | "image/png";
 
 /** A local photo whose bytes are read only when it is about to be uploaded. */
 export interface LocalImage {
+  /** A readable file with these bytes. */
   uri: string;
+  /**
+   * A lasting reference to the photo to keep with its transaction, when `uri` is a temporary copy, such as `ph://` for
+   * a photo iOS only lets the app read through a copy. Defaults to `uri`.
+   */
+  reference?: string;
   byteLength: number;
   header(): Promise<Uint8Array>;
   base64(): Promise<string>;

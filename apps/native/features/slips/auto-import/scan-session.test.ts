@@ -33,6 +33,9 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+/** A native call that never answers. */
+const never = () => new Promise<never>(() => {});
+
 /** Let pending requests and timers run. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
@@ -53,7 +56,14 @@ function harness(
     bindImage?: SlipScanPorts["bindImage"];
     refreshLedger?: SlipScanPorts["refreshLedger"];
     shrink?: SlipScanPorts["shrink"];
+    /** A lasting photo reference that differs from the readable copy, as on iOS. */
+    reference?: (assetId: string) => string;
     libraryError?: Error;
+    /** The photo library stops answering, as when native Photos calls stall. */
+    libraryHangs?: boolean;
+    /** Photos whose original never finishes reading. */
+    readHangs?: string[];
+    deadlines?: SlipScanPorts["deadlines"];
     /** Persistent scan memory shared by sessions, as a reopened app would find it. */
     store?: Map<string, string>;
     clock?: { now: number };
@@ -78,6 +88,7 @@ function harness(
 
   const ports: SlipScanPorts = {
     pageSize: options.pageSize ?? 2,
+    deadlines: options.deadlines,
     now: () => clock.now,
     random: options.random,
     store: {
@@ -92,6 +103,7 @@ function harness(
     },
     photoAccess: async () => (typeof options.access === "function" ? options.access() : (options.access ?? "all")),
     albums: async () => {
+      if (options.libraryHangs) await never();
       if (options.libraryError) throw options.libraryError;
       return albums.map((title) => ({ key: title, title }));
     },
@@ -109,11 +121,13 @@ function harness(
         }));
     },
     readOriginal: async (assetId) => {
+      if (options.readHangs?.includes(assetId)) await never();
       const photo = photos.find((item) => item.id === assetId);
       if (!photo?.bytes) throw new Error("unreadable");
       const bytes = photo.bytes;
       return {
         uri: `file:///photos/${assetId}`,
+        reference: options.reference?.(assetId),
         byteLength: photo.size ?? bytes.length,
         header: async () => bytes.slice(0, 16),
         base64: async () => base64(bytes),
@@ -218,6 +232,15 @@ describe("slip scan session", () => {
     ]);
     expect(pageQueries.every((query) => query.from === now - 30 * day && query.to === now)).toBe(true);
     expect(session.getState()).toMatchObject({ scanning: false });
+  });
+
+  it("binds a photo's lasting reference rather than the copy it was read from", async () => {
+    const { session, bindings } = harness({
+      photos: [photo("a", "K PLUS")],
+      reference: (assetId) => `ph://${assetId}`,
+    });
+    await session.request({ accountId: "alice", trigger: "home" });
+    expect(bindings.map((binding) => binding.uri)).toEqual(["ph://a"]);
   });
 
   it("matches existing album aliases without widening to other albums", async () => {
@@ -400,6 +423,35 @@ describe("slip scan session", () => {
     expect(broken.session.getState().scanning).toBe(false);
   });
 
+  it("ends the round when a step stops answering, so Home does not keep reading", async () => {
+    const deadlines = { discovery: 20, read: 20, refresh: 20 };
+
+    const stalledLibrary = harness({ photos: [photo("a")], libraryHangs: true, deadlines });
+    expect(await stalledLibrary.session.request({ accountId: "alice", trigger: "home" })).toMatchObject({
+      status: "error",
+    });
+    expect(stalledLibrary.session.getState().scanning).toBe(false);
+
+    const stalledRead = harness({
+      photos: [photo("stuck"), photo("fine", "K PLUS", 2)],
+      readHangs: ["stuck"],
+      deadlines,
+    });
+    const round = await stalledRead.session.request({ accountId: "alice", trigger: "home" });
+    expect(round).toMatchObject({ status: "completed", created: 1, failed: 1 });
+    // Treated like any unreadable photo: tried again on a later round.
+    expect(round.failures).toEqual([
+      expect.objectContaining({ assetId: "stuck", code: "UNREADABLE_IMAGE", retryAt: expect.any(Number) }),
+    ]);
+
+    const stalledRefresh = harness({ photos: [photo("a")], refreshLedger: never, deadlines });
+    expect(await stalledRefresh.session.request({ accountId: "alice", trigger: "home" })).toMatchObject({
+      status: "completed",
+      created: 1,
+    });
+    expect(stalledRefresh.session.getState().scanning).toBe(false);
+  });
+
   it("stops sending further photos after the session is rejected with 401", async () => {
     const { session, sent } = harness({
       photos: Array.from({ length: 6 }, (_, index) => photo(`p${index}`, "K PLUS", index)),
@@ -571,7 +623,7 @@ describe("slip scan session", () => {
       expect(round).toMatchObject({ status: "completed", discovered: 5, created: 0, skipped: 1, failed: 0 });
     });
 
-    it.each([400, 413, 415])(
+    it.each([400, 403, 404, 409, 413, 415, 422])(
       "does not resend unchanged input rejected with %i, even after a long time",
       async (status) => {
         const store = new Map<string, string>();
@@ -1129,8 +1181,11 @@ describe("slip scan session", () => {
     });
 
     it.each([
+      ["500", new AutoImportRequestError({ kind: "response", code: "IMPORT_FAILED", status: 500 })],
       ["5xx", new AutoImportRequestError({ kind: "response", code: "AI_UPSTREAM_ERROR", status: 502 })],
+      ["503", new AutoImportRequestError({ kind: "response", code: "AI_UNAVAILABLE", status: 503 })],
       ["504", new AutoImportRequestError({ kind: "response", code: "IMPORT_TIMEOUT", status: 504 })],
+      ["408 from a proxy", new AutoImportRequestError({ kind: "response", code: null, status: 408 })],
       ["network failure", new AutoImportRequestError({ kind: "network" })],
       ["client timeout", new AutoImportRequestError({ kind: "timeout" })],
     ])("defers a photo after a %s and sends the same asset ID later", async (_, error) => {
@@ -1145,6 +1200,41 @@ describe("slip scan session", () => {
       run.recover();
       expect(await run.sendsAt(30 * second)).toBe(true);
       expect(run.sent.map((input) => input.assetId)).toEqual(["slip", "slip"]);
+    });
+
+    it("retries a photo that cannot be read yet up to 10 times, then waits until the photo itself changes", async () => {
+      const store = new Map<string, string>();
+      const clock = { now };
+      const unreadable: Photo = { ...photo("slip"), bytes: undefined, modificationTime: 1 };
+      const run = harness({ store, clock, random: () => 0, photos: [unreadable] });
+      const roundAt = (elapsed: number) => {
+        clock.now = now + elapsed;
+        return run.session.request({ accountId: "alice", trigger: "refresh" });
+      };
+
+      const first = await roundAt(0);
+      expect(first.failures).toEqual([
+        expect.objectContaining({ code: "UNREADABLE_IMAGE", retryAt: now + 30 * second }),
+      ]);
+      // The usual backoff still applies between attempts.
+      expect(await roundAt(10 * second)).toMatchObject({ deferred: 1, failed: 0 });
+
+      let elapsed = 0;
+      for (let attempt = 2; attempt <= 10; attempt++) {
+        elapsed += 60 * minute;
+        const round = await roundAt(elapsed);
+        expect(round.failures).toEqual([expect.objectContaining({ code: "UNREADABLE_IMAGE" })]);
+        expect(round.failures[0]!.retryAt === null).toBe(attempt === 10);
+      }
+
+      elapsed += 24 * 60 * minute;
+      expect(await roundAt(elapsed)).toMatchObject({ discovered: 1, deferred: 0, failed: 0 });
+      const reopened = harness({ store, clock, photos: [unreadable] });
+      expect(await reopened.session.request({ accountId: "alice", trigger: "home" })).toMatchObject({ failed: 0 });
+
+      run.photos[0] = { ...unreadable, bytes: PNG, modificationTime: 2 };
+      expect(await roundAt(elapsed + second)).toMatchObject({ created: 1, failed: 0 });
+      expect(run.sent.map((input) => input.assetId)).toEqual(["slip"]);
     });
 
     it("finishes a round with only deferred photos without waiting for them", async () => {
