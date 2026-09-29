@@ -49,3 +49,12 @@ Default five roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Multi-context: root `CONTEXT-MAP.md` points to one `CONTEXT.md` per workspace (`packages/*`, `apps/*`). See `docs/agents/domain.md`.
+
+## Git workflow
+
+`dev` is the default branch, where work lands. `main` holds what is ready to ship.
+
+- Build a feature or fix on a branch cut from `dev`: `feat/<feature-slug>`, named after its `.scratch/` directory, or `fix/<slug>`. Give each ticket its own commit, then open the PR into `dev`.
+- Commit a chore that leaves app behavior unchanged (docs, issue files, lint fixes, dropping an unused dependency) straight to `dev` once the Review Checklist passes. A dependency or tool upgrade goes on a `chore/<slug>` branch instead.
+- Keep pushed commits unchanged, because `Done in:` lines cite their hashes: bring `dev` into a feature branch with `git merge`, and merge PRs with a merge commit, the only kind this repo allows.
+- `main` changes only through a `dev` → `main` PR, opened when the user says `dev` is ready.
