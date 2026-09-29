@@ -3,7 +3,7 @@ import { Modal, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
 import { fromISO, longMonths, toISO } from "@/features/entries/date";
-import { styles } from "@/features/entries/entry-styles";
+import { useEntryStyles } from "@/features/entries/entry-styles";
 import { todayISO } from "@/utils/format";
 
 export function CalendarSheet({
@@ -29,6 +29,7 @@ function CalendarContents({
   onSelect: (value: string) => void;
   onClose: () => void;
 }) {
+  const styles = useEntryStyles();
   const [month, setMonth] = useState(() => {
     const date = fromISO(value);
     return new Date(date.getFullYear(), date.getMonth(), 1);

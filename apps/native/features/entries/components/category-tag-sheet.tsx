@@ -11,16 +11,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CategoryGlyph } from "@/components/ui/category-glyph";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Text, TextInput } from "@/components/ui/typography";
 import type { Category, Tag } from "@/types/finance";
-
-const colors = {
-  blue: "#0876F9",
-  ink: "#142339",
-  pale: "#EDF4FF",
-  white: "#FFFFFF",
-  muted: "#A9B9CA",
-};
 
 const suggestions = [
   "❤️ เปย์ตัวเอง",
@@ -64,6 +58,8 @@ export function CategoryTagSheet({
   onManageCategories,
   onClose,
 }: CategoryTagSheetProps) {
+  const styles = useLocalStyles();
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
 
@@ -258,7 +254,7 @@ export function CategoryTagSheet({
                     }}
                     maxLength={20}
                     placeholder="ใส่ชื่อแท็กไม่เกิน 20 ตัวอักษร"
-                    placeholderTextColor={colors.muted}
+                    placeholderTextColor={theme.muted}
                     returnKeyType="done"
                     onSubmitEditing={() => {
                       void saveTag();
@@ -310,153 +306,160 @@ export function CategoryTagSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  modalRoot: { flex: 1, justifyContent: "flex-end" },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0, 0, 0, .08)",
-  },
-  sheet: {
-    width: "100%",
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    overflow: "hidden",
-  },
-  header: {
-    height: 56,
-    backgroundColor: colors.pale,
-    paddingLeft: 16,
-    paddingRight: 7,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerTitle: { color: "#101D2C", fontSize: 19, fontWeight: "900" },
-  closeButton: { width: 43, height: 48, alignItems: "center", justifyContent: "center" },
-  closeText: { color: "#4D535F", fontSize: 41, lineHeight: 45, fontWeight: "300" },
-  tagActions: {
-    height: 68,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 16,
-  },
-  hashBadge: {
-    width: 31,
-    height: 31,
-    backgroundColor: "#DDF0FF",
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hashText: { color: colors.blue, fontSize: 27, lineHeight: 31, fontWeight: "800" },
-  addTagButton: {
-    borderWidth: 1.2,
-    borderColor: colors.blue,
-    borderRadius: 25,
-    minHeight: 34,
-    paddingHorizontal: 12,
-    justifyContent: "center",
-  },
-  addTagText: { color: colors.blue, fontSize: 16, fontWeight: "700" },
-  savedTags: { flexGrow: 0, maxHeight: 48 },
-  savedTagsInner: { gap: 7, paddingHorizontal: 16, paddingBottom: 8 },
-  tagChip: {
-    minHeight: 34,
-    paddingHorizontal: 12,
-    borderWidth: 1.2,
-    borderColor: colors.blue,
-    borderRadius: 18,
-    justifyContent: "center",
-  },
-  tagChipSelected: { backgroundColor: colors.blue },
-  tagChipText: { color: colors.blue, fontSize: 13, fontWeight: "700" },
-  tagChipTextSelected: { color: colors.white },
-  categoryScroll: { flex: 1 },
-  categoryScrollContent: { paddingTop: 10, paddingBottom: 18 },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
-  categoryCell: {
-    width: "25%",
-    minHeight: 114,
-    alignItems: "center",
-    paddingHorizontal: 3,
-    paddingTop: 1,
-  },
-  iconBadge: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 2px 11px rgba(15, 30, 45, .15)",
-  },
-  selectedBadge: { borderWidth: 2, borderColor: colors.blue },
-  categoryName: {
-    color: colors.ink,
-    fontSize: 14,
-    lineHeight: 19,
-    textAlign: "center",
-    paddingTop: 8,
-  },
-  manageButton: {
-    alignSelf: "center",
-    minHeight: 55,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    marginTop: 14,
-  },
-  manageIcon: { color: colors.blue, fontSize: 28, lineHeight: 32 },
-  manageText: { color: colors.blue, fontSize: 17, fontWeight: "800" },
-  addTagBody: { flex: 1, paddingTop: 14 },
-  inputRow: {
-    height: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-  },
-  backButton: { width: 28, height: 46, justifyContent: "center" },
-  backText: { color: colors.blue, fontSize: 36, lineHeight: 42, fontWeight: "300" },
-  tagInputWrap: {
-    flex: 1,
-    minWidth: 0,
-    height: 42,
-    borderRadius: 22,
-    backgroundColor: "#F4F8FF",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 11,
-  },
-  inputHash: { color: colors.muted, fontSize: 21, paddingRight: 8 },
-  tagInput: { flex: 1, minWidth: 0, color: colors.ink, fontSize: 16, paddingVertical: 0 },
-  confirmTag: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmTagText: { color: colors.white, fontSize: 27, lineHeight: 28, fontWeight: "300" },
-  suggestionScroll: { flexGrow: 0, marginTop: 14, maxHeight: 38 },
-  suggestionContent: { alignItems: "center", gap: 8, paddingHorizontal: 20 },
-  suggestionChip: {
-    borderWidth: 1.2,
-    borderColor: colors.blue,
-    borderRadius: 19,
-    minHeight: 32,
-    paddingHorizontal: 10,
-    justifyContent: "center",
-  },
-  suggestionText: { color: colors.blue, fontSize: 14, fontWeight: "700" },
-  errorText: { color: "#C83434", paddingTop: 12, paddingHorizontal: 18, fontSize: 13 },
-  disabled: { opacity: 0.5 },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    modalRoot: { flex: 1, justifyContent: "flex-end" },
+    backdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(0, 0, 0, .08)",
+    },
+    sheet: {
+      width: "100%",
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: 10,
+      borderTopRightRadius: 10,
+      overflow: "hidden",
+    },
+    header: {
+      height: 56,
+      backgroundColor: theme.raised,
+      paddingLeft: 16,
+      paddingRight: 7,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    headerTitle: { color: theme.text, fontSize: 19, fontWeight: "900" },
+    closeButton: { width: 43, height: 48, alignItems: "center", justifyContent: "center" },
+    closeText: { color: theme.muted, fontSize: 41, lineHeight: 45, fontWeight: "300" },
+    tagActions: {
+      height: 68,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 16,
+      paddingHorizontal: 16,
+    },
+    hashBadge: {
+      width: 31,
+      height: 31,
+      backgroundColor: theme.raised,
+      borderRadius: 11,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    hashText: { color: theme.accentText, fontSize: 27, lineHeight: 31, fontWeight: "800" },
+    addTagButton: {
+      borderWidth: 1.2,
+      borderColor: theme.accent,
+      borderRadius: 25,
+      minHeight: 34,
+      paddingHorizontal: 12,
+      justifyContent: "center",
+    },
+    addTagText: { color: theme.accentText, fontSize: 16, fontWeight: "700" },
+    savedTags: { flexGrow: 0, maxHeight: 48 },
+    savedTagsInner: { gap: 7, paddingHorizontal: 16, paddingBottom: 8 },
+    tagChip: {
+      minHeight: 34,
+      paddingHorizontal: 12,
+      borderWidth: 1.2,
+      borderColor: theme.accent,
+      borderRadius: 18,
+      justifyContent: "center",
+    },
+    tagChipSelected: { backgroundColor: theme.accent },
+    tagChipText: { color: theme.accentText, fontSize: 13, fontWeight: "700" },
+    tagChipTextSelected: { color: theme.onAccent },
+    categoryScroll: { flex: 1 },
+    categoryScrollContent: { paddingTop: 10, paddingBottom: 18 },
+    grid: { flexDirection: "row", flexWrap: "wrap" },
+    categoryCell: {
+      width: "25%",
+      minHeight: 114,
+      alignItems: "center",
+      paddingHorizontal: 3,
+      paddingTop: 1,
+    },
+    iconBadge: {
+      width: 54,
+      height: 54,
+      borderRadius: 27,
+      backgroundColor: theme.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 2px 11px rgba(45, 45, 43, .15)",
+    },
+    selectedBadge: { borderWidth: 2, borderColor: theme.accent },
+    categoryName: {
+      color: theme.text,
+      fontSize: 14,
+      lineHeight: 19,
+      textAlign: "center",
+      paddingTop: 8,
+    },
+    manageButton: {
+      alignSelf: "center",
+      minHeight: 55,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 16,
+      marginTop: 14,
+    },
+    manageIcon: { color: theme.accentText, fontSize: 28, lineHeight: 32 },
+    manageText: { color: theme.accentText, fontSize: 17, fontWeight: "800" },
+    addTagBody: { flex: 1, paddingTop: 14 },
+    inputRow: {
+      height: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    backButton: { width: 28, height: 46, justifyContent: "center" },
+    backText: { color: theme.accentText, fontSize: 36, lineHeight: 42, fontWeight: "300" },
+    tagInputWrap: {
+      flex: 1,
+      minWidth: 0,
+      height: 42,
+      borderRadius: 22,
+      backgroundColor: theme.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 11,
+    },
+    inputHash: { color: theme.muted, fontSize: 21, paddingRight: 8 },
+    tagInput: { flex: 1, minWidth: 0, color: theme.text, fontSize: 16, paddingVertical: 0 },
+    confirmTag: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    confirmTagText: { color: theme.onAccent, fontSize: 27, lineHeight: 28, fontWeight: "300" },
+    suggestionScroll: { flexGrow: 0, marginTop: 14, maxHeight: 38 },
+    suggestionContent: { alignItems: "center", gap: 8, paddingHorizontal: 20 },
+    suggestionChip: {
+      borderWidth: 1.2,
+      borderColor: theme.accent,
+      borderRadius: 19,
+      minHeight: 32,
+      paddingHorizontal: 10,
+      justifyContent: "center",
+    },
+    suggestionText: { color: theme.accentText, fontSize: 14, fontWeight: "700" },
+    errorText: { color: theme.dangerText, paddingTop: 12, paddingHorizontal: 18, fontSize: 13 },
+    disabled: { opacity: 0.5 },
+  });
+}
+
+function useLocalStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

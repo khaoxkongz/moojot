@@ -9,9 +9,10 @@ import { Text, TextInput } from "@/components/ui/typography";
 import { Footer, Header, Page } from "@/features/onboarding/components/onboarding-controls";
 import { formatBirthDate } from "@/features/onboarding/date";
 import { useOnboardingFlow } from "@/features/onboarding/flow-context";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingBirthdayRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { birthDate, setBirthDate } = useOnboardingFlow();
   const [birthDraft, setBirthDraft] = useState(new Date(2000, 0, 1));
@@ -51,11 +52,11 @@ export default function OnboardingBirthdayRoute() {
   }
 
   return (
-    <Page backgroundColor={color.navy}>
+    <Page backgroundColor={theme.background}>
       <Header title="ข้อมูลส่วนตัว" onBack={() => router.back()} />
       <View style={{ flex: 1, paddingHorizontal: 18, paddingTop: 30, gap: 22 }}>
-        <Text style={{ color: color.white, fontSize: 23, fontWeight: "700" }}>พี่มนุษย์เกิดวันไหนนะ?</Text>
-        <Text style={{ color: color.muted, fontSize: 17, lineHeight: 27 }}>บอกวันเกิดเพื่อเก็บไว้ในโปรไฟล์ ข้ามขั้นตอนนี้ได้</Text>
+        <Text style={{ color: theme.text, fontSize: 23, fontWeight: "700" }}>พี่มนุษย์เกิดวันไหนนะ?</Text>
+        <Text style={{ color: theme.muted, fontSize: 17, lineHeight: 27 }}>บอกวันเกิดเพื่อเก็บไว้ในโปรไฟล์ ข้ามขั้นตอนนี้ได้</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="เลือกวันเกิด"
@@ -64,7 +65,7 @@ export default function OnboardingBirthdayRoute() {
             setBirthPickerOpen(true);
           }}
           style={{
-            backgroundColor: color.dark,
+            backgroundColor: theme.surface,
             borderRadius: 12,
             minHeight: 73,
             flexDirection: "row",
@@ -76,11 +77,11 @@ export default function OnboardingBirthdayRoute() {
           <MaterialCommunityIcons
             name="calendar-month-outline"
             size={28}
-            color={birthDate ? color.white : color.muted}
+            color={birthDate ? theme.text : theme.muted}
           />
           <Text
             style={{
-              color: birthDate ? color.white : color.muted,
+              color: birthDate ? theme.text : theme.muted,
               fontSize: 19,
               fontWeight: "700",
             }}
@@ -100,7 +101,7 @@ export default function OnboardingBirthdayRoute() {
               onPress={() => router.push("/onboarding/greeting")}
               style={{ alignItems: "center", padding: 5 }}
             >
-              <Text style={{ color: color.muted, fontSize: 15 }}>ข้ามก่อน</Text>
+              <Text style={{ color: theme.muted, fontSize: 15 }}>ข้ามก่อน</Text>
             </Pressable>
           ) : undefined
         }
@@ -119,10 +120,10 @@ export default function OnboardingBirthdayRoute() {
             paddingHorizontal: 16,
           }}
         >
-          <View style={{ backgroundColor: color.slate, borderRadius: 22, overflow: "hidden" }}>
+          <View style={{ backgroundColor: theme.raised, borderRadius: 22, overflow: "hidden" }}>
             <View
               style={{
-                backgroundColor: color.yellow,
+                backgroundColor: theme.accent,
                 alignItems: "center",
                 paddingTop: 15,
                 paddingBottom: 2,
@@ -141,7 +142,7 @@ export default function OnboardingBirthdayRoute() {
             >
               <Text
                 style={{
-                  color: color.white,
+                  color: theme.text,
                   fontSize: 22,
                   fontWeight: "800",
                   textAlign: "center",
@@ -151,7 +152,7 @@ export default function OnboardingBirthdayRoute() {
               </Text>
               <Text
                 style={{
-                  color: color.yellow,
+                  color: theme.accentText,
                   fontSize: 19,
                   fontWeight: "800",
                   textAlign: "center",
@@ -159,7 +160,7 @@ export default function OnboardingBirthdayRoute() {
               >
                 วันเกิด: {birthDate ? formatBirthDate(birthDate) : ""}
               </Text>
-              <Text style={{ color: color.white, fontSize: 16, lineHeight: 24, textAlign: "center" }}>
+              <Text style={{ color: theme.text, fontSize: 16, lineHeight: 24, textAlign: "center" }}>
                 ถ้าวันเกิดไม่ถูกต้อง ย้อนกลับไปเลือกใหม่ได้
               </Text>
               <View style={{ flexDirection: "row", width: "100%", gap: 10, marginTop: 15 }}>
@@ -170,12 +171,12 @@ export default function OnboardingBirthdayRoute() {
                     flex: 1,
                     borderRadius: 999,
                     borderWidth: 1.5,
-                    borderColor: "#5DB0FF",
+                    borderColor: theme.accentText,
                     padding: 12,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: "#5DB0FF", fontSize: 17, fontWeight: "800" }}>ย้อนกลับ</Text>
+                  <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "800" }}>ย้อนกลับ</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -186,12 +187,12 @@ export default function OnboardingBirthdayRoute() {
                   style={{
                     flex: 1,
                     borderRadius: 999,
-                    backgroundColor: color.blue,
+                    backgroundColor: theme.accent,
                     padding: 12,
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ color: color.white, fontSize: 17, fontWeight: "800" }}>ยืนยัน</Text>
+                  <Text style={{ color: theme.onAccent, fontSize: 17, fontWeight: "800" }}>ยืนยัน</Text>
                 </Pressable>
               </View>
             </View>
@@ -208,8 +209,8 @@ export default function OnboardingBirthdayRoute() {
               paddingHorizontal: 16,
             }}
           >
-            <View style={{ backgroundColor: color.slate, borderRadius: 20, padding: 20, gap: 17 }}>
-              <Text style={{ color: color.white, fontSize: 20, fontWeight: "800" }}>ใส่วันเกิด</Text>
+            <View style={{ backgroundColor: theme.raised, borderRadius: 20, padding: 20, gap: 17 }}>
+              <Text style={{ color: theme.text, fontSize: 20, fontWeight: "800" }}>ใส่วันเกิด</Text>
               <DateTimePicker
                 mode="date"
                 display="spinner"
@@ -223,7 +224,7 @@ export default function OnboardingBirthdayRoute() {
               />
               <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 20 }}>
                 <Pressable accessibilityRole="button" onPress={() => setBirthPickerOpen(false)}>
-                  <Text style={{ color: "#5DB0FF", fontSize: 17, fontWeight: "700" }}>ยกเลิก</Text>
+                  <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "700" }}>ยกเลิก</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -232,7 +233,7 @@ export default function OnboardingBirthdayRoute() {
                     setBirthPickerOpen(false);
                   }}
                 >
-                  <Text style={{ color: "#5DB0FF", fontSize: 17, fontWeight: "700" }}>เลือก</Text>
+                  <Text style={{ color: theme.accentText, fontSize: 17, fontWeight: "700" }}>เลือก</Text>
                 </Pressable>
               </View>
             </View>
@@ -262,34 +263,34 @@ export default function OnboardingBirthdayRoute() {
               padding: 20,
             }}
           >
-            <View style={{ backgroundColor: color.slate, borderRadius: 20, padding: 20, gap: 16 }}>
-              <Text style={{ color: color.white, fontSize: 20, fontWeight: "800" }}>ใส่วันเกิด</Text>
+            <View style={{ backgroundColor: theme.raised, borderRadius: 20, padding: 20, gap: 16 }}>
+              <Text style={{ color: theme.text, fontSize: 20, fontWeight: "800" }}>ใส่วันเกิด</Text>
               <TextInput
                 accessibilityLabel="วันเกิด วัน เดือน ปี ค.ศ."
                 placeholder="วว/ดด/ปปปป (ค.ศ.)"
-                placeholderTextColor={color.muted}
+                placeholderTextColor={theme.muted}
                 value={webBirthDraft}
                 onChangeText={setWebBirthDraft}
                 keyboardType="numbers-and-punctuation"
                 style={{
-                  backgroundColor: color.dark,
-                  color: color.white,
+                  backgroundColor: theme.surface,
+                  color: theme.text,
                   minHeight: 50,
                   paddingHorizontal: 15,
                   borderRadius: 10,
                 }}
               />
               {error ? (
-                <Text accessibilityRole="alert" style={{ color: "#FFC4C4" }}>
+                <Text accessibilityRole="alert" style={{ color: theme.dangerText }}>
                   {error}
                 </Text>
               ) : null}
               <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 20 }}>
                 <Pressable accessibilityRole="button" onPress={() => setBirthPickerOpen(false)}>
-                  <Text style={{ color: "#5DB0FF" }}>ยกเลิก</Text>
+                  <Text style={{ color: theme.accentText }}>ยกเลิก</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={saveWebBirthDraft}>
-                  <Text style={{ color: "#5DB0FF" }}>เลือก</Text>
+                  <Text style={{ color: theme.accentText }}>เลือก</Text>
                 </Pressable>
               </View>
             </View>

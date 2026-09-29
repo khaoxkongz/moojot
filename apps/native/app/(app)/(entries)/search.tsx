@@ -6,6 +6,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { CategoryGlyph } from "@/components/ui/category-glyph";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text, TextInput } from "@/components/ui/typography";
@@ -14,20 +16,6 @@ import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
 import type { Category, FinanceTransaction } from "@/types/finance";
 import { formatBaht, kindLabel, thaiDate, todayISO } from "@/utils/format";
-
-const color = {
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#1D374F",
-  yellow: "#FFDA60",
-  paleYellow: "#FFEB9E",
-  blue: "#1167DA",
-  lightBlue: "#4CA6FF",
-  muted: "#AAB9CA",
-  white: "#FFFFFF",
-  ink: "#172333",
-  pale: "#F5F9FF",
-};
 
 function dateISO(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -51,6 +39,7 @@ function closeSearch() {
 }
 
 function HighlightedText({ value, query }: { value: string; query: string }) {
+  const styles = useSearchStyles();
   const term = query.trim();
   if (!term) return <Text>{value}</Text>;
   const lower = value.toLocaleLowerCase();
@@ -73,6 +62,7 @@ function HighlightedText({ value, query }: { value: string; query: string }) {
 }
 
 function MatchingDetail({ item, query }: { item: FinanceTransaction; query: string }) {
+  const styles = useSearchStyles();
   const term = query.toLocaleLowerCase();
   const detail =
     [item.title, item.note, item.bank, item.cardName, item.cardLast4].find((value) =>
@@ -86,6 +76,7 @@ function MatchingDetail({ item, query }: { item: FinanceTransaction; query: stri
 }
 
 function TransferIcon() {
+  const theme = useAppTheme();
   return (
     <Svg
       width={34}
@@ -97,7 +88,7 @@ function TransferIcon() {
       <Path
         d="M3 12h25l-6-6M31 22H6l6 6"
         fill="none"
-        stroke={color.yellow}
+        stroke={theme.accentText}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -107,6 +98,8 @@ function TransferIcon() {
 }
 
 function ResultIcon({ item, category }: { item: FinanceTransaction; category?: Category }) {
+  const styles = useSearchStyles();
+  const theme = useAppTheme();
   if (item.kind === "transfer")
     return (
       <View style={styles.resultGlyph}>
@@ -125,7 +118,7 @@ function ResultIcon({ item, category }: { item: FinanceTransaction; category?: C
     );
   return (
     <View style={styles.resultIconFallback}>
-      <HomeIcon name="edit" size={22} color={color.white} />
+      <HomeIcon name="edit" size={22} color={theme.text} />
     </View>
   );
 }
@@ -141,6 +134,8 @@ function ResultRow({
   query: string;
   onOpen: () => void;
 }) {
+  const styles = useSearchStyles();
+  const theme = useAppTheme();
   const amount = formatBaht(item.amountSatang, item.amountSatang % 100 === 0 ? 0 : 2);
   return (
     <Pressable
@@ -156,7 +151,7 @@ function ResultRow({
         </Text>
         <MatchingDetail item={item} query={query} />
       </View>
-      <Text selectable style={[styles.resultAmount, item.kind === "income" && { color: "#54D990" }]}>
+      <Text selectable style={[styles.resultAmount, item.kind === "income" && { color: theme.successText }]}>
         {item.kind === "income" ? "+" : ""}
         {amount}
       </Text>
@@ -177,11 +172,13 @@ function ResultDay({
   query: string;
   onOpen: (id: string) => void;
 }) {
+  const styles = useSearchStyles();
+  const theme = useAppTheme();
   const today = date === todayISO();
   return (
     <View style={styles.dayGroup}>
       <View style={styles.dayRail}>
-        <View style={[styles.dayAccent, { backgroundColor: today ? color.yellow : color.white }]} />
+        <View style={[styles.dayAccent, { backgroundColor: today ? theme.accent : theme.text }]} />
         <Text style={[styles.dayName, today && styles.dayToday]}>
           {today ? "วันนี้" : thaiDate(date, { weekday: "short" })}
         </Text>
@@ -207,6 +204,8 @@ function ResultDay({
 }
 
 export default function SearchScreen() {
+  const styles = useSearchStyles();
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
 
@@ -285,19 +284,19 @@ export default function SearchScreen() {
             onPress={closeSearch}
             style={styles.backButton}
           >
-            <HomeIcon name="chevronLeft" size={30} color={color.ink} strokeWidth={2.5} />
+            <HomeIcon name="chevronLeft" size={30} color={theme.onAccent} strokeWidth={2.5} />
           </Pressable>
           <View style={styles.searchField}>
-            <HomeIcon name="search" size={25} color="#778394" strokeWidth={2.1} />
+            <HomeIcon name="search" size={25} color={theme.muted} strokeWidth={2.1} />
             <TextInput
               accessibilityLabel="ค้นหารายการ"
               value={query}
               onChangeText={changeQuery}
               onSubmitEditing={remember}
               placeholder="ค้นหารายการ"
-              placeholderTextColor="#768295"
+              placeholderTextColor={theme.muted}
               returnKeyType="search"
-              selectionColor={color.blue}
+              selectionColor={theme.accentText}
               style={styles.input}
             />
             {query ? (
@@ -323,10 +322,10 @@ export default function SearchScreen() {
             onPress={() => changeOffset(-1)}
             style={styles.periodArrow}
           >
-            <HomeIcon name="chevronLeft" size={29} color={color.blue} strokeWidth={2.4} />
+            <HomeIcon name="chevronLeft" size={29} color={theme.accentText} strokeWidth={2.4} />
           </Pressable>
           <View style={styles.periodTitle}>
-            <HomeIcon name="calendar" size={22} color={color.blue} strokeWidth={2} />
+            <HomeIcon name="calendar" size={22} color={theme.accentText} strokeWidth={2} />
             <Text numberOfLines={1} style={styles.periodText}>
               {period.label}
             </Text>
@@ -338,7 +337,7 @@ export default function SearchScreen() {
             onPress={() => changeOffset(1)}
             style={[styles.periodArrow, offset >= 0 && styles.periodArrowDisabled]}
           >
-            <HomeIcon name="chevronRight" size={29} color={color.blue} strokeWidth={2.4} />
+            <HomeIcon name="chevronRight" size={29} color={theme.accentText} strokeWidth={2.4} />
           </Pressable>
         </View>
       </View>
@@ -388,9 +387,9 @@ export default function SearchScreen() {
             <View style={styles.emptyState}>
               <View style={styles.emptyArtFrame}>
                 <Image
-                  source={require("../../../assets/generated/search-empty-cat.png")}
+                  source={require("../../../assets/generated/search-empty-pig.png")}
                   contentFit="contain"
-                  accessibilityLabel="น้องแมวถือแว่นขยายกับปฏิทิน"
+                  accessibilityLabel="น้องหมูถือแว่นขยายกับปฏิทิน"
                   style={styles.emptyArt}
                 />
               </View>
@@ -398,7 +397,7 @@ export default function SearchScreen() {
             </View>
           )
         ) : loading ? (
-          <ActivityIndicator color={color.lightBlue} style={styles.loading} />
+          <ActivityIndicator color={theme.accentText} style={styles.loading} />
         ) : error && resultsQuery.data === undefined ? (
           <Text accessibilityRole="alert" style={styles.error}>
             {error}
@@ -425,9 +424,9 @@ export default function SearchScreen() {
           <View style={styles.emptyState}>
             <View style={styles.emptyArtFrame}>
               <Image
-                source={require("../../../assets/generated/search-empty-cat.png")}
+                source={require("../../../assets/generated/search-empty-pig.png")}
                 contentFit="contain"
-                accessibilityLabel="น้องแมวถือแว่นขยายกับปฏิทิน"
+                accessibilityLabel="น้องหมูถือแว่นขยายกับปฏิทิน"
                 style={styles.emptyArt}
               />
             </View>
@@ -439,143 +438,150 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.navy },
-  header: { height: 104, backgroundColor: color.yellow, justifyContent: "flex-end" },
-  headerInner: {
-    width: "100%",
-    maxWidth: 680,
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingBottom: 5,
-    paddingRight: 24,
-    gap: 0,
-  },
-  backButton: { width: 56, height: 51, alignItems: "center", justifyContent: "center" },
-  searchField: {
-    flex: 1,
-    height: 49,
-    borderRadius: 30,
-    backgroundColor: color.paleYellow,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 19,
-    paddingRight: 13,
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    height: "100%",
-    minWidth: 0,
-    color: color.ink,
-    fontSize: 19,
-    lineHeight: 25,
-    paddingVertical: 0,
-    outlineStyle: "solid",
-    outlineColor: "transparent",
-    outlineWidth: 0,
-  },
-  clearButton: { width: 31, height: 39, alignItems: "center", justifyContent: "center" },
-  clearText: { color: color.ink, fontSize: 35, lineHeight: 40, fontWeight: "300" },
-  periodBar: {
-    height: 60,
-    backgroundColor: color.pale,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    justifyContent: "center",
-  },
-  periodInner: {
-    width: "100%",
-    maxWidth: 680,
-    alignSelf: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  periodArrow: { width: 58, height: 54, alignItems: "center", justifyContent: "center" },
-  periodArrowDisabled: { opacity: 0.65 },
-  periodTitle: {
-    minWidth: 170,
-    maxWidth: 260,
-    flexDirection: "row",
-    gap: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  periodText: { color: color.blue, fontSize: 19, fontWeight: "800" },
-  content: { flexGrow: 1, width: "100%", maxWidth: 680, alignSelf: "center" },
-  emptyState: { alignItems: "center", paddingTop: 84, paddingHorizontal: 22 },
-  emptyArtFrame: { width: 200, height: 90, overflow: "hidden" },
-  emptyArt: { position: "absolute", width: 240, height: 240, left: -20, top: -87 },
-  emptyText: {
-    color: color.muted,
-    fontSize: 19,
-    lineHeight: 28,
-    textAlign: "center",
-    marginTop: 16,
-  },
-  loading: { marginTop: 80 },
-  error: { color: "#FFB5B5", fontSize: 15, margin: 22, textAlign: "center" },
-  history: { paddingTop: 0 },
-  historyTitle: {
-    color: color.white,
-    fontSize: 20,
-    fontWeight: "800",
-    height: 58,
-    textAlignVertical: "center",
-    paddingHorizontal: 17,
-    paddingTop: 15,
-  },
-  historyRow: {
-    minHeight: 64,
-    backgroundColor: color.dark,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 17,
-    paddingRight: 13,
-  },
-  historyTerm: { flex: 1, minHeight: 64, justifyContent: "center" },
-  historyText: { color: color.muted, fontSize: 19 },
-  historyRemove: { width: 41, height: 50, alignItems: "center", justifyContent: "center" },
-  historyRemoveText: { color: color.muted, fontSize: 35, lineHeight: 41, fontWeight: "300" },
-  results: { paddingTop: 5 },
-  dayGroup: { flexDirection: "row", marginBottom: 9, backgroundColor: color.navy },
-  dayRail: { width: 59, paddingTop: 17, alignItems: "center", position: "relative" },
-  dayAccent: { position: "absolute", top: 0, left: 0, width: 4, height: 76 },
-  dayName: { color: color.white, fontSize: 15, lineHeight: 19 },
-  dayToday: { color: color.yellow },
-  dayNumber: { color: color.white, fontSize: 24, lineHeight: 28, fontWeight: "800" },
-  dayMonth: { color: color.white, fontSize: 12, lineHeight: 17, textAlign: "center" },
-  dayRows: { flex: 1, minWidth: 0 },
-  dayTop: { height: 75, backgroundColor: color.slate },
-  resultRow: {
-    minHeight: 87,
-    backgroundColor: color.dark,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 18,
-    paddingRight: 15,
-    gap: 11,
-  },
-  resultGlyph: { width: 39, height: 42, alignItems: "center", justifyContent: "center" },
-  customCategoryIcon: { fontSize: 28 },
-  resultIconFallback: {
-    width: 39,
-    height: 39,
-    borderRadius: 20,
-    backgroundColor: color.slate,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resultCopy: { flex: 1, minWidth: 0, justifyContent: "center", gap: 2 },
-  resultTitle: { color: color.white, fontSize: 17, fontWeight: "800" },
-  resultDetail: { color: color.white, fontSize: 15, lineHeight: 22 },
-  highlight: { color: color.white, backgroundColor: color.blue },
-  resultAmount: {
-    color: color.white,
-    fontSize: 17,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
-  },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    header: { height: 104, backgroundColor: theme.accent, justifyContent: "flex-end" },
+    headerInner: {
+      width: "100%",
+      maxWidth: 680,
+      alignSelf: "center",
+      flexDirection: "row",
+      alignItems: "center",
+      paddingBottom: 5,
+      paddingRight: 24,
+      gap: 0,
+    },
+    backButton: { width: 56, height: 51, alignItems: "center", justifyContent: "center" },
+    searchField: {
+      flex: 1,
+      height: 49,
+      borderRadius: 30,
+      backgroundColor: theme.raised,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: 19,
+      paddingRight: 13,
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      height: "100%",
+      minWidth: 0,
+      color: theme.text,
+      fontSize: 19,
+      lineHeight: 25,
+      paddingVertical: 0,
+      outlineStyle: "solid",
+      outlineColor: "transparent",
+      outlineWidth: 0,
+    },
+    clearButton: { width: 31, height: 39, alignItems: "center", justifyContent: "center" },
+    clearText: { color: theme.text, fontSize: 35, lineHeight: 40, fontWeight: "300" },
+    periodBar: {
+      height: 60,
+      backgroundColor: theme.surface,
+      borderBottomLeftRadius: 8,
+      borderBottomRightRadius: 8,
+      justifyContent: "center",
+    },
+    periodInner: {
+      width: "100%",
+      maxWidth: 680,
+      alignSelf: "center",
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    periodArrow: { width: 58, height: 54, alignItems: "center", justifyContent: "center" },
+    periodArrowDisabled: { opacity: 0.65 },
+    periodTitle: {
+      minWidth: 170,
+      maxWidth: 260,
+      flexDirection: "row",
+      gap: 7,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    periodText: { color: theme.accentText, fontSize: 19, fontWeight: "800" },
+    content: { flexGrow: 1, width: "100%", maxWidth: 680, alignSelf: "center" },
+    emptyState: { alignItems: "center", paddingTop: 84, paddingHorizontal: 22 },
+    emptyArtFrame: { width: 220, height: 220 },
+    emptyArt: { width: 220, height: 220 },
+    emptyText: {
+      color: theme.muted,
+      fontSize: 19,
+      lineHeight: 28,
+      textAlign: "center",
+      marginTop: 16,
+    },
+    loading: { marginTop: 80 },
+    error: { color: theme.dangerText, fontSize: 15, margin: 22, textAlign: "center" },
+    history: { paddingTop: 0 },
+    historyTitle: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: "800",
+      height: 58,
+      textAlignVertical: "center",
+      paddingHorizontal: 17,
+      paddingTop: 15,
+    },
+    historyRow: {
+      minHeight: 64,
+      backgroundColor: theme.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: 17,
+      paddingRight: 13,
+    },
+    historyTerm: { flex: 1, minHeight: 64, justifyContent: "center" },
+    historyText: { color: theme.muted, fontSize: 19 },
+    historyRemove: { width: 41, height: 50, alignItems: "center", justifyContent: "center" },
+    historyRemoveText: { color: theme.muted, fontSize: 35, lineHeight: 41, fontWeight: "300" },
+    results: { paddingTop: 5 },
+    dayGroup: { flexDirection: "row", marginBottom: 9, backgroundColor: theme.background },
+    dayRail: { width: 59, paddingTop: 17, alignItems: "center", position: "relative" },
+    dayAccent: { position: "absolute", top: 0, left: 0, width: 4, height: 76 },
+    dayName: { color: theme.text, fontSize: 15, lineHeight: 19 },
+    dayToday: { color: theme.accentText },
+    dayNumber: { color: theme.text, fontSize: 24, lineHeight: 28, fontWeight: "800" },
+    dayMonth: { color: theme.text, fontSize: 12, lineHeight: 17, textAlign: "center" },
+    dayRows: { flex: 1, minWidth: 0 },
+    dayTop: { height: 75, backgroundColor: theme.raised },
+    resultRow: {
+      minHeight: 87,
+      backgroundColor: theme.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: 18,
+      paddingRight: 15,
+      gap: 11,
+    },
+    resultGlyph: { width: 39, height: 42, alignItems: "center", justifyContent: "center" },
+    customCategoryIcon: { fontSize: 28 },
+    resultIconFallback: {
+      width: 39,
+      height: 39,
+      borderRadius: 20,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    resultCopy: { flex: 1, minWidth: 0, justifyContent: "center", gap: 2 },
+    resultTitle: { color: theme.text, fontSize: 17, fontWeight: "800" },
+    resultDetail: { color: theme.text, fontSize: 15, lineHeight: 22 },
+    highlight: { color: theme.onAccent, backgroundColor: theme.accent },
+    resultAmount: {
+      color: theme.text,
+      fontSize: 17,
+      fontWeight: "800",
+      fontVariant: ["tabular-nums"],
+    },
+  });
+}
+
+function useSearchStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

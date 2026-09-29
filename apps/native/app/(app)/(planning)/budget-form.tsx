@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { Button, Card, Field, Pill, SectionHeading } from "@/components/ui/moo-ui";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningMutationOptions } from "@/features/planning/mutation-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
@@ -48,6 +48,7 @@ function confirmDelete(onConfirm: () => void) {
 }
 
 export default function BudgetFormScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
 
   const params = useLocalSearchParams<{
@@ -219,18 +220,18 @@ export default function BudgetFormScreen() {
       <View style={{ width: "100%", maxWidth: 620, gap: 18 }}>
         <View style={{ alignItems: "center", gap: 5, paddingVertical: 7 }}>
           <Text style={{ fontSize: 42 }}>🎯</Text>
-          <Text style={{ color: palette.ink, fontSize: 20, fontWeight: "900" }}>
+          <Text style={{ color: theme.text, fontSize: 20, fontWeight: "900" }}>
             {existing ? "แก้ไขงบประมาณ" : "ตั้งงบไว้ให้หมูช่วยดู"}
           </Text>
-          <Text style={{ color: palette.muted, fontSize: 13, textAlign: "center" }}>
+          <Text style={{ color: theme.muted, fontSize: 13, textAlign: "center" }}>
             ใกล้ถึงงบเมื่อไร หมูจะบอกให้รู้ในหน้าวางแผน
           </Text>
         </View>
         {loading ? (
-          <ActivityIndicator color={palette.pink} style={{ paddingVertical: 35 }} />
+          <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 35 }} />
         ) : loadError ? (
           <Card>
-            <Text selectable style={{ color: palette.red }}>
+            <Text selectable style={{ color: theme.dangerText }}>
               {loadError}
             </Text>
             <Button
@@ -252,13 +253,13 @@ export default function BudgetFormScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 12,
-                  backgroundColor: palette.cream,
+                  backgroundColor: theme.raised,
                 }}
               >
                 <Text style={{ fontSize: 28 }}>🗓️</Text>
                 <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={{ color: palette.ink, fontSize: 14, fontWeight: "800" }}>รอบเดือนที่ตั้งงบ</Text>
-                  <Text selectable style={{ color: palette.muted, fontSize: 13 }}>
+                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "800" }}>รอบเดือนที่ตั้งงบ</Text>
+                  <Text selectable style={{ color: theme.muted, fontSize: 13 }}>
                     {thaiDate(bounds.from)} – {thaiDate(bounds.to)}
                   </Text>
                 </View>
@@ -335,7 +336,7 @@ export default function BudgetFormScreen() {
               </form.Field>
             </Card>
             {error || queryError || missingBudget ? (
-              <Text selectable style={{ color: palette.red, textAlign: "center", fontSize: 13 }}>
+              <Text selectable style={{ color: theme.dangerText, textAlign: "center", fontSize: 13 }}>
                 {error ?? queryError ?? "ไม่พบงบประมาณนี้ กรุณากลับไปเลือกจากหน้าวางแผนอีกครั้ง"}
               </Text>
             ) : null}
@@ -346,7 +347,7 @@ export default function BudgetFormScreen() {
             />
             {existing ? (
               <Pressable onPress={remove} disabled={saving} style={{ alignItems: "center", padding: 14 }}>
-                <Text style={{ color: palette.red, fontWeight: "800" }}>ลบงบประมาณนี้</Text>
+                <Text style={{ color: theme.dangerText, fontWeight: "800" }}>ลบงบประมาณนี้</Text>
               </Pressable>
             ) : null}
           </>

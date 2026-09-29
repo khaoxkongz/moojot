@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 
 const CARD_WIDTH = 82;
@@ -10,6 +12,8 @@ interface FlowCardProps {
 }
 
 function FlowCard({ initialPhase }: FlowCardProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [anim] = useState(() => new Animated.Value(initialPhase));
 
   useEffect(() => {
@@ -93,6 +97,8 @@ function FlowCard({ initialPhase }: FlowCardProps) {
 }
 
 export function SlipFlowCards() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   return (
     <View style={styles.wrapper}>
       {/* 3 cards with phase offsets: 0, 1/3, 2/3 */}
@@ -103,62 +109,64 @@ export function SlipFlowCards() {
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    height: CARD_HEIGHT + 14,
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    marginVertical: 4,
-  },
-  cardContainer: {
-    position: "absolute",
-  },
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 8,
-    backgroundColor: "#142C44",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    padding: 8,
-    justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  topBar: {
-    height: 6,
-    width: "68%",
-    borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-  },
-  subBar: {
-    height: 4,
-    width: "46%",
-    borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.13)",
-    marginTop: 3,
-  },
-  bottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 4,
-  },
-  miniIcon: {
-    width: 12,
-    height: 12,
-    borderRadius: 2.5,
-    backgroundColor: "rgba(255, 255, 255, 0.16)",
-  },
-  miniBar: {
-    height: 5,
-    width: "42%",
-    borderRadius: 2.5,
-    backgroundColor: "rgba(255, 255, 255, 0.18)",
-  },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    wrapper: {
+      height: CARD_HEIGHT + 14,
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      marginVertical: 4,
+    },
+    cardContainer: {
+      position: "absolute",
+    },
+    card: {
+      width: CARD_WIDTH,
+      height: CARD_HEIGHT,
+      borderRadius: 8,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      padding: 8,
+      justifyContent: "space-between",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.25,
+      shadowRadius: 5,
+      elevation: 4,
+    },
+    topBar: {
+      height: 6,
+      width: "68%",
+      borderRadius: 3,
+      backgroundColor: theme.raised,
+    },
+    subBar: {
+      height: 4,
+      width: "46%",
+      borderRadius: 2,
+      backgroundColor: theme.raised,
+      marginTop: 3,
+    },
+    bottomRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      marginTop: 4,
+    },
+    miniIcon: {
+      width: 12,
+      height: 12,
+      borderRadius: 2.5,
+      backgroundColor: theme.raised,
+    },
+    miniBar: {
+      height: 5,
+      width: "42%",
+      borderRadius: 2.5,
+      backgroundColor: theme.raised,
+    },
+  });
+}

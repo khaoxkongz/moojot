@@ -6,9 +6,10 @@ import { Animated, View, useWindowDimensions } from "react-native";
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
 import { fontFaces } from "@/constants/fonts";
 import { Page } from "@/features/onboarding/components/onboarding-controls";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingSplashRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [splashOpacity] = useState(() => new Animated.Value(0));
@@ -74,11 +75,11 @@ export default function OnboardingSplashRoute() {
               ],
             }}
           >
-            <MaterialCommunityIcons name="pencil" size={42} color={color.blue} />
+            <MaterialCommunityIcons name="pencil" size={42} color={theme.accentText} />
           </Animated.View>
           <Animated.Text
             style={{
-              color: color.ink,
+              color: theme.text,
               fontFamily: fontFaces.heavy,
               fontSize: 42,
               marginTop: -10,

@@ -5,13 +5,11 @@ import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } f
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { FilterSourceIcon } from "@/features/wallets/components/filter-source-icon";
 import type { WalletCard, WalletFilterOptions, WalletFilterSelection } from "@/types/finance";
-
-const BLUE = "#0B6EF3";
-const NAVY = "#092640";
-const INK = "#1D293A";
 
 type FilterTab = "account" | "card" | "other";
 
@@ -61,6 +59,8 @@ function TabIcon({ tab, color }: { tab: FilterTab; color: string }) {
 }
 
 function CheckMark({ checked }: { checked: boolean }) {
+  const styles = useWalletStyles();
+  const theme = useAppTheme();
   return (
     <View style={[styles.checkBox, checked && styles.checkBoxChecked]}>
       {checked ? (
@@ -68,7 +68,7 @@ function CheckMark({ checked }: { checked: boolean }) {
           <Path
             d="m2.4 10.2 5.1 5.1L17.7 5"
             fill="none"
-            stroke="#FFFFFF"
+            stroke={theme.onAccent}
             strokeWidth="2.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -98,6 +98,7 @@ function SourceRow({
   disabled?: boolean;
   subtitle?: string;
 }) {
+  const styles = useWalletStyles();
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -122,6 +123,8 @@ function SourceRow({
 
 /** The wallet icon's three source filters. Selection is controlled by the parent. */
 export function WalletFilterSheet({ visible, options, value, onChange, onApply, onClose }: WalletFilterSheetProps) {
+  const styles = useWalletStyles();
+  const theme = useAppTheme();
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -209,7 +212,7 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
                 ] as const
               ).map(([name, label]) => {
                 const selected = tab === name;
-                const color = selected ? "#FFFFFF" : BLUE;
+                const color = selected ? theme.onAccent : theme.accentText;
                 return (
                   <Pressable
                     key={name}
@@ -313,7 +316,7 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
           </ScrollView>
 
           <LinearGradient
-            colors={["rgba(255,255,255,0)", "#FFFFFF", "#FFFFFF"]}
+            colors={["rgba(255,255,255,0)", theme.surface, theme.surface]}
             locations={[0, 0.3, 1]}
             style={[styles.footer, { paddingBottom: Math.max(insets.bottom + 40, 68) }]}
           >
@@ -339,126 +342,133 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
   );
 }
 
-const styles = StyleSheet.create({
-  modalRoot: { flex: 1, justifyContent: "flex-end" },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0, 15, 30, 0.28)",
-  },
-  sheet: {
-    width: "100%",
-    maxWidth: 520,
-    alignSelf: "center",
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    overflow: "hidden",
-  },
-  header: {
-    height: 54,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#EDF3FE",
-  },
-  headerTitle: { color: INK, fontSize: 19, fontWeight: "800" },
-  resetButton: { minHeight: 44, justifyContent: "center" },
-  resetText: { color: BLUE, fontSize: 19, fontWeight: "800" },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 158 },
-  tabs: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  tab: {
-    height: 40,
-    flexShrink: 1,
-    flexDirection: "row",
-    gap: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 9,
-    borderWidth: 1,
-    borderColor: BLUE,
-    borderRadius: 24,
-    backgroundColor: "#FFFFFF",
-  },
-  tabSelected: { backgroundColor: NAVY, borderColor: NAVY },
-  tabPressed: { opacity: 0.75 },
-  tabText: { color: BLUE, fontSize: 17, fontWeight: "700" },
-  tabTextSelected: { color: "#FFFFFF" },
-  firstRow: { paddingTop: 15 },
-  sourceRow: {
-    minHeight: 60,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  rowPressed: { backgroundColor: "#F7FAFF" },
-  sourceCopy: { flex: 1 },
-  sourceLabel: { color: INK, fontSize: 17, lineHeight: 26 },
-  sourceSubtitle: { color: "#7F91A8", fontSize: 11, lineHeight: 15 },
-  disabledCheck: { opacity: 0.55 },
-  checkBox: {
-    width: 18,
-    height: 18,
-    marginRight: 3,
-    borderWidth: 1.5,
-    borderRadius: 2,
-    borderColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  checkBoxChecked: { backgroundColor: BLUE },
-  divider: {
-    height: 1,
-    backgroundColor: "#C7D2E3",
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    color: INK,
-    fontSize: 17,
-    lineHeight: 27,
-    fontWeight: "700",
-    paddingHorizontal: 16,
-  },
-  bankRows: { paddingTop: 6 },
-  emptySources: {
-    color: "#7F91A8",
-    fontSize: 13,
-    lineHeight: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  cardRows: { paddingTop: 13 },
-  footer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 24,
-    alignItems: "center",
-  },
-  applyButton: {
-    height: 48,
-    borderRadius: 30,
-    backgroundColor: BLUE,
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 2px 5px rgba(0, 31, 66, 0.18)",
-  },
-  applyPressed: { opacity: 0.8 },
-  applyText: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    modalRoot: { flex: 1, justifyContent: "flex-end" },
+    backdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(0, 15, 30, 0.28)",
+    },
+    sheet: {
+      width: "100%",
+      maxWidth: 520,
+      alignSelf: "center",
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: 10,
+      borderTopRightRadius: 10,
+      overflow: "hidden",
+    },
+    header: {
+      height: 54,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: theme.raised,
+    },
+    headerTitle: { color: theme.text, fontSize: 19, fontWeight: "800" },
+    resetButton: { minHeight: 44, justifyContent: "center" },
+    resetText: { color: theme.accentText, fontSize: 19, fontWeight: "800" },
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: 158 },
+    tabs: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    tab: {
+      height: 40,
+      flexShrink: 1,
+      flexDirection: "row",
+      gap: 5,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 9,
+      borderWidth: 1,
+      borderColor: theme.accentText,
+      borderRadius: 24,
+      backgroundColor: theme.surface,
+    },
+    tabSelected: { backgroundColor: theme.accent, borderColor: theme.accent },
+    tabPressed: { opacity: 0.75 },
+    tabText: { color: theme.accentText, fontSize: 17, fontWeight: "700" },
+    tabTextSelected: { color: theme.onAccent },
+    firstRow: { paddingTop: 15 },
+    sourceRow: {
+      minHeight: 60,
+      paddingHorizontal: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    rowPressed: { backgroundColor: theme.raised },
+    sourceCopy: { flex: 1 },
+    sourceLabel: { color: theme.text, fontSize: 17, lineHeight: 26 },
+    sourceSubtitle: { color: theme.muted, fontSize: 11, lineHeight: 15 },
+    disabledCheck: { opacity: 0.55 },
+    checkBox: {
+      width: 18,
+      height: 18,
+      marginRight: 3,
+      borderWidth: 1.5,
+      borderRadius: 2,
+      borderColor: theme.accentText,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.surface,
+    },
+    checkBoxChecked: { backgroundColor: theme.accent },
+    divider: {
+      height: 1,
+      backgroundColor: theme.border,
+      marginHorizontal: 16,
+      marginTop: 14,
+      marginBottom: 15,
+    },
+    sectionTitle: {
+      color: theme.text,
+      fontSize: 17,
+      lineHeight: 27,
+      fontWeight: "700",
+      paddingHorizontal: 16,
+    },
+    bankRows: { paddingTop: 6 },
+    emptySources: {
+      color: theme.muted,
+      fontSize: 13,
+      lineHeight: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    cardRows: { paddingTop: 13 },
+    footer: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingTop: 24,
+      alignItems: "center",
+    },
+    applyButton: {
+      height: 48,
+      borderRadius: 30,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 2px 5px rgba(45, 45, 43, 0.18)",
+    },
+    applyPressed: { opacity: 0.8 },
+    applyText: { color: theme.onAccent, fontSize: 18, fontWeight: "800" },
+  });
+}
+
+function useWalletStyles() {
+  const theme = useAppTheme();
+  return useMemo(() => createStyles(theme), [theme]);
+}

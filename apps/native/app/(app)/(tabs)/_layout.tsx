@@ -2,21 +2,21 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 
 import { fontFaces } from "@/constants/fonts";
-import { palette } from "@/constants/moo-theme";
-const blue = "#1478F2";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function TabLayout() {
+  const theme = useAppTheme();
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: palette.background },
+        headerStyle: { backgroundColor: theme.background },
         headerShadowVisible: false,
-        headerTitleStyle: { color: palette.ink, fontFamily: fontFaces.heavy, fontSize: 21 },
-        sceneStyle: { backgroundColor: "#09243D" },
-        tabBarActiveTintColor: blue,
-        tabBarInactiveTintColor: "#1A2635",
+        headerTitleStyle: { color: theme.text, fontFamily: fontFaces.heavy, fontSize: 21 },
+        sceneStyle: { backgroundColor: theme.background },
+        tabBarActiveTintColor: theme.accentText,
+        tabBarInactiveTintColor: theme.muted,
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: theme.surface,
           borderTopWidth: 0,
           borderTopLeftRadius: 17,
           borderTopRightRadius: 17,

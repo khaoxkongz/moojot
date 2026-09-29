@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 import { Button, Card, EmptyState, SectionHeading } from "@/components/ui/moo-ui";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { getPeriodForDate, shiftPeriodKey } from "@/utils/dates";
@@ -14,6 +14,7 @@ import { formatMoney, kindLabel, todayISO } from "@/utils/format";
 import { orpc, queryClient } from "@/utils/orpc";
 
 export default function PlanScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
 
   const [offset, setOffset] = useState(0);
@@ -63,7 +64,7 @@ export default function PlanScreen() {
       overScrollMode="never"
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: palette.background }}
+      style={{ flex: 1, backgroundColor: theme.background }}
       contentContainerStyle={{
         alignItems: "center",
         paddingHorizontal: 18,
@@ -72,9 +73,9 @@ export default function PlanScreen() {
       }}
     >
       <View style={{ width: "100%", maxWidth: 680, gap: 20 }}>
-        <Text style={{ color: palette.muted, fontSize: 13, fontWeight: "700" }}>วางแผนเงินให้สบายใจขึ้นอีกนิด 🐷</Text>
+        <Text style={{ color: theme.muted, fontSize: 13, fontWeight: "700" }}>วางแผนเงินให้สบายใจขึ้นอีกนิด 🐷</Text>
         <LinearGradient
-          colors={["#F4A3A6", "#F9C9AB"]}
+          colors={[theme.accent, theme.accentSoft]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ padding: 22, borderRadius: 27, overflow: "hidden", gap: 9 }}
@@ -90,9 +91,9 @@ export default function PlanScreen() {
               backgroundColor: "rgba(255,255,255,.16)",
             }}
           />
-          <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "700" }}>แผนการเงินของฉัน</Text>
-          <Text style={{ color: "#FFFFFF", fontSize: 27, fontWeight: "900" }}>{budgets.length} งบประมาณ</Text>
-          <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "700", opacity: 0.95 }}>
+          <Text style={{ color: theme.onAccent, fontSize: 13, fontWeight: "700" }}>แผนการเงินของฉัน</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 27, fontWeight: "900" }}>{budgets.length} งบประมาณ</Text>
+          <Text style={{ color: theme.onAccent, fontSize: 13, fontWeight: "700", opacity: 0.95 }}>
             {overCount
               ? `${overCount} งบเกินวงเงิน`
               : nearCount
@@ -111,11 +112,11 @@ export default function PlanScreen() {
                 marginTop: 5,
               }}
             >
-              <Text style={{ color: "#FFFFFF", fontSize: 11 }}>งบรวมเดือนนี้</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 11 }}>งบรวมเดือนนี้</Text>
               <Text
                 selectable
                 style={{
-                  color: "#FFFFFF",
+                  color: theme.onAccent,
                   fontSize: 19,
                   fontWeight: "900",
                   fontVariant: ["tabular-nums"],
@@ -144,14 +145,14 @@ export default function PlanScreen() {
                 borderRadius: 15,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: palette.surface,
+                backgroundColor: theme.surface,
                 borderWidth: 1,
-                borderColor: palette.line,
+                borderColor: theme.border,
               }}
             >
-              <Text style={{ color: palette.ink, fontSize: 28, lineHeight: 32 }}>‹</Text>
+              <Text style={{ color: theme.text, fontSize: 28, lineHeight: 32 }}>‹</Text>
             </Pressable>
-            <Text selectable style={{ color: palette.ink, fontSize: 16, fontWeight: "800" }}>
+            <Text selectable style={{ color: theme.text, fontSize: 16, fontWeight: "800" }}>
               {periodLabel}
             </Text>
             <Pressable
@@ -165,18 +166,18 @@ export default function PlanScreen() {
                 borderRadius: 15,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: palette.surface,
+                backgroundColor: theme.surface,
                 borderWidth: 1,
-                borderColor: palette.line,
+                borderColor: theme.border,
                 opacity: offset >= 0 ? 0.35 : 1,
               }}
             >
-              <Text style={{ color: palette.ink, fontSize: 28, lineHeight: 32 }}>›</Text>
+              <Text style={{ color: theme.text, fontSize: 28, lineHeight: 32 }}>›</Text>
             </Pressable>
           </View>
           {error ? (
             <Card style={{ gap: 10 }}>
-              <Text selectable style={{ color: palette.red }}>
+              <Text selectable style={{ color: theme.dangerText }}>
                 {error.message}
               </Text>
               <Button
@@ -191,7 +192,7 @@ export default function PlanScreen() {
             </Card>
           ) : null}
           {loading ? (
-            <ActivityIndicator color={palette.pink} style={{ paddingVertical: 25 }} />
+            <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 25 }} />
           ) : budgetsQuery.data === undefined ? null : budgets.length === 0 ? (
             <Card style={{ gap: 4 }}>
               <EmptyState
@@ -209,7 +210,11 @@ export default function PlanScreen() {
               const category = categoryById.get(status.budget.categoryId ?? "");
               const tag = tagById.get(status.budget.tagId ?? "");
               const name = category ? `${category.icon} ${category.name}` : tag ? `# ${tag.name}` : "💰 งบรวม";
-              const color = status.isOverLimit ? palette.red : status.isNearLimit ? palette.yellow : palette.green;
+              const color = status.isOverLimit
+                ? theme.dangerText
+                : status.isNearLimit
+                  ? theme.accent
+                  : theme.successText;
               return (
                 <Pressable
                   key={status.budget.id}
@@ -231,7 +236,7 @@ export default function PlanScreen() {
                         gap: 10,
                       }}
                     >
-                      <Text style={{ flex: 1, color: palette.ink, fontSize: 15, fontWeight: "800" }}>{name}</Text>
+                      <Text style={{ flex: 1, color: theme.text, fontSize: 15, fontWeight: "800" }}>{name}</Text>
                       <Text style={{ color, fontSize: 12, fontWeight: "800" }}>
                         {status.isOverLimit ? "เกินงบ" : status.isNearLimit ? "ใกล้เต็ม" : "ตามแผน"}
                       </Text>
@@ -240,7 +245,7 @@ export default function PlanScreen() {
                       style={{
                         height: 10,
                         borderRadius: 99,
-                        backgroundColor: palette.line,
+                        backgroundColor: theme.border,
                         overflow: "hidden",
                       }}
                     >
@@ -263,25 +268,25 @@ export default function PlanScreen() {
                       <Text
                         selectable
                         style={{
-                          color: palette.ink,
+                          color: theme.text,
                           fontSize: 14,
                           fontWeight: "800",
                           fontVariant: ["tabular-nums"],
                         }}
                       >
                         {formatMoney(status.spentSatang, 0)}{" "}
-                        <Text style={{ color: palette.muted, fontWeight: "600" }}>
+                        <Text style={{ color: theme.muted, fontWeight: "600" }}>
                           / {formatMoney(status.budget.limitSatang, 0)}
                         </Text>
                       </Text>
-                      <Text style={{ color: palette.muted, fontSize: 12, fontWeight: "700" }}>
+                      <Text style={{ color: theme.muted, fontSize: 12, fontWeight: "700" }}>
                         {Math.round(status.percentUsed)}%
                       </Text>
                     </View>
                     <Text
                       selectable
                       style={{
-                        color: status.isOverLimit ? palette.red : palette.muted,
+                        color: status.isOverLimit ? theme.dangerText : theme.muted,
                         fontSize: 12,
                       }}
                     >
@@ -328,7 +333,7 @@ export default function PlanScreen() {
                       width: 43,
                       height: 43,
                       borderRadius: 15,
-                      backgroundColor: rule.kind === "income" ? palette.greenPale : palette.pinkPale,
+                      backgroundColor: rule.kind === "income" ? theme.raised : theme.raised,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -338,10 +343,10 @@ export default function PlanScreen() {
                     </Text>
                   </View>
                   <View style={{ flex: 1, gap: 5 }}>
-                    <Text style={{ color: palette.ink, fontSize: 14, fontWeight: "800" }} numberOfLines={1}>
+                    <Text style={{ color: theme.text, fontSize: 14, fontWeight: "800" }} numberOfLines={1}>
                       {rule.title}
                     </Text>
-                    <Text style={{ color: palette.muted, fontSize: 11 }}>
+                    <Text style={{ color: theme.muted, fontSize: 11 }}>
                       ทุกวันที่ {rule.dayOfMonth} · {kindLabel(rule.kind)}
                       {rule.isActive ? "" : " · หยุดชั่วคราว"}
                     </Text>
@@ -349,7 +354,7 @@ export default function PlanScreen() {
                   <Text
                     selectable
                     style={{
-                      color: rule.kind === "income" ? palette.green : palette.ink,
+                      color: rule.kind === "income" ? theme.successText : theme.text,
                       fontSize: 14,
                       fontWeight: "800",
                       fontVariant: ["tabular-nums"],

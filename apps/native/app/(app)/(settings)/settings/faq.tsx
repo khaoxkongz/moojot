@@ -2,12 +2,8 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
-import {
-  SettingsPage,
-  SettingsScroll,
-  settingsColors,
-  settingsPageStyles,
-} from "@/features/settings/components/settings-page";
+import { useAppTheme } from "@/lib/use-app-theme";
+import { SettingsPage, SettingsScroll, useSettingsPageStyles } from "@/features/settings/components/settings-page";
 
 const faqs = [
   {
@@ -35,6 +31,8 @@ const faqs = [
 ];
 
 export default function FaqSettingsScreen() {
+  const theme = useAppTheme();
+  const settingsPageStyles = useSettingsPageStyles();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
@@ -50,7 +48,7 @@ export default function FaqSettingsScreen() {
           >
             <View style={settingsPageStyles.faqHeader}>
               <Text style={[settingsPageStyles.rowTitle, { flex: 1 }]}>{item.question}</Text>
-              <Text style={{ color: settingsColors.blue, fontSize: 25 }}>{openFaq === index ? "−" : "+"}</Text>
+              <Text style={{ color: theme.accentText, fontSize: 25 }}>{openFaq === index ? "−" : "+"}</Text>
             </View>
             {openFaq === index ? (
               <Text style={[settingsPageStyles.copy, { paddingTop: 12 }]}>{item.answer}</Text>

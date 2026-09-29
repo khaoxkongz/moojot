@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle } from "react-native-svg";
 import { scheduleOnRN } from "react-native-worklets";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text } from "@/components/ui/typography";
 import { useAppData } from "@/context/app-data";
@@ -28,14 +30,6 @@ import { formatBaht, formatMoney, todayISO } from "@/utils/format";
 
 type BreakdownMode = "category" | "tag";
 const emptyRows: never[] = [];
-
-const yellow = "#FFDA60";
-const navy = "#0B243B";
-const deepNavy = "#071D30";
-const slate = "#20384E";
-const blue = "#2876EE";
-const muted = "#A6B5C7";
-const ink = "#172338";
 
 const kindLabels: Record<TransactionKind, string> = {
   expense: "รายจ่าย",
@@ -74,16 +68,18 @@ function Donut({
   label: string;
   categories: CategoryBreakdownItem[];
 }) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const thickness = Math.round(size * 0.13);
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
   const segments =
     kind === "transfer" && total > 0
-      ? [{ id: "transfer", percentage: 100, color: blue }]
+      ? [{ id: "transfer", percentage: 100, color: theme.accentText }]
       : categories.map((item, index) => ({
           id: item.categoryId ?? "none-" + index,
           percentage: item.percentage,
-          color: item.categoryId ? item.color : "#6A8097",
+          color: item.categoryId ? item.color : theme.muted,
         }));
   return (
     <View
@@ -96,7 +92,7 @@ function Donut({
         viewBox={"0 0 " + size + " " + size}
         style={{ transform: [{ rotate: "-90deg" }] }}
       >
-        <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#425269" strokeWidth={thickness} />
+        <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={theme.border} strokeWidth={thickness} />
         {segments.map((item, index) => {
           const arc = (circumference * Math.max(0, Math.min(100, item.percentage))) / 100;
           const preceding = segments
@@ -134,6 +130,8 @@ function Donut({
 }
 
 export default function SummaryScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -288,7 +286,7 @@ export default function SummaryScreen() {
             onPress={() => router.replace("/")}
             style={styles.headerSide}
           >
-            <HomeIcon name="chevronLeft" color={ink} size={29} strokeWidth={2.5} />
+            <HomeIcon name="chevronLeft" color={theme.onAccent} size={29} strokeWidth={2.5} />
           </Pressable>
           <View style={styles.monthNav}>
             <Pressable
@@ -297,9 +295,9 @@ export default function SummaryScreen() {
               onPress={() => setOffset((value) => value - 1)}
               style={styles.navArrow}
             >
-              <HomeIcon name="chevronLeft" color={blue} size={23} />
+              <HomeIcon name="chevronLeft" color={theme.onAccent} size={23} />
             </Pressable>
-            <HomeIcon name="calendar" color={blue} size={21} />
+            <HomeIcon name="calendar" color={theme.onAccent} size={21} />
             <Text numberOfLines={1} style={styles.monthLabel}>
               {periodLabel}
             </Text>
@@ -310,7 +308,7 @@ export default function SummaryScreen() {
               onPress={() => setOffset((value) => value + 1)}
               style={[styles.navArrow, offset >= 0 && { opacity: 0.35 }]}
             >
-              <HomeIcon name="chevronRight" color={blue} size={23} />
+              <HomeIcon name="chevronRight" color={theme.onAccent} size={23} />
             </Pressable>
           </View>
           <Pressable
@@ -322,7 +320,7 @@ export default function SummaryScreen() {
             }}
             style={[styles.headerSide, appliedWalletFilter && styles.headerSideFiltered]}
           >
-            <HomeIcon name="wallet" color={ink} size={27} />
+            <HomeIcon name="wallet" color={theme.onAccent} size={27} />
           </Pressable>
         </View>
       </View>
@@ -356,7 +354,7 @@ export default function SummaryScreen() {
             <View style={styles.metricsRow}>
               <View style={styles.metric}>
                 <Text style={styles.metricLabel}>↓ รายรับ</Text>
-                <Text selectable style={[styles.metricValue, { color: "#28B980" }]}>
+                <Text selectable style={[styles.metricValue, { color: theme.successText }]}>
                   {formatBaht(summary?.incomeSatang ?? 0)}
                 </Text>
               </View>
@@ -392,10 +390,10 @@ export default function SummaryScreen() {
                   }}
                   style={[styles.kindButton, kind === value && styles.kindButtonActive]}
                 >
-                  <Text style={[styles.kindArrow, kind === value && { color: "#FFFFFF" }]}>
+                  <Text style={[styles.kindArrow, kind === value && { color: theme.text }]}>
                     {value === "expense" ? "↑" : value === "income" ? "↓" : "⇄"}
                   </Text>
-                  <Text style={[styles.kindText, kind === value && { color: "#FFFFFF" }]}>{kindLabels[value]}</Text>
+                  <Text style={[styles.kindText, kind === value && { color: theme.text }]}>{kindLabels[value]}</Text>
                 </Pressable>
               ))}
             </Animated.View>
@@ -410,7 +408,7 @@ export default function SummaryScreen() {
               </Text>
             ) : null}
             {loading ? (
-              <ActivityIndicator color={yellow} style={{ marginTop: 50 }} />
+              <ActivityIndicator color={theme.accentText} style={{ marginTop: 50 }} />
             ) : error ? (
               <View style={styles.errorBox}>
                 <Text selectable style={styles.errorText}>
@@ -498,7 +496,7 @@ export default function SummaryScreen() {
                   style={[styles.breakdownTab, breakdownMode === value && styles.breakdownTabActive]}
                 >
                   <Text style={styles.breakdownTabIcon}>{value === "category" ? "▦" : "#"}</Text>
-                  <Text style={[styles.breakdownTabText, breakdownMode === value && { color: "#FFFFFF" }]}>
+                  <Text style={[styles.breakdownTabText, breakdownMode === value && { color: theme.text }]}>
                     {value === "category" ? "หมวดหมู่" : "แท็ก"}
                   </Text>
                 </Pressable>
@@ -521,7 +519,7 @@ export default function SummaryScreen() {
                   <View style={styles.transferSection}>
                     <Text style={styles.sectionHeading}>⇄ ย้ายเงินระหว่างบัญชี</Text>
                     <View style={styles.breakdownRow}>
-                      <View style={[styles.dot, { backgroundColor: blue }]} />
+                      <View style={[styles.dot, { backgroundColor: theme.accentText }]} />
                       <Text style={styles.breakdownName}>ยอดย้ายเงินรวม</Text>
                       <Text selectable style={styles.breakdownAmount}>
                         {formatMoney(total)}
@@ -541,7 +539,10 @@ export default function SummaryScreen() {
                         categories.map((item, index) => (
                           <View key={item.categoryId ?? "none-" + index} style={styles.breakdownRow}>
                             <View
-                              style={[styles.categoryIcon, { backgroundColor: item.categoryId ? item.color : slate }]}
+                              style={[
+                                styles.categoryIcon,
+                                { backgroundColor: item.categoryId ? item.color : theme.raised },
+                              ]}
                             >
                               <Text style={styles.categoryEmoji}>{item.categoryId ? item.icon : "✎"}</Text>
                             </View>
@@ -587,8 +588,8 @@ export default function SummaryScreen() {
                 <View style={styles.trendSection}>
                   <Text style={styles.trendHeading}>แนวโน้มรายเดือน</Text>
                   <View style={styles.trendLegend}>
-                    <Text style={[styles.trendLegendText, { color: "#6ED5A9" }]}>● รายรับ</Text>
-                    <Text style={[styles.trendLegendText, { color: yellow }]}>● รายจ่าย</Text>
+                    <Text style={[styles.trendLegendText, { color: theme.success }]}>● รายรับ</Text>
+                    <Text style={[styles.trendLegendText, { color: theme.accentText }]}>● รายจ่าย</Text>
                   </View>
                   {hasTrend ? (
                     <ScrollView
@@ -603,7 +604,7 @@ export default function SummaryScreen() {
                               style={[
                                 styles.trendBar,
                                 {
-                                  backgroundColor: "#6ED5A9",
+                                  backgroundColor: theme.success,
                                   height: Math.max(3, Math.round((item.incomeSatang / trendMax) * 84)),
                                   opacity: item.incomeSatang ? 1 : 0.22,
                                 },
@@ -613,7 +614,7 @@ export default function SummaryScreen() {
                               style={[
                                 styles.trendBar,
                                 {
-                                  backgroundColor: yellow,
+                                  backgroundColor: theme.accent,
                                   height: Math.max(3, Math.round((item.expenseSatang / trendMax) * 84)),
                                   opacity: item.expenseSatang ? 1 : 0.22,
                                 },
@@ -645,208 +646,210 @@ export default function SummaryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: navy },
-  header: { backgroundColor: yellow, paddingBottom: 22 },
-  headerInner: {
-    width: "100%",
-    maxWidth: 680,
-    alignSelf: "center",
-    minHeight: 52,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerSide: { width: 40, height: 42, alignItems: "center", justifyContent: "center" },
-  headerSideFiltered: { borderWidth: 2, borderColor: blue, borderRadius: 21 },
-  monthNav: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  navArrow: { width: 29, height: 40, alignItems: "center", justifyContent: "center" },
-  monthLabel: {
-    color: blue,
-    fontSize: 20,
-    fontWeight: "900",
-    minWidth: 76,
-    maxWidth: 160,
-    textAlign: "center",
-  },
-  metricsPanel: {
-    backgroundColor: "#F4F8FF",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  metricsInner: {
-    width: "100%",
-    maxWidth: 680,
-    alignSelf: "center",
-    paddingHorizontal: 24,
-    paddingTop: 25,
-  },
-  metricsRow: { flexDirection: "row", alignItems: "center", minHeight: 66 },
-  metric: { flex: 1, gap: 4 },
-  metricLabel: { color: "#6B7C91", fontSize: 15 },
-  metricValue: { color: "#111925", fontSize: 19, fontWeight: "800", fontVariant: ["tabular-nums"] },
-  metricDivider: { width: 1.5, height: 32, backgroundColor: "#879BB0", marginHorizontal: 18 },
-  netRow: {
-    marginTop: 11,
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "center",
-    flexWrap: "wrap",
-  },
-  netLabel: { color: "#75869A", fontSize: 17 },
-  netValue: { color: ink, fontSize: 22, fontWeight: "900", fontVariant: ["tabular-nums"] },
-  kindSwitch: {
-    marginTop: 19,
-    flexDirection: "row",
-    alignSelf: "center",
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    overflow: "hidden",
-  },
-  kindButton: {
-    minWidth: 87,
-    paddingVertical: 8,
-    paddingHorizontal: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-  },
-  kindButtonActive: { backgroundColor: navy, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
-  kindArrow: { color: ink, fontSize: 26, lineHeight: 26 },
-  kindText: { color: ink, fontSize: 13, fontWeight: "800" },
-  body: { backgroundColor: navy },
-  bodyBeforeTabs: { paddingBottom: 37 },
-  bodyInner: { width: "100%", maxWidth: 680, alignSelf: "center", paddingHorizontal: 20 },
-  donutWrap: { alignItems: "center", marginTop: 40 },
-  donutCenter: {
-    position: "absolute",
-    left: 35,
-    right: 35,
-    top: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-  },
-  donutKind: { color: "#F7F9FC", fontSize: 15 },
-  donutPeriod: { color: muted, fontSize: 15 },
-  donutAmount: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-    marginTop: 8,
-    textAlign: "center",
-  },
-  donutCurrency: { fontSize: 19, fontWeight: "500" },
-  donutCaption: { color: "#C6D3E0", fontSize: 14, marginTop: 15 },
-  actions: { flexDirection: "row", gap: 8, marginTop: 25, marginHorizontal: 13 },
-  action: {
-    flex: 1,
-    height: 48,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: "#3A5874",
-    backgroundColor: slate,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-  },
-  actionIcon: { color: "#FFFFFF", fontSize: 23, lineHeight: 25 },
-  actionText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  compareBox: {
-    marginTop: 14,
-    marginHorizontal: 13,
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: slate,
-    gap: 7,
-  },
-  compareTitle: { color: "#FFFFFF", fontWeight: "900", fontSize: 15, marginBottom: 4 },
-  compareRow: { flexDirection: "row", justifyContent: "space-between" },
-  compareMuted: { color: muted, fontSize: 13 },
-  compareValue: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-  compareResult: { color: yellow, fontSize: 13, marginTop: 4, fontWeight: "800" },
-  breakdownSticky: { backgroundColor: navy, zIndex: 2 },
-  breakdownTabs: {
-    width: "100%",
-    maxWidth: 680,
-    alignSelf: "center",
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#3A5874",
-  },
-  breakdownTab: {
-    flex: 1,
-    minHeight: 53,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  breakdownTabActive: { borderBottomWidth: 2, borderBottomColor: "#FFFFFF" },
-  breakdownTabIcon: { color: "#FFFFFF", fontSize: 23 },
-  breakdownTabText: { color: muted, fontSize: 17, fontWeight: "800" },
-  breakdownRow: {
-    minHeight: 76,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1A3A55",
-  },
-  categoryIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryEmoji: { fontSize: 20, color: "#FFFFFF" },
-  dot: { width: 19, height: 19, borderRadius: 10 },
-  breakdownCopy: { flex: 1, minWidth: 0, gap: 3 },
-  breakdownName: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  breakdownMeta: { color: muted, fontSize: 12 },
-  breakdownAmount: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
-    flexShrink: 0,
-  },
-  emptyBox: { alignItems: "center", paddingVertical: 28, gap: 6 },
-  emptyTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  emptyBody: { color: muted, fontSize: 13, textAlign: "center" },
-  transferSection: { marginTop: 42 },
-  sectionHeading: { color: "#FFFFFF", fontSize: 17, fontWeight: "800", marginBottom: 10 },
-  transferHint: { color: muted, fontSize: 12, marginTop: 12 },
-  trendSection: {
-    marginTop: 38,
-    padding: 17,
-    borderRadius: 20,
-    backgroundColor: deepNavy,
-    borderWidth: 1,
-    borderColor: "#1D3A55",
-  },
-  trendHeading: { color: "#FFFFFF", fontSize: 17, fontWeight: "900" },
-  trendLegend: { flexDirection: "row", gap: 15, marginTop: 9 },
-  trendLegendText: { fontSize: 12, fontWeight: "700" },
-  trendContent: { flexGrow: 1, justifyContent: "space-around", gap: 10, paddingTop: 17 },
-  trendGroup: { width: 48, alignItems: "center", gap: 7 },
-  trendBars: { height: 90, flexDirection: "row", alignItems: "flex-end", gap: 3 },
-  trendBar: { width: 14, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
-  trendLabel: { color: muted, fontSize: 10, textAlign: "center" },
-  trendEmpty: { color: muted, fontSize: 12, marginTop: 17 },
-  errorBox: { marginTop: 30, backgroundColor: slate, borderRadius: 16, padding: 18 },
-  errorText: { color: "#FFADB2", fontSize: 13 },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    header: { backgroundColor: theme.accent, paddingBottom: 22 },
+    headerInner: {
+      width: "100%",
+      maxWidth: 680,
+      alignSelf: "center",
+      minHeight: 52,
+      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    headerSide: { width: 40, height: 42, alignItems: "center", justifyContent: "center" },
+    headerSideFiltered: { borderWidth: 2, borderColor: theme.onAccent, borderRadius: 21 },
+    monthNav: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+    },
+    navArrow: { width: 29, height: 40, alignItems: "center", justifyContent: "center" },
+    monthLabel: {
+      color: theme.onAccent,
+      fontSize: 20,
+      fontWeight: "900",
+      minWidth: 76,
+      maxWidth: 160,
+      textAlign: "center",
+    },
+    metricsPanel: {
+      backgroundColor: theme.surface,
+      borderBottomLeftRadius: 20,
+      borderBottomRightRadius: 20,
+    },
+    metricsInner: {
+      width: "100%",
+      maxWidth: 680,
+      alignSelf: "center",
+      paddingHorizontal: 24,
+      paddingTop: 25,
+    },
+    metricsRow: { flexDirection: "row", alignItems: "center", minHeight: 66 },
+    metric: { flex: 1, gap: 4 },
+    metricLabel: { color: theme.muted, fontSize: 15 },
+    metricValue: { color: theme.text, fontSize: 19, fontWeight: "800", fontVariant: ["tabular-nums"] },
+    metricDivider: { width: 1.5, height: 32, backgroundColor: theme.border, marginHorizontal: 18 },
+    netRow: {
+      marginTop: 11,
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "center",
+      flexWrap: "wrap",
+    },
+    netLabel: { color: theme.muted, fontSize: 17 },
+    netValue: { color: theme.text, fontSize: 22, fontWeight: "900", fontVariant: ["tabular-nums"] },
+    kindSwitch: {
+      marginTop: 19,
+      flexDirection: "row",
+      alignSelf: "center",
+      backgroundColor: theme.raised,
+      borderTopLeftRadius: 14,
+      borderTopRightRadius: 14,
+      overflow: "hidden",
+    },
+    kindButton: {
+      minWidth: 87,
+      paddingVertical: 8,
+      paddingHorizontal: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 3,
+    },
+    kindButtonActive: { backgroundColor: theme.surface, borderTopLeftRadius: 14, borderTopRightRadius: 14 },
+    kindArrow: { color: theme.text, fontSize: 26, lineHeight: 26 },
+    kindText: { color: theme.text, fontSize: 13, fontWeight: "800" },
+    body: { backgroundColor: theme.background },
+    bodyBeforeTabs: { paddingBottom: 37 },
+    bodyInner: { width: "100%", maxWidth: 680, alignSelf: "center", paddingHorizontal: 20 },
+    donutWrap: { alignItems: "center", marginTop: 40 },
+    donutCenter: {
+      position: "absolute",
+      left: 35,
+      right: 35,
+      top: 0,
+      bottom: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+    },
+    donutKind: { color: theme.text, fontSize: 15 },
+    donutPeriod: { color: theme.muted, fontSize: 15 },
+    donutAmount: {
+      color: theme.text,
+      fontSize: 28,
+      fontWeight: "900",
+      fontVariant: ["tabular-nums"],
+      marginTop: 8,
+      textAlign: "center",
+    },
+    donutCurrency: { fontSize: 19, fontWeight: "500" },
+    donutCaption: { color: theme.muted, fontSize: 14, marginTop: 15 },
+    actions: { flexDirection: "row", gap: 8, marginTop: 25, marginHorizontal: 13 },
+    action: {
+      flex: 1,
+      height: 48,
+      borderRadius: 26,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.raised,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+    },
+    actionIcon: { color: theme.text, fontSize: 23, lineHeight: 25 },
+    actionText: { color: theme.text, fontSize: 15, fontWeight: "800" },
+    compareBox: {
+      marginTop: 14,
+      marginHorizontal: 13,
+      padding: 16,
+      borderRadius: 18,
+      backgroundColor: theme.raised,
+      gap: 7,
+    },
+    compareTitle: { color: theme.text, fontWeight: "900", fontSize: 15, marginBottom: 4 },
+    compareRow: { flexDirection: "row", justifyContent: "space-between" },
+    compareMuted: { color: theme.muted, fontSize: 13 },
+    compareValue: { color: theme.text, fontSize: 13, fontWeight: "800" },
+    compareResult: { color: theme.accentText, fontSize: 13, marginTop: 4, fontWeight: "800" },
+    breakdownSticky: { backgroundColor: theme.background, zIndex: 2 },
+    breakdownTabs: {
+      width: "100%",
+      maxWidth: 680,
+      alignSelf: "center",
+      paddingHorizontal: 20,
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    breakdownTab: {
+      flex: 1,
+      minHeight: 53,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+    },
+    breakdownTabActive: { borderBottomWidth: 2, borderBottomColor: theme.accent },
+    breakdownTabIcon: { color: theme.text, fontSize: 23 },
+    breakdownTabText: { color: theme.muted, fontSize: 17, fontWeight: "800" },
+    breakdownRow: {
+      minHeight: 76,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 13,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    categoryIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    categoryEmoji: { fontSize: 20, color: theme.text },
+    dot: { width: 19, height: 19, borderRadius: 10 },
+    breakdownCopy: { flex: 1, minWidth: 0, gap: 3 },
+    breakdownName: { color: theme.text, fontSize: 15, fontWeight: "800" },
+    breakdownMeta: { color: theme.muted, fontSize: 12 },
+    breakdownAmount: {
+      color: theme.text,
+      fontSize: 15,
+      fontWeight: "800",
+      fontVariant: ["tabular-nums"],
+      flexShrink: 0,
+    },
+    emptyBox: { alignItems: "center", paddingVertical: 28, gap: 6 },
+    emptyTitle: { color: theme.text, fontSize: 15, fontWeight: "800" },
+    emptyBody: { color: theme.muted, fontSize: 13, textAlign: "center" },
+    transferSection: { marginTop: 42 },
+    sectionHeading: { color: theme.text, fontSize: 17, fontWeight: "800", marginBottom: 10 },
+    transferHint: { color: theme.muted, fontSize: 12, marginTop: 12 },
+    trendSection: {
+      marginTop: 38,
+      padding: 17,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    trendHeading: { color: theme.text, fontSize: 17, fontWeight: "900" },
+    trendLegend: { flexDirection: "row", gap: 15, marginTop: 9 },
+    trendLegendText: { fontSize: 12, fontWeight: "700" },
+    trendContent: { flexGrow: 1, justifyContent: "space-around", gap: 10, paddingTop: 17 },
+    trendGroup: { width: 48, alignItems: "center", gap: 7 },
+    trendBars: { height: 90, flexDirection: "row", alignItems: "flex-end", gap: 3 },
+    trendBar: { width: 14, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+    trendLabel: { color: theme.muted, fontSize: 10, textAlign: "center" },
+    trendEmpty: { color: theme.muted, fontSize: 12, marginTop: 17 },
+    errorBox: { marginTop: 30, backgroundColor: theme.raised, borderRadius: 16, padding: 18 },
+    errorText: { color: theme.dangerText, fontSize: 13 },
+  });
+}

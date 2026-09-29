@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { Animated, StyleSheet, View } from "react-native";
 
-const rowNavy = "#071D30";
-
 export function TimelineSkeletonRow() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [pulseAnim] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
@@ -37,44 +39,46 @@ export function TimelineSkeletonRow() {
   );
 }
 
-const styles = StyleSheet.create({
-  transaction: {
-    minHeight: 86,
-    backgroundColor: rowNavy,
-    paddingLeft: 18,
-    paddingRight: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  categoryCircle: {
-    width: 37,
-    height: 37,
-    borderRadius: 21,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-  transactionCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  kindBar: {
-    height: 12,
-    width: 72,
-    borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
-  },
-  titleBar: {
-    height: 11,
-    width: 145,
-    borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
-    marginTop: 5,
-  },
-  amountBar: {
-    height: 16,
-    width: 65,
-    borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.18)",
-  },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    transaction: {
+      minHeight: 86,
+      backgroundColor: theme.surface,
+      paddingLeft: 18,
+      paddingRight: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    categoryCircle: {
+      width: 37,
+      height: 37,
+      borderRadius: 21,
+      backgroundColor: theme.raised,
+    },
+    transactionCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    kindBar: {
+      height: 12,
+      width: 72,
+      borderRadius: 3,
+      backgroundColor: theme.raised,
+    },
+    titleBar: {
+      height: 11,
+      width: 145,
+      borderRadius: 3,
+      backgroundColor: theme.raised,
+      marginTop: 5,
+    },
+    amountBar: {
+      height: 16,
+      width: 65,
+      borderRadius: 4,
+      backgroundColor: theme.raised,
+    },
+  });
+}

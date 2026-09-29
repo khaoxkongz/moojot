@@ -7,10 +7,11 @@ import {
   SettingsPage,
   SettingsPanel,
   SettingsScroll,
-  settingsPageStyles,
+  useSettingsPageStyles,
 } from "@/features/settings/components/settings-page";
 
 export default function GuideSettingsScreen() {
+  const settingsPageStyles = useSettingsPageStyles();
   return (
     <SettingsPage title="แนะนำการใช้งาน">
       <SettingsScroll>

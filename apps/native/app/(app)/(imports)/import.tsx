@@ -8,12 +8,13 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 
 import { Button, Card, Field, Pill, SectionHeading } from "@/components/ui/moo-ui";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import type { FileForImport } from "@/features/imports/client";
 import { importsMutationOptions } from "@/features/imports/mutation-options";
 import { setImportSession } from "@/features/imports/session";
 
 export default function ImportScreen() {
+  const theme = useAppTheme();
   const { type } = useLocalSearchParams<{ type?: string }>();
 
   const [mode, setMode] = useState<"slip" | "statement">(type === "statement" ? "statement" : "slip");
@@ -106,8 +107,8 @@ export default function ImportScreen() {
       <View style={{ width: "100%", maxWidth: 620, gap: 18 }}>
         <View style={{ alignItems: "center", gap: 5, paddingVertical: 8 }}>
           <Text style={{ fontSize: 48 }}>{mode === "slip" ? "🧾" : "💳"}</Text>
-          <Text style={{ color: palette.ink, fontSize: 21, fontWeight: "900" }}>ให้หมูช่วยอ่านไฟล์</Text>
-          <Text style={{ color: palette.muted, fontSize: 13, textAlign: "center" }}>
+          <Text style={{ color: theme.text, fontSize: 21, fontWeight: "900" }}>ให้หมูช่วยอ่านไฟล์</Text>
+          <Text style={{ color: theme.muted, fontSize: 13, textAlign: "center" }}>
             Gemini ช่วยอ่านและเสนอรายการ ให้คุณตรวจทุกครั้งก่อนบันทึก
           </Text>
         </View>
@@ -117,7 +118,7 @@ export default function ImportScreen() {
         </View>
         <Card style={{ gap: 14 }}>
           <SectionHeading title={mode === "slip" ? "เลือกภาพสลิป" : "เลือกใบแจ้งยอดบัตร"} />
-          <Text style={{ color: palette.muted, fontSize: 13, lineHeight: 21 }}>
+          <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 21 }}>
             {mode === "slip"
               ? "เลือกภาพสลิปจากเครื่อง หมูจะแปลงเป็น JPEG แล้วให้ Gemini ช่วยอ่านวันที่ ยอดเงิน และชื่อร้าน"
               : "เลือกไฟล์ PDF รายเดือน ให้ Gemini ช่วยแยกรายการ แล้วเลือกว่าจะบันทึกรายการใด"}
@@ -140,20 +141,20 @@ export default function ImportScreen() {
         </Card>
         <Card style={{ gap: 12 }}>
           <SectionHeading title="การอ่านเอกสารด้วย AI" />
-          <Text style={{ color: palette.muted, fontSize: 12, lineHeight: 19 }}>
+          <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 19 }}>
             ไฟล์ที่คุณเลือกจะถูกส่งผ่านเซิร์ฟเวอร์หมูจดไปยัง Google Gemini 3.8 Flash เพื่อวิเคราะห์ข้อมูล การอ่านอาจคลาดเคลื่อน กรุณาตรวจยอดเงิน
             วันที่ และรายการก่อนบันทึก
           </Text>
         </Card>
         {notice ? (
           <View style={{ alignItems: "center", gap: 9 }}>
-            <ActivityIndicator color={palette.pink} />
-            <Text style={{ color: palette.muted }}>{notice}</Text>
+            <ActivityIndicator color={theme.accentText} />
+            <Text style={{ color: theme.muted }}>{notice}</Text>
           </View>
         ) : null}
         {error ? (
-          <Card style={{ backgroundColor: "#FFF1F1" }}>
-            <Text selectable style={{ color: palette.red, lineHeight: 21 }}>
+          <Card style={{ backgroundColor: theme.raised }}>
+            <Text selectable style={{ color: theme.dangerText, lineHeight: 21 }}>
               {error}
             </Text>
           </Card>

@@ -1,3 +1,4 @@
+import { useAppTheme } from "@/lib/use-app-theme";
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 
 export type FilterSourceIconKind = "wallet" | "card" | "other" | "removed-card" | "bank";
@@ -7,9 +8,6 @@ type FilterSourceIconProps = {
   bankName?: string;
   size?: number;
 };
-
-const BLUE = "#0B6EF3";
-const INK = "#0B2741";
 
 function normalizeBank(name: string) {
   const normalized = name
@@ -27,11 +25,12 @@ function normalizeBank(name: string) {
 
 /** Compact source badges for the transaction filter. Drawn as SVG for native and web. */
 export function FilterSourceIcon({ kind, bankName = "", size = 48 }: FilterSourceIconProps) {
+  const theme = useAppTheme();
   if (kind === "removed-card") {
     return (
       <Svg width={size} height={size} viewBox="0 0 48 48" accessible={false}>
-        <Rect x="1" y="7" width="46" height="34" rx="4" fill={INK} />
-        <Rect x="7" y="29" width="24" height="3.5" rx="1.75" fill="#7D92A8" />
+        <Rect x="1" y="7" width="46" height="34" rx="4" fill={theme.surface} />
+        <Rect x="7" y="29" width="24" height="3.5" rx="1.75" fill={theme.muted} />
       </Svg>
     );
   }
@@ -39,30 +38,51 @@ export function FilterSourceIcon({ kind, bankName = "", size = 48 }: FilterSourc
   if (kind !== "bank") {
     return (
       <Svg width={size} height={size} viewBox="0 0 48 48" accessible={false}>
-        <Circle cx="24" cy="24" r="23" fill="#F3F8FF" stroke="#E6E8ED" />
+        <Circle cx="24" cy="24" r="23" fill={theme.raised} stroke={theme.border} />
         {kind === "wallet" ? (
           <>
             <Path
               d="M12.5 18.5v-4c0-1.3.9-2.4 2.1-2.7l17-4.2c1.6-.4 3 .8 3 2.4v8.5"
               fill="none"
-              stroke={BLUE}
+              stroke={theme.accentText}
               strokeWidth="1.8"
               strokeLinejoin="round"
             />
-            <Rect x="12.5" y="17" width="23" height="19" rx="3" fill="none" stroke={BLUE} strokeWidth="2" />
-            <Path d="M29 23h8v7h-8a3.5 3.5 0 0 1 0-7Z" fill="#F3F8FF" stroke={BLUE} strokeWidth="2" />
-            <Circle cx="30.5" cy="26.5" r="1" fill={BLUE} />
+            <Rect x="12.5" y="17" width="23" height="19" rx="3" fill="none" stroke={theme.accentText} strokeWidth="2" />
+            <Path d="M29 23h8v7h-8a3.5 3.5 0 0 1 0-7Z" fill={theme.raised} stroke={theme.accentText} strokeWidth="2" />
+            <Circle cx="30.5" cy="26.5" r="1" fill={theme.accentText} />
           </>
         ) : kind === "card" ? (
           <>
-            <Rect x="10.5" y="14.5" width="27" height="19" rx="3" fill="none" stroke={BLUE} strokeWidth="2" />
-            <Line x1="11" y1="21" x2="37" y2="21" stroke={BLUE} strokeWidth="2" />
-            <Line x1="15" y1="28.5" x2="20" y2="28.5" stroke={BLUE} strokeWidth="2" strokeLinecap="round" />
+            <Rect
+              x="10.5"
+              y="14.5"
+              width="27"
+              height="19"
+              rx="3"
+              fill="none"
+              stroke={theme.accentText}
+              strokeWidth="2"
+            />
+            <Line x1="11" y1="21" x2="37" y2="21" stroke={theme.accentText} strokeWidth="2" />
+            <Line x1="15" y1="28.5" x2="20" y2="28.5" stroke={theme.accentText} strokeWidth="2" strokeLinecap="round" />
           </>
         ) : (
           <>
-            <Path d="m17 32 4-14 13-4-4 14-13 4Z" fill="none" stroke={BLUE} strokeWidth="2" strokeLinejoin="round" />
-            <Path d="m21 18 9 10M16 33l7-7" fill="none" stroke={BLUE} strokeWidth="1.6" strokeLinecap="round" />
+            <Path
+              d="m17 32 4-14 13-4-4 14-13 4Z"
+              fill="none"
+              stroke={theme.accentText}
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="m21 18 9 10M16 33l7-7"
+              fill="none"
+              stroke={theme.accentText}
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
           </>
         )}
       </Svg>
@@ -163,16 +183,16 @@ export function FilterSourceIcon({ kind, bankName = "", size = 48 }: FilterSourc
         </>
       ) : (
         <>
-          <Circle cx="24" cy="24" r="23" fill="#F3F8FF" stroke="#E6E8ED" />
+          <Circle cx="24" cy="24" r="23" fill={theme.raised} stroke={theme.border} />
           <Path
             d="M12.5 18.5v-4c0-1.3.9-2.4 2.1-2.7l17-4.2c1.6-.4 3 .8 3 2.4v8.5"
             fill="none"
-            stroke={BLUE}
+            stroke={theme.accentText}
             strokeWidth="1.8"
             strokeLinejoin="round"
           />
-          <Rect x="12.5" y="17" width="23" height="19" rx="3" fill="none" stroke={BLUE} strokeWidth="2" />
-          <Path d="M29 23h8v7h-8a3.5 3.5 0 0 1 0-7Z" fill="#F3F8FF" stroke={BLUE} strokeWidth="2" />
+          <Rect x="12.5" y="17" width="23" height="19" rx="3" fill="none" stroke={theme.accentText} strokeWidth="2" />
+          <Path d="M29 23h8v7h-8a3.5 3.5 0 0 1 0-7Z" fill={theme.raised} stroke={theme.accentText} strokeWidth="2" />
         </>
       )}
     </Svg>

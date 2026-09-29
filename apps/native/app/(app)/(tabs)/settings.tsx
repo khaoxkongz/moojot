@@ -9,18 +9,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 
 import { Text } from "@/components/ui/typography";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
-
-const c = {
-  yellow: "#FFDA60",
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  white: "#FFFFFF",
-  ink: "#172337",
-  muted: "#A9B9C9",
-  blue: "#1978F2",
-};
 
 type IconName =
   | "account"
@@ -44,6 +34,7 @@ type IconName =
   | "repeat"
   | "import";
 function RowIcon({ name }: { name: IconName }) {
+  const theme = useAppTheme();
   if (name === "facebook" || name === "line" || name === "messenger") {
     return (
       <View
@@ -51,14 +42,14 @@ function RowIcon({ name }: { name: IconName }) {
           width: 29,
           height: 29,
           borderRadius: 15,
-          backgroundColor: c.muted,
+          backgroundColor: theme.muted,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <Text
           style={{
-            color: c.dark,
+            color: theme.surface,
             fontSize: name === "line" ? 8 : 23,
             lineHeight: name === "line" ? 12 : 27,
             fontWeight: "900",
@@ -71,7 +62,7 @@ function RowIcon({ name }: { name: IconName }) {
   }
   const p = {
     fill: "none",
-    stroke: c.muted,
+    stroke: theme.muted,
     strokeWidth: 1.8,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
@@ -162,7 +153,7 @@ function RowIcon({ name }: { name: IconName }) {
         <>
           <Circle cx={15} cy={15} r={12} {...p} />
           <Path d="M11 11c0-2 2-4 4-4 3 0 5 2 5 5 0 2-1 3-4 5v2" {...p} />
-          <Circle cx={16} cy={23} r={1} fill={c.muted} />
+          <Circle cx={16} cy={23} r={1} fill={theme.muted} />
         </>
       );
       break;
@@ -199,7 +190,7 @@ function RowIcon({ name }: { name: IconName }) {
         <>
           <Circle cx={15} cy={15} r={12} {...p} />
           <Circle cx={15} cy={15} r={7} {...p} />
-          <Circle cx={15} cy={15} r={2} fill={c.muted} />
+          <Circle cx={15} cy={15} r={2} fill={theme.muted} />
         </>
       );
       break;
@@ -235,18 +226,19 @@ function RowIcon({ name }: { name: IconName }) {
 }
 
 function SectionTitle({ children }: { children: string }) {
+  const theme = useAppTheme();
   return (
     <View
       style={{
         minHeight: 69,
-        backgroundColor: c.navy,
+        backgroundColor: theme.background,
         justifyContent: "flex-end",
         paddingHorizontal: 17,
         paddingTop: 22,
         paddingBottom: 16,
       }}
     >
-      <Text style={{ color: c.white, fontSize: 17, fontWeight: "900" }}>{children}</Text>
+      <Text style={{ color: theme.text, fontSize: 17, fontWeight: "900" }}>{children}</Text>
     </View>
   );
 }
@@ -264,6 +256,7 @@ function SettingsRow({
   isNew?: boolean;
   unavailable?: boolean;
 }) {
+  const theme = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -273,7 +266,7 @@ function SettingsRow({
       onPress={onPress}
       style={({ pressed }) => ({
         minHeight: 58,
-        backgroundColor: c.dark,
+        backgroundColor: theme.surface,
         paddingHorizontal: 17,
         flexDirection: "row",
         alignItems: "center",
@@ -284,18 +277,18 @@ function SettingsRow({
       <View style={{ width: 31, alignItems: "center" }}>
         <RowIcon name={icon} />
       </View>
-      <Text numberOfLines={1} style={{ flex: 1, color: c.muted, fontSize: 16 }}>
+      <Text numberOfLines={1} style={{ flex: 1, color: theme.muted, fontSize: 16 }}>
         {title}
-        {isNew ? <Text style={{ color: "#53A9FF", fontSize: 13 }}> ใหม่</Text> : null}
+        {isNew ? <Text style={{ color: theme.accentText, fontSize: 13 }}> ใหม่</Text> : null}
       </Text>
       {unavailable ? (
-        <Text style={{ color: "#7790A7", fontSize: 10 }}>เร็ว ๆ นี้</Text>
+        <Text style={{ color: theme.muted, fontSize: 10 }}>เร็ว ๆ นี้</Text>
       ) : (
         <Svg width={17} height={28} viewBox="0 0 17 28">
           <Path
             d="m2 2 12 12L2 26"
             fill="none"
-            stroke={c.muted}
+            stroke={theme.muted}
             strokeWidth={1.8}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -307,6 +300,7 @@ function SettingsRow({
 }
 
 export default function SettingsScreen() {
+  const theme = useAppTheme();
   const insets = useSafeAreaInsets();
 
   const exportTransactionsCsvMutation = useMutation(entriesMutationOptions.exportCsv());
@@ -351,7 +345,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.navy }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
@@ -361,7 +355,7 @@ export default function SettingsScreen() {
         <View
           style={{
             height: Math.max(260, insets.top + 217),
-            backgroundColor: c.yellow,
+            backgroundColor: theme.accent,
             paddingTop: Math.max(insets.top, 30) + 23,
             paddingHorizontal: 17,
           }}
@@ -370,7 +364,7 @@ export default function SettingsScreen() {
             <Text
               style={{
                 maxWidth: "61%",
-                color: c.ink,
+                color: theme.onAccent,
                 fontSize: 21,
                 fontWeight: "900",
                 lineHeight: 29,
@@ -378,7 +372,7 @@ export default function SettingsScreen() {
             >
               สวัสดี พี่มนุษย์!
             </Text>
-            <Text style={{ maxWidth: "59%", color: c.ink, fontSize: 16, lineHeight: 24, paddingTop: 9 }}>
+            <Text style={{ maxWidth: "59%", color: theme.onAccent, fontSize: 16, lineHeight: 24, paddingTop: 9 }}>
               มาช่วยกันดูแลการใช้จ่าย{"\n"}กันเถอะ หมู~
             </Text>
             <Image
@@ -400,7 +394,7 @@ export default function SettingsScreen() {
               marginHorizontal: 16,
               minHeight: 109,
               borderRadius: 20,
-              backgroundColor: c.slate,
+              backgroundColor: theme.raised,
               flexDirection: "row",
               alignItems: "center",
               paddingRight: 16,
@@ -414,8 +408,8 @@ export default function SettingsScreen() {
               style={{ position: "absolute", left: -4, top: -4, width: 248, height: 124 }}
             />
             <View style={{ flex: 1, gap: 4, marginLeft: 130 }}>
-              <Text style={{ color: c.white, fontSize: 18, fontWeight: "900" }}>ลองใช้หมูจดให้เต็มที่</Text>
-              <Text style={{ color: "#53A9FF", fontSize: 16, fontWeight: "700" }}>เพิ่มข้อมูลตัวอย่าง</Text>
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: "900" }}>ลองใช้หมูจดให้เต็มที่</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "700" }}>เพิ่มข้อมูลตัวอย่าง</Text>
             </View>
           </Pressable>
 
@@ -434,8 +428,8 @@ export default function SettingsScreen() {
             }}
           />
           {notice ? (
-            <View style={{ backgroundColor: c.dark, paddingHorizontal: 19, paddingBottom: 12 }}>
-              <Text selectable style={{ color: "#79B8FF", fontSize: 12 }}>
+            <View style={{ backgroundColor: theme.surface, paddingHorizontal: 19, paddingBottom: 12 }}>
+              <Text selectable style={{ color: theme.accentText, fontSize: 12 }}>
                 {notice}
               </Text>
             </View>
@@ -467,14 +461,14 @@ export default function SettingsScreen() {
 
           <View
             style={{
-              backgroundColor: c.navy,
+              backgroundColor: theme.background,
               paddingHorizontal: 17,
               paddingTop: 19,
               paddingBottom: 29,
               gap: 18,
             }}
           >
-            <Text style={{ color: c.muted, fontSize: 13 }}>เวอร์ชัน 1.0.0 · หมูจด</Text>
+            <Text style={{ color: theme.muted, fontSize: 13 }}>เวอร์ชัน 1.0.0 · หมูจด</Text>
             <View style={{ flexDirection: "row", gap: 9 }}>
               {["บันทึกในเครื่อง", "ข้อมูลของคุณ", "หมูจด"].map((label) => (
                 <View
@@ -483,17 +477,19 @@ export default function SettingsScreen() {
                     flex: 1,
                     minHeight: 62,
                     borderRadius: 8,
-                    backgroundColor: "#F6F9FC",
+                    backgroundColor: theme.raised,
                     alignItems: "center",
                     justifyContent: "center",
                     padding: 6,
                   }}
                 >
-                  <Text style={{ color: c.navy, fontSize: 11, fontWeight: "900", textAlign: "center" }}>{label}</Text>
+                  <Text style={{ color: theme.text, fontSize: 11, fontWeight: "900", textAlign: "center" }}>
+                    {label}
+                  </Text>
                 </View>
               ))}
             </View>
-            <Text style={{ color: c.muted, fontSize: 12, textAlign: "center" }}>แอปบันทึกรายรับรายจ่ายส่วนตัว</Text>
+            <Text style={{ color: theme.muted, fontSize: 12, textAlign: "center" }}>แอปบันทึกรายรับรายจ่ายส่วนตัว</Text>
           </View>
 
           <Pressable
@@ -503,12 +499,12 @@ export default function SettingsScreen() {
             onPress={() => setExtraOpen((open) => !open)}
             style={{
               minHeight: 49,
-              backgroundColor: c.slate,
+              backgroundColor: theme.raised,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: c.white, fontSize: 13, fontWeight: "700" }}>
+            <Text style={{ color: theme.text, fontSize: 13, fontWeight: "700" }}>
               เครื่องมือเพิ่มเติม {extraOpen ? "⌃" : "⌄"}
             </Text>
           </Pressable>

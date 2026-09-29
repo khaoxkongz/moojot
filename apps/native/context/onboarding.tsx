@@ -4,7 +4,7 @@ import { createContext, use } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -16,6 +16,7 @@ type OnboardingContextValue = {
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
+  const theme = useAppTheme();
   const { data: session, isPending: isSessionPending } = authClient.useSession();
 
   const userId = session?.user.id ?? null;
@@ -35,19 +36,15 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FFDA60",
+          backgroundColor: theme.background,
           padding: 24,
           gap: 18,
         }}
       >
-        <Text style={{ color: palette.ink, fontSize: 36, fontWeight: "900" }}>หมูจด</Text>
+        <Text style={{ color: theme.text, fontSize: 36, fontWeight: "900" }}>หมูจด</Text>
         {isError ? (
           <>
-            <Text
-              accessibilityRole="alert"
-              selectable
-              style={{ color: palette.ink, textAlign: "center", fontSize: 16 }}
-            >
+            <Text accessibilityRole="alert" selectable style={{ color: theme.text, textAlign: "center", fontSize: 16 }}>
               โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error.message}
             </Text>
             <Pressable
@@ -56,16 +53,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
               onPress={() => refetch()}
               style={{
                 borderRadius: 999,
-                backgroundColor: "#1978F2",
+                backgroundColor: theme.accent,
                 paddingHorizontal: 32,
                 paddingVertical: 12,
               }}
             >
-              <Text style={{ color: "#FFFFFF", fontSize: 17, fontWeight: "800" }}>ลองอีกครั้ง</Text>
+              <Text style={{ color: theme.onAccent, fontSize: 17, fontWeight: "800" }}>ลองอีกครั้ง</Text>
             </Pressable>
           </>
         ) : (
-          <ActivityIndicator color="#1978F2" size="large" accessibilityLabel="กำลังเตรียมหมูจด" />
+          <ActivityIndicator color={theme.accentText} size="large" accessibilityLabel="กำลังเตรียมหมูจด" />
         )}
       </View>
     );

@@ -4,7 +4,7 @@ import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { Text, TextInput } from "@/components/ui/typography";
 import { Image } from "expo-image";
 import { router, useIsFocused } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,17 +19,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Tag } from "@/types/finance";
-
-const colors = {
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#20384E",
-  yellow: "#FFDA60",
-  blue: "#1677F5",
-  muted: "#A9B9CA",
-  white: "#FFFFFF",
-  red: "#FF7676",
-};
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 const tagColors = ["#4D99FF", "#FF8C83", "#FFC65A", "#A18AFF", "#66CBB0", "#ED83CE"];
 const suggestedTags = [
@@ -44,6 +35,8 @@ function goBack() {
 }
 
 export default function TagsScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isFocused = useIsFocused();
   const createTagMutation = useMutation(categoriesMutationOptions.createTag());
   const deleteTagMutation = useMutation(categoriesMutationOptions.deleteTag());
@@ -131,7 +124,7 @@ export default function TagsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator color={colors.blue} style={{ marginTop: 190 }} />
+          <ActivityIndicator color={theme.accentText} style={{ marginTop: 190 }} />
         ) : tags.length === 0 ? (
           <View style={styles.emptyState}>
             <Image
@@ -226,7 +219,7 @@ export default function TagsScreen() {
               onChangeText={setName}
               maxLength={40}
               placeholder="เช่น ทริปญี่ปุ่น"
-              placeholderTextColor="#7C8FA3"
+              placeholderTextColor={theme.muted}
               style={styles.input}
             />
             <Text style={styles.fieldLabel}>สีแท็ก</Text>
@@ -311,151 +304,153 @@ export default function TagsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.navy },
-  header: {
-    minHeight: 105,
-    paddingHorizontal: 17,
-    backgroundColor: colors.yellow,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerSide: { width: 46, minHeight: 52, justifyContent: "center", alignItems: "center" },
-  backIcon: { color: colors.navy, fontSize: 44, lineHeight: 49, fontWeight: "300" },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    color: "#152235",
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: "900",
-  },
-  content: { flexGrow: 1 },
-  emptyState: { alignItems: "center", paddingTop: 107 },
-  emptyArt: { height: 230 },
-  emptyCopy: {
-    color: colors.muted,
-    fontSize: 19,
-    lineHeight: 28,
-    textAlign: "center",
-    paddingTop: 2,
-  },
-  emptyEmphasis: { color: colors.white, fontWeight: "800" },
-  suggestions: { paddingTop: 24, alignItems: "center", gap: 9, width: "100%" },
-  suggestionRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 4,
-    width: "100%",
-    paddingHorizontal: 16,
-  },
-  suggestion: {
-    backgroundColor: colors.slate,
-    borderRadius: 20,
-    minHeight: 32,
-    paddingHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  suggestionText: { color: colors.white, fontSize: 14, fontWeight: "600" },
-  pressed: { opacity: 0.78 },
-  footer: { position: "absolute", left: 0, right: 0, alignItems: "center" },
-  addButton: {
-    minHeight: 50,
-    backgroundColor: colors.blue,
-    borderRadius: 28,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  addPlus: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: "300" },
-  addText: { color: colors.white, fontSize: 20, fontWeight: "900" },
-  pageError: { color: colors.red, textAlign: "center", paddingHorizontal: 20, paddingTop: 24 },
-  savedContent: { paddingTop: 25, paddingHorizontal: 16, gap: 4 },
-  savedHeading: { color: colors.white, fontSize: 20, fontWeight: "800", paddingBottom: 2 },
-  savedHint: { color: colors.muted, fontSize: 13, lineHeight: 19, paddingBottom: 20 },
-  tagRow: {
-    minHeight: 70,
-    borderRadius: 16,
-    backgroundColor: colors.dark,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    gap: 6,
-  },
-  tagMark: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tagHash: { fontSize: 24, fontWeight: "900" },
-  tagName: { flex: 1, color: colors.white, fontSize: 16, fontWeight: "700", paddingLeft: 5 },
-  rowAction: { minHeight: 42, paddingHorizontal: 5, justifyContent: "center" },
-  editText: { color: "#56A8FF", fontSize: 13, fontWeight: "700" },
-  deleteText: { color: "#FF8A8A", fontSize: 13, fontWeight: "700" },
-  modalRoot: { flex: 1, alignItems: "center", justifyContent: "center" },
-  modalBackdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0, 0, 0, .62)",
-  },
-  editorCard: {
-    width: "90%",
-    maxWidth: 420,
-    padding: 22,
-    borderRadius: 20,
-    backgroundColor: colors.slate,
-    gap: 10,
-  },
-  modalTitle: { color: colors.white, fontSize: 21, fontWeight: "900", paddingBottom: 6 },
-  fieldLabel: { color: colors.muted, fontSize: 14, fontWeight: "700" },
-  input: {
-    color: colors.white,
-    backgroundColor: colors.dark,
-    borderRadius: 12,
-    minHeight: 48,
-    paddingHorizontal: 14,
-    fontSize: 17,
-  },
-  colorRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 },
-  colorChoice: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorSelected: { borderWidth: 2, borderColor: colors.white },
-  colorCheck: { color: colors.white, fontSize: 22, fontWeight: "900" },
-  modalError: { color: colors.red, fontSize: 13 },
-  modalActions: { flexDirection: "row", gap: 12, paddingTop: 12 },
-  cancelButton: {
-    flex: 1,
-    minHeight: 45,
-    borderWidth: 1,
-    borderColor: colors.blue,
-    borderRadius: 25,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelText: { color: "#57A8FF", fontSize: 16, fontWeight: "800" },
-  saveButton: {
-    flex: 1,
-    minHeight: 45,
-    backgroundColor: colors.blue,
-    borderRadius: 25,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveText: { color: colors.white, fontSize: 16, fontWeight: "900" },
-  deleteDescription: { color: colors.muted, fontSize: 15, lineHeight: 23 },
-  disabled: { opacity: 0.5 },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    header: {
+      minHeight: 105,
+      paddingHorizontal: 17,
+      backgroundColor: theme.accent,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    headerSide: { width: 46, minHeight: 52, justifyContent: "center", alignItems: "center" },
+    backIcon: { color: theme.onAccent, fontSize: 44, lineHeight: 49, fontWeight: "300" },
+    headerTitle: {
+      flex: 1,
+      textAlign: "center",
+      color: theme.onAccent,
+      fontSize: 20,
+      lineHeight: 28,
+      fontWeight: "900",
+    },
+    content: { flexGrow: 1 },
+    emptyState: { alignItems: "center", paddingTop: 107 },
+    emptyArt: { height: 230 },
+    emptyCopy: {
+      color: theme.muted,
+      fontSize: 19,
+      lineHeight: 28,
+      textAlign: "center",
+      paddingTop: 2,
+    },
+    emptyEmphasis: { color: theme.text, fontWeight: "800" },
+    suggestions: { paddingTop: 24, alignItems: "center", gap: 9, width: "100%" },
+    suggestionRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 4,
+      width: "100%",
+      paddingHorizontal: 16,
+    },
+    suggestion: {
+      backgroundColor: theme.raised,
+      borderRadius: 20,
+      minHeight: 32,
+      paddingHorizontal: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    suggestionText: { color: theme.text, fontSize: 14, fontWeight: "600" },
+    pressed: { opacity: 0.78 },
+    footer: { position: "absolute", left: 0, right: 0, alignItems: "center" },
+    addButton: {
+      minHeight: 50,
+      backgroundColor: theme.accent,
+      borderRadius: 28,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+    },
+    addPlus: { color: theme.onAccent, fontSize: 32, lineHeight: 38, fontWeight: "300" },
+    addText: { color: theme.onAccent, fontSize: 20, fontWeight: "900" },
+    pageError: { color: theme.dangerText, textAlign: "center", paddingHorizontal: 20, paddingTop: 24 },
+    savedContent: { paddingTop: 25, paddingHorizontal: 16, gap: 4 },
+    savedHeading: { color: theme.text, fontSize: 20, fontWeight: "800", paddingBottom: 2 },
+    savedHint: { color: theme.muted, fontSize: 13, lineHeight: 19, paddingBottom: 20 },
+    tagRow: {
+      minHeight: 70,
+      borderRadius: 16,
+      backgroundColor: theme.surface,
+      marginBottom: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 12,
+      gap: 6,
+    },
+    tagMark: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    tagHash: { fontSize: 24, fontWeight: "900" },
+    tagName: { flex: 1, color: theme.text, fontSize: 16, fontWeight: "700", paddingLeft: 5 },
+    rowAction: { minHeight: 42, paddingHorizontal: 5, justifyContent: "center" },
+    editText: { color: theme.accentText, fontSize: 13, fontWeight: "700" },
+    deleteText: { color: theme.dangerText, fontSize: 13, fontWeight: "700" },
+    modalRoot: { flex: 1, alignItems: "center", justifyContent: "center" },
+    modalBackdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(0, 0, 0, .62)",
+    },
+    editorCard: {
+      width: "90%",
+      maxWidth: 420,
+      padding: 22,
+      borderRadius: 20,
+      backgroundColor: theme.raised,
+      gap: 10,
+    },
+    modalTitle: { color: theme.text, fontSize: 21, fontWeight: "900", paddingBottom: 6 },
+    fieldLabel: { color: theme.muted, fontSize: 14, fontWeight: "700" },
+    input: {
+      color: theme.text,
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      minHeight: 48,
+      paddingHorizontal: 14,
+      fontSize: 17,
+    },
+    colorRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 },
+    colorChoice: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    colorSelected: { borderWidth: 2, borderColor: theme.text },
+    colorCheck: { color: theme.text, fontSize: 22, fontWeight: "900" },
+    modalError: { color: theme.dangerText, fontSize: 13 },
+    modalActions: { flexDirection: "row", gap: 12, paddingTop: 12 },
+    cancelButton: {
+      flex: 1,
+      minHeight: 45,
+      borderWidth: 1,
+      borderColor: theme.accentText,
+      borderRadius: 25,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cancelText: { color: theme.accentText, fontSize: 16, fontWeight: "800" },
+    saveButton: {
+      flex: 1,
+      minHeight: 45,
+      backgroundColor: theme.accent,
+      borderRadius: 25,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    saveText: { color: theme.onAccent, fontSize: 16, fontWeight: "900" },
+    deleteDescription: { color: theme.muted, fontSize: 15, lineHeight: 23 },
+    disabled: { opacity: 0.5 },
+  });
+}

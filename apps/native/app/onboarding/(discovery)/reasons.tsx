@@ -7,7 +7,7 @@ import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations
 import { Text } from "@/components/ui/typography";
 import { FloatingBack, Footer, Page } from "@/features/onboarding/components/onboarding-controls";
 import { useOnboardingFlow } from "@/features/onboarding/flow-context";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 const reasonOptions = [
   { key: "reduce", label: "ลดรายจ่าย" },
@@ -19,6 +19,7 @@ const reasonOptions = [
 ] as const;
 
 export default function OnboardingReasonsRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -58,7 +59,7 @@ export default function OnboardingReasonsRoute() {
         <OnboardingIllustration variant="reasons" size={Math.min(width * 0.9, 345)} selectedReasons={reasons} />
         <Text
           style={{
-            color: color.ink,
+            color: theme.text,
             fontSize: 28,
             lineHeight: 38,
             fontWeight: "900",
@@ -68,7 +69,7 @@ export default function OnboardingReasonsRoute() {
         >
           พี่มนุษย์อยากจดรายจ่าย{`\n`}เพราะอะไรเหรอ?
         </Text>
-        <Text style={{ color: "#7B8492", fontSize: 17, marginTop: 12 }}>เลือกได้หลายคำตอบ</Text>
+        <Text style={{ color: theme.muted, fontSize: 17, marginTop: 12 }}>เลือกได้หลายคำตอบ</Text>
         <View
           style={{
             flexDirection: "row",
@@ -90,14 +91,14 @@ export default function OnboardingReasonsRoute() {
                 style={({ pressed }) => ({
                   borderRadius: 999,
                   borderWidth: 1.5,
-                  borderColor: selected ? color.lightBlue : color.blue,
-                  backgroundColor: selected ? color.lightBlue : color.yellow,
+                  borderColor: selected ? theme.accentText : theme.accent,
+                  backgroundColor: selected ? theme.accentText : theme.accent,
                   paddingHorizontal: 17,
                   paddingVertical: 10,
                   opacity: pressed ? 0.7 : 1,
                 })}
               >
-                <Text style={{ color: color.blue, fontSize: 16, fontWeight: "800" }}>{reason.label}</Text>
+                <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>{reason.label}</Text>
               </Pressable>
             );
           })}

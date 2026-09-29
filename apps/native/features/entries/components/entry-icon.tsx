@@ -1,22 +1,15 @@
 import React from "react";
 import Svg, { Line, Path, Rect } from "react-native-svg";
 
-import { colors } from "@/features/entries/entry-styles";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 type IconName = "up" | "down" | "transfer" | "calendar" | "category" | "note" | "repeat";
 
-export function EntryIcon({
-  name,
-  size = 28,
-  color = colors.lightBlue,
-}: {
-  name: IconName;
-  size?: number;
-  color?: string;
-}) {
+export function EntryIcon({ name, size = 28, color }: { name: IconName; size?: number; color?: string }) {
+  const theme = useAppTheme();
   const shared = {
     fill: "none" as const,
-    stroke: color,
+    stroke: color ?? theme.accentText,
     strokeWidth: 1.9,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,

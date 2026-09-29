@@ -18,21 +18,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Category } from "@/types/finance";
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 type Kind = "expense" | "income";
 type Editor = { id: string | null; name: string; icon: string; color: string };
 
-const colors = {
-  navy: "#0B243B",
-  dark: "#071D30",
-  slate: "#1E3A51",
-  yellow: "#FFDA60",
-  paleYellow: "#FFEB9E",
-  blue: "#1677F5",
-  white: "#FFFFFF",
-  ink: "#132337",
-  muted: "#A9B9CA",
-};
 const icons = ["🍜", "🚙", "🛍️", "🏠", "💊", "🎬", "🎁", "📚", "💼", "💸", "✨", "📈"];
 const swatches = ["#FF9E15", "#21B6D1", "#EE59CA", "#7957E5", "#19CDA9", "#8DDD29", "#D7971C"];
 
@@ -42,6 +33,8 @@ function goBack() {
 }
 
 export default function CategoriesScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const isFocused = useIsFocused();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const createCategoryMutation = useMutation(categoriesMutationOptions.createCategory());
@@ -146,10 +139,10 @@ export default function CategoriesScreen() {
               onPress={() => setKind(value)}
               style={[styles.tab, kind === value ? styles.selectedTab : styles.unselectedTab]}
             >
-              <Text style={[styles.tabArrow, { color: kind === value ? colors.white : colors.ink }]}>
+              <Text style={[styles.tabArrow, { color: kind === value ? theme.text : theme.text }]}>
                 {value === "expense" ? "↑" : "↓"}
               </Text>
-              <Text style={[styles.tabLabel, { color: kind === value ? colors.white : colors.ink }]}>
+              <Text style={[styles.tabLabel, { color: kind === value ? theme.text : theme.text }]}>
                 {value === "expense" ? "รายจ่าย" : "รายรับ"}
               </Text>
             </Pressable>
@@ -178,7 +171,7 @@ export default function CategoriesScreen() {
           <Text style={styles.headingText}>หมวดหมู่{kind === "expense" ? "รายจ่าย" : "รายรับ"}</Text>
         </View>
         {loading ? (
-          <ActivityIndicator color={colors.blue} style={{ marginTop: 32 }} />
+          <ActivityIndicator color={theme.accentText} style={{ marginTop: 32 }} />
         ) : (
           <View style={styles.grid}>
             {visible.map((category) => (
@@ -228,7 +221,7 @@ export default function CategoriesScreen() {
               <TextInput
                 accessibilityLabel="ชื่อหมวดหมู่"
                 placeholder="เช่น คาเฟ่"
-                placeholderTextColor="#8CA0B2"
+                placeholderTextColor={theme.muted}
                 value={editor?.name ?? ""}
                 onChangeText={(value) => setEditor((current) => current && { ...current, name: value })}
                 style={styles.nameInput}
@@ -296,154 +289,156 @@ export default function CategoriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.navy },
-  header: {
-    minHeight: 105,
-    backgroundColor: colors.yellow,
-    paddingHorizontal: 15,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  back: { width: 45, height: 56, alignItems: "flex-start", justifyContent: "center" },
-  backText: { color: colors.ink, fontSize: 46, fontWeight: "300", lineHeight: 49 },
-  tabs: { height: 56, flexDirection: "row", alignItems: "flex-end" },
-  tab: {
-    width: 75,
-    height: 56,
-    borderTopLeftRadius: 13,
-    borderTopRightRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 0,
-  },
-  selectedTab: { backgroundColor: colors.navy },
-  unselectedTab: { backgroundColor: colors.paleYellow },
-  tabArrow: { fontSize: 23, lineHeight: 25, fontWeight: "300" },
-  tabLabel: { fontSize: 13, lineHeight: 19, fontWeight: "800" },
-  manage: { width: 57, height: 56, justifyContent: "center", alignItems: "flex-end" },
-  manageText: { color: colors.blue, fontWeight: "800", fontSize: 17 },
-  sectionHeading: {
-    minHeight: 72,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    backgroundColor: colors.navy,
-  },
-  headingText: { color: colors.white, fontSize: 17, fontWeight: "800" },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    backgroundColor: colors.dark,
-    paddingTop: 16,
-    paddingBottom: 5,
-  },
-  cell: { width: "25%", minHeight: 114, alignItems: "center", paddingHorizontal: 3 },
-  iconBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editDot: {
-    position: "absolute",
-    right: -2,
-    bottom: -2,
-    width: 17,
-    height: 17,
-    borderRadius: 9,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editDotText: { color: colors.white, fontSize: 11, fontWeight: "900" },
-  cellLabel: { color: "#F4F7FB", fontSize: 14, lineHeight: 19, textAlign: "center", paddingTop: 8 },
-  manageHint: {
-    color: colors.muted,
-    fontSize: 12,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  inlineError: { color: "#FFB3B3", textAlign: "center", padding: 18 },
-  addButton: {
-    position: "absolute",
-    alignSelf: "center",
-    width: "62%",
-    maxWidth: 300,
-    minHeight: 49,
-    borderRadius: 26,
-    backgroundColor: colors.blue,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  addButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  modalShade: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,.62)",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  modalCard: {
-    maxWidth: 460,
-    width: "100%",
-    alignSelf: "center",
-    backgroundColor: colors.slate,
-    borderRadius: 18,
-    padding: 20,
-    gap: 10,
-  },
-  modalTitle: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: "900",
-    textAlign: "center",
-    paddingBottom: 7,
-  },
-  fieldCaption: { color: colors.white, fontSize: 14, fontWeight: "700" },
-  nameInput: {
-    minHeight: 48,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-    color: colors.ink,
-    paddingHorizontal: 12,
-    fontSize: 16,
-  },
-  iconChoices: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  iconChoice: {
-    width: 43,
-    height: 43,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.navy,
-  },
-  selectedChoice: { borderWidth: 2, borderColor: colors.yellow },
-  swatches: { flexDirection: "row", flexWrap: "wrap", gap: 9, paddingVertical: 4 },
-  swatch: { width: 30, height: 30, borderRadius: 15 },
-  selectedSwatch: { borderWidth: 3, borderColor: colors.white },
-  formError: { color: "#FFB3B3", fontSize: 13 },
-  modalActions: { flexDirection: "row", gap: 9, paddingTop: 9 },
-  modalAction: {
-    flex: 1,
-    minHeight: 43,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelAction: { borderWidth: 1, borderColor: colors.blue },
-  cancelText: { color: "#5AABFF", fontWeight: "800", fontSize: 15 },
-  saveAction: { backgroundColor: colors.blue },
-  saveText: { color: colors.white, fontWeight: "800", fontSize: 15 },
-  deleteAction: { alignItems: "center", paddingTop: 6 },
-  deleteText: { color: "#FF9D9D", fontSize: 13, fontWeight: "700" },
-});
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    header: {
+      minHeight: 105,
+      backgroundColor: theme.accent,
+      paddingHorizontal: 15,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+    },
+    back: { width: 45, height: 56, alignItems: "flex-start", justifyContent: "center" },
+    backText: { color: theme.onAccent, fontSize: 46, fontWeight: "300", lineHeight: 49 },
+    tabs: { height: 56, flexDirection: "row", alignItems: "flex-end" },
+    tab: {
+      width: 75,
+      height: 56,
+      borderTopLeftRadius: 13,
+      borderTopRightRadius: 13,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 0,
+    },
+    selectedTab: { backgroundColor: theme.background },
+    unselectedTab: { backgroundColor: theme.raised },
+    tabArrow: { fontSize: 23, lineHeight: 25, fontWeight: "300" },
+    tabLabel: { fontSize: 13, lineHeight: 19, fontWeight: "800" },
+    manage: { width: 57, height: 56, justifyContent: "center", alignItems: "flex-end" },
+    manageText: { color: theme.onAccent, fontWeight: "800", fontSize: 17 },
+    sectionHeading: {
+      minHeight: 72,
+      justifyContent: "center",
+      paddingHorizontal: 16,
+      backgroundColor: theme.background,
+    },
+    headingText: { color: theme.text, fontSize: 17, fontWeight: "800" },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      backgroundColor: theme.surface,
+      paddingTop: 16,
+      paddingBottom: 5,
+    },
+    cell: { width: "25%", minHeight: 114, alignItems: "center", paddingHorizontal: 3 },
+    iconBadge: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: theme.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    editDot: {
+      position: "absolute",
+      right: -2,
+      bottom: -2,
+      width: 17,
+      height: 17,
+      borderRadius: 9,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    editDotText: { color: theme.onAccent, fontSize: 11, fontWeight: "900" },
+    cellLabel: { color: theme.text, fontSize: 14, lineHeight: 19, textAlign: "center", paddingTop: 8 },
+    manageHint: {
+      color: theme.muted,
+      fontSize: 12,
+      textAlign: "center",
+      paddingHorizontal: 20,
+      paddingTop: 16,
+    },
+    inlineError: { color: theme.dangerText, textAlign: "center", padding: 18 },
+    addButton: {
+      position: "absolute",
+      alignSelf: "center",
+      width: "62%",
+      maxWidth: 300,
+      minHeight: 49,
+      borderRadius: 26,
+      backgroundColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 10,
+    },
+    addButtonText: {
+      color: theme.onAccent,
+      fontSize: 18,
+      lineHeight: 24,
+      fontWeight: "800",
+      textAlign: "center",
+    },
+    modalShade: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,.62)",
+      justifyContent: "center",
+      paddingHorizontal: 16,
+    },
+    modalCard: {
+      maxWidth: 460,
+      width: "100%",
+      alignSelf: "center",
+      backgroundColor: theme.raised,
+      borderRadius: 18,
+      padding: 20,
+      gap: 10,
+    },
+    modalTitle: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: "900",
+      textAlign: "center",
+      paddingBottom: 7,
+    },
+    fieldCaption: { color: theme.text, fontSize: 14, fontWeight: "700" },
+    nameInput: {
+      minHeight: 48,
+      borderRadius: 10,
+      backgroundColor: theme.surface,
+      color: theme.text,
+      paddingHorizontal: 12,
+      fontSize: 16,
+    },
+    iconChoices: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    iconChoice: {
+      width: 43,
+      height: 43,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.background,
+    },
+    selectedChoice: { borderWidth: 2, borderColor: theme.accent },
+    swatches: { flexDirection: "row", flexWrap: "wrap", gap: 9, paddingVertical: 4 },
+    swatch: { width: 30, height: 30, borderRadius: 15 },
+    selectedSwatch: { borderWidth: 3, borderColor: theme.text },
+    formError: { color: theme.dangerText, fontSize: 13 },
+    modalActions: { flexDirection: "row", gap: 9, paddingTop: 9 },
+    modalAction: {
+      flex: 1,
+      minHeight: 43,
+      borderRadius: 23,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cancelAction: { borderWidth: 1, borderColor: theme.accentText },
+    cancelText: { color: theme.accentText, fontWeight: "800", fontSize: 15 },
+    saveAction: { backgroundColor: theme.accent },
+    saveText: { color: theme.onAccent, fontWeight: "800", fontSize: 15 },
+    deleteAction: { alignItems: "center", paddingTop: 6 },
+    deleteText: { color: theme.dangerText, fontSize: 13, fontWeight: "700" },
+  });
+}

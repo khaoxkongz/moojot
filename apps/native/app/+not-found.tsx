@@ -3,7 +3,7 @@ import { Stack, router } from "expo-router";
 import { Text, View, StyleSheet } from "react-native";
 
 import { Container } from "@/components/container";
-import { NAV_THEME } from "@/utils/constants";
+import { NAV_THEME } from "@/constants/theme";
 import { useColorScheme } from "@/lib/use-color-scheme";
 
 export default function NotFoundScreen() {

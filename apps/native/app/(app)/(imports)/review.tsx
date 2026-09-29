@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 import { Button, Card, EmptyState, Field, Pill, SectionHeading } from "@/components/ui/moo-ui";
 import { Text } from "@/components/ui/typography";
-import { palette } from "@/constants/moo-theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { detectDuplicates } from "@/features/entries/data";
 import { entriesQueryOptions } from "@/features/entries/query-options";
@@ -30,6 +30,7 @@ const emptyCandidates: never[] = [];
 const emptyReviewRows: ReviewRow[] = [];
 
 export default function ReviewScreen() {
+  const theme = useAppTheme();
   const isFocused = useIsFocused();
 
   const { data } = authClient.useSession();
@@ -171,15 +172,15 @@ export default function ReviewScreen() {
       <View style={{ width: "100%", maxWidth: 680, gap: 16 }}>
         <View style={{ alignItems: "center", gap: 5, paddingVertical: 6 }}>
           <Text style={{ fontSize: 43 }}>🔎</Text>
-          <Text style={{ color: palette.ink, fontSize: 21, fontWeight: "900" }}>ตรวจให้ชัวร์ก่อนจด</Text>
-          <Text style={{ color: palette.muted, textAlign: "center", fontSize: 13 }}>
+          <Text style={{ color: theme.text, fontSize: 21, fontWeight: "900" }}>ตรวจให้ชัวร์ก่อนจด</Text>
+          <Text style={{ color: theme.muted, textAlign: "center", fontSize: 13 }}>
             เลือกและแก้ไขรายการที่อ่านได้ก่อนบันทึกลงบัญชี
           </Text>
         </View>
         {session.warnings.length ? (
-          <Card style={{ backgroundColor: "#FFF3E7", gap: 5 }}>
+          <Card style={{ backgroundColor: theme.raised, gap: 5 }}>
             {session.warnings.map((warning, i) => (
-              <Text key={i} style={{ color: "#98652B", fontSize: 12, lineHeight: 19 }}>
+              <Text key={i} style={{ color: theme.accentText, fontSize: 12, lineHeight: 19 }}>
                 • {warning}
               </Text>
             ))}
@@ -187,13 +188,13 @@ export default function ReviewScreen() {
         ) : null}
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <SectionHeading title={`${rows.length} รายการที่พบ`} />
-          <Text style={{ color: palette.pinkDark, fontWeight: "800", fontSize: 13 }}>เลือก {selectedCount} รายการ</Text>
+          <Text style={{ color: theme.accentText, fontWeight: "800", fontSize: 13 }}>เลือก {selectedCount} รายการ</Text>
         </View>
         {loading ? (
-          <ActivityIndicator color={palette.pink} />
+          <ActivityIndicator color={theme.accentText} />
         ) : loadError ? (
-          <Card style={{ backgroundColor: "#FFF1F1" }}>
-            <Text selectable style={{ color: palette.red }}>
+          <Card style={{ backgroundColor: theme.raised }}>
+            <Text selectable style={{ color: theme.dangerText }}>
               {loadError}
             </Text>
             <Button
@@ -212,7 +213,7 @@ export default function ReviewScreen() {
           </Card>
         ) : (
           rows.map((row, index) => (
-            <Card key={index} style={{ gap: 13, borderColor: row.selected ? palette.pink : palette.line }}>
+            <Card key={index} style={{ gap: 13, borderColor: row.selected ? theme.accent : theme.border }}>
               <Pressable
                 onPress={() => update(index, { selected: !row.selected })}
                 style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
@@ -223,20 +224,18 @@ export default function ReviewScreen() {
                     height: 25,
                     borderRadius: 8,
                     borderWidth: 2,
-                    borderColor: row.selected ? palette.pink : palette.muted,
-                    backgroundColor: row.selected ? palette.pink : "#FFFFFF",
+                    borderColor: row.selected ? theme.accent : theme.muted,
+                    backgroundColor: row.selected ? theme.accent : theme.surface,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  {row.selected ? <Text style={{ color: "#FFFFFF", fontWeight: "900" }}>✓</Text> : null}
+                  {row.selected ? <Text style={{ color: theme.onAccent, fontWeight: "900" }}>✓</Text> : null}
                 </View>
-                <Text style={{ color: palette.ink, fontWeight: "900", fontSize: 15, flex: 1 }}>
-                  รายการที่ {index + 1}
-                </Text>
+                <Text style={{ color: theme.text, fontWeight: "900", fontSize: 15, flex: 1 }}>รายการที่ {index + 1}</Text>
                 <Text
                   style={{
-                    color: row.issues.length ? "#A96B2A" : palette.muted,
+                    color: row.issues.length ? theme.accentText : theme.muted,
                     fontSize: 11,
                     fontWeight: "800",
                   }}
@@ -245,10 +244,10 @@ export default function ReviewScreen() {
                 </Text>
               </Pressable>
               {row.duplicate ? (
-                <Text style={{ color: "#A96B2A", fontSize: 12 }}>⚠ พบรายการที่อาจซ้ำ จึงไม่ได้เลือกไว้</Text>
+                <Text style={{ color: theme.accentText, fontSize: 12 }}>⚠ พบรายการที่อาจซ้ำ จึงไม่ได้เลือกไว้</Text>
               ) : null}
               {row.issues.map((issue, i) => (
-                <Text key={i} style={{ color: "#A96B2A", fontSize: 12 }}>
+                <Text key={i} style={{ color: theme.accentText, fontSize: 12 }}>
                   • {issue}
                 </Text>
               ))}
@@ -283,7 +282,7 @@ export default function ReviewScreen() {
               />
               {row.kind !== "transfer" ? (
                 <View style={{ gap: 8 }}>
-                  <Text style={{ color: palette.ink, fontWeight: "700", fontSize: 14 }}>หมวดหมู่</Text>
+                  <Text style={{ color: theme.text, fontWeight: "700", fontSize: 14 }}>หมวดหมู่</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
                     <Pill
                       label="ไม่ระบุ"
@@ -310,15 +309,15 @@ export default function ReviewScreen() {
                 onChangeText={(value) => update(index, { note: value })}
                 placeholder="รายละเอียดเพิ่มเติม"
               />
-              <Text style={{ color: palette.muted, fontSize: 11 }}>
+              <Text style={{ color: theme.muted, fontSize: 11 }}>
                 {[row.bank, row.cardName, row.cardLast4 ? `•••• ${row.cardLast4}` : null].filter(Boolean).join(" · ")}
               </Text>
             </Card>
           ))
         )}
         {error || (prepared && queryError) ? (
-          <Card style={{ backgroundColor: "#FFF1F1" }}>
-            <Text selectable style={{ color: palette.red }}>
+          <Card style={{ backgroundColor: theme.raised }}>
+            <Text selectable style={{ color: theme.dangerText }}>
               {error ?? queryError}
             </Text>
           </Card>

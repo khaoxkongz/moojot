@@ -10,7 +10,7 @@ import { useAppFonts } from "@/constants/fonts";
 import { AppDataProvider } from "@/context/app-data";
 import { OnboardingProvider, useOnboarding } from "@/context/onboarding";
 import { authClient } from "@/lib/auth-client";
-import { NAV_THEME } from "@/utils/constants";
+import { NAV_THEME, themes } from "@/constants/theme";
 import { useColorScheme } from "@/lib/use-color-scheme";
 import { queryClient } from "@/utils/orpc";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -66,10 +66,16 @@ function RootNavigation({ isDarkColorScheme }: { isDarkColorScheme: boolean }) {
         <GestureHandlerRootView style={styles.container}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={!userId}>
-              <Stack.Screen name="(auth)" options={{ contentStyle: { backgroundColor: "#FFDA60" } }} />
+              <Stack.Screen
+                name="(auth)"
+                options={{ contentStyle: { backgroundColor: themes[isDarkColorScheme ? "dark" : "light"].background } }}
+              />
             </Stack.Protected>
             <Stack.Protected guard={Boolean(userId) && !isComplete}>
-              <Stack.Screen name="onboarding" options={{ contentStyle: { backgroundColor: "#FFDA60" } }} />
+              <Stack.Screen
+                name="onboarding"
+                options={{ contentStyle: { backgroundColor: themes[isDarkColorScheme ? "dark" : "light"].background } }}
+              />
             </Stack.Protected>
             <Stack.Protected guard={hasAccount}>
               <Stack.Screen name="(app)" />

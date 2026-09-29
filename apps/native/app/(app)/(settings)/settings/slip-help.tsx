@@ -7,10 +7,11 @@ import {
   SettingsPage,
   SettingsPanel,
   SettingsScroll,
-  settingsPageStyles,
+  useSettingsPageStyles,
 } from "@/features/settings/components/settings-page";
 
 export default function SlipHelpSettingsScreen() {
+  const settingsPageStyles = useSettingsPageStyles();
   return (
     <SettingsPage title="หมูไม่อ่านสลิป?">
       <SettingsScroll>

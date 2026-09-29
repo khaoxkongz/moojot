@@ -7,9 +7,10 @@ import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations
 import { Text } from "@/components/ui/typography";
 import { FloatingBack, Footer, Page } from "@/features/onboarding/components/onboarding-controls";
 import { useOnboardingFlow } from "@/features/onboarding/flow-context";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingMotivationRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -71,7 +72,7 @@ export default function OnboardingMotivationRoute() {
       >
         <View
           style={{
-            backgroundColor: motivationDone ? color.white : "#FFECA6",
+            backgroundColor: motivationDone ? theme.surface : theme.raised,
             borderRadius: 17,
             paddingHorizontal: 20,
             paddingVertical: 14,
@@ -80,7 +81,7 @@ export default function OnboardingMotivationRoute() {
         >
           <Text
             style={{
-              color: color.ink,
+              color: theme.text,
               fontSize: motivationDone ? 20 : 17,
               fontWeight: "800",
               textAlign: "center",
@@ -130,15 +131,15 @@ export default function OnboardingMotivationRoute() {
                 width: 112,
                 height: 112,
                 borderRadius: 56,
-                backgroundColor: color.blue,
+                backgroundColor: theme.accent,
                 justifyContent: "center",
                 alignItems: "center",
-                boxShadow: "0 5px 13px rgba(25, 120, 242, .28)",
+                boxShadow: "0 5px 13px rgba(45, 45, 43, .22)",
               }}
             >
               <Text
                 style={{
-                  color: color.white,
+                  color: theme.onAccent,
                   fontSize: 19,
                   fontWeight: "800",
                   textAlign: "center",

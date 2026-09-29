@@ -16,10 +16,11 @@ import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations
 import { Text } from "@/components/ui/typography";
 import { FloatingBack, Footer, Page, PrimaryButton } from "@/features/onboarding/components/onboarding-controls";
 import { SlipSourceCard } from "@/features/onboarding/components/slip-source-card";
-import { color } from "@/features/onboarding/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { scanSlipAlbums, slipAlbumSources, type SlipAlbumScanResult } from "@/features/slips/library-scan";
 
 export default function OnboardingSlipsRoute() {
+  const theme = useAppTheme();
   const router = useRouter();
   const { height } = useWindowDimensions();
   const slipScanRun = useRef(0);
@@ -89,23 +90,23 @@ export default function OnboardingSlipsRoute() {
                 width: 76,
                 height: 42,
                 borderRadius: 24,
-                backgroundColor: "#F94B53",
+                backgroundColor: theme.danger,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               {completedScan ? (
-                <Text style={{ color: color.white, fontSize: 24, fontWeight: "900" }}>
+                <Text style={{ color: theme.onAccent, fontSize: 24, fontWeight: "900" }}>
                   {completedScan.total > 99 ? "99+" : completedScan.total}
                 </Text>
               ) : (
-                <MaterialCommunityIcons name="image-multiple-outline" size={26} color={color.white} />
+                <MaterialCommunityIcons name="image-multiple-outline" size={26} color={theme.onAccent} />
               )}
             </View>
           </View>
           <Text
             style={{
-              color: color.ink,
+              color: theme.text,
               fontSize: 25,
               fontWeight: "800",
               textAlign: "center",
@@ -116,7 +117,7 @@ export default function OnboardingSlipsRoute() {
           </Text>
           <Text
             style={{
-              color: color.ink,
+              color: theme.text,
               fontSize: 18,
               textAlign: "center",
               marginTop: 20,
@@ -146,28 +147,28 @@ export default function OnboardingSlipsRoute() {
               marginTop: 17,
             }}
           >
-            <ActivityIndicator color={color.blue} />
-            <Text style={{ color: color.ink, fontSize: 15 }}>กำลังนับรูปในอัลบั้ม…</Text>
+            <ActivityIndicator color={theme.accentText} />
+            <Text style={{ color: theme.text, fontSize: 15 }}>กำลังนับรูปในอัลบั้ม…</Text>
           </View>
         ) : slipScanError ? (
           <View style={{ alignItems: "center", marginTop: 17, paddingHorizontal: 24, gap: 5 }}>
-            <Text style={{ color: color.ink, textAlign: "center", fontSize: 15 }}>
+            <Text style={{ color: theme.text, textAlign: "center", fontSize: 15 }}>
               ค้นหาอัลบั้มไม่สำเร็จ: {slipScanError}
             </Text>
             <PrimaryButton label="ลองอีกครั้ง" onPress={() => void refreshSlipScan()} />
           </View>
         ) : slipScan?.status === "permission-required" ? (
           <View style={{ alignItems: "center", marginTop: 17, paddingHorizontal: 24, gap: 8 }}>
-            <Text style={{ color: color.ink, textAlign: "center", fontSize: 15 }}>
+            <Text style={{ color: theme.text, textAlign: "center", fontSize: 15 }}>
               อนุญาตให้เข้าถึงรูปภาพทั้งหมดเพื่อค้นหาอัลบั้มสลิป หมูจดไม่ส่งรูปไปยังเซิร์ฟเวอร์
             </Text>
             <Pressable accessibilityRole="button" onPress={() => void refreshSlipScan(true)} style={{ padding: 9 }}>
-              <Text style={{ color: color.blue, fontSize: 16, fontWeight: "800" }}>อนุญาตและค้นหาสลิป</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>อนุญาตและค้นหาสลิป</Text>
             </Pressable>
           </View>
         ) : needsSettings ? (
           <View style={{ alignItems: "center", marginTop: 17, paddingHorizontal: 24, gap: 8 }}>
-            <Text style={{ color: color.ink, textAlign: "center", fontSize: 15 }}>
+            <Text style={{ color: theme.text, textAlign: "center", fontSize: 15 }}>
               {slipScan?.status === "limited"
                 ? "ต้องอนุญาตให้เข้าถึงรูปภาพทั้งหมด จึงจะค้นหาอัลบั้มได้"
                 : "ยังไม่ได้รับสิทธิ์เข้าถึงรูปภาพทั้งหมด"}
@@ -181,11 +182,11 @@ export default function OnboardingSlipsRoute() {
               }}
               style={{ padding: 9 }}
             >
-              <Text style={{ color: color.blue, fontSize: 16, fontWeight: "800" }}>เปิดการตั้งค่ารูปภาพ</Text>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "800" }}>เปิดการตั้งค่ารูปภาพ</Text>
             </Pressable>
           </View>
         ) : completedScan?.matchedAlbums === 0 ? (
-          <Text style={{ color: color.ink, textAlign: "center", fontSize: 15, marginTop: 17 }}>
+          <Text style={{ color: theme.text, textAlign: "center", fontSize: 15, marginTop: 17 }}>
             ยังไม่พบอัลบั้มของแอปธนาคารที่รองรับ
           </Text>
         ) : null}
@@ -203,8 +204,8 @@ export default function OnboardingSlipsRoute() {
             marginTop: 16,
           }}
         >
-          <MaterialCommunityIcons name="information-outline" size={22} color={color.blue} />
-          <Text style={{ color: color.blue, fontSize: 16, fontWeight: "700" }}>หมูจดอ่านสลิปอะไรได้บ้าง?</Text>
+          <MaterialCommunityIcons name="information-outline" size={22} color={theme.accentText} />
+          <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: "700" }}>หมูจดอ่านสลิปอะไรได้บ้าง?</Text>
         </Pressable>
         <View style={{ flexGrow: 1, minHeight: 20 }} />
         <Pressable
@@ -213,9 +214,9 @@ export default function OnboardingSlipsRoute() {
           onPress={() => setSlipInfo("help")}
           style={{ alignSelf: "center", paddingHorizontal: 15, paddingVertical: 10 }}
         >
-          <Text style={{ color: color.ink, fontSize: 15, textAlign: "center" }}>
+          <Text style={{ color: theme.text, fontSize: 15, textAlign: "center" }}>
             ไม่พบสลิปบางธนาคาร?{"  "}
-            <Text style={{ color: color.blue, fontWeight: "700" }}>ดูวิธีแก้ไข</Text>
+            <Text style={{ color: theme.accentText, fontWeight: "700" }}>ดูวิธีแก้ไข</Text>
           </Text>
         </Pressable>
       </ScrollView>
@@ -229,11 +230,11 @@ export default function OnboardingSlipsRoute() {
             backgroundColor: "rgba(0, 0, 0, 0.55)",
           }}
         >
-          <View style={{ backgroundColor: color.white, borderRadius: 20, padding: 22, gap: 16 }}>
-            <Text style={{ color: color.ink, fontSize: 21, fontWeight: "800" }}>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 20, padding: 22, gap: 16 }}>
+            <Text style={{ color: theme.text, fontSize: 21, fontWeight: "800" }}>
               {slipInfo === "supported" ? "หมูจดนับรูปอะไรบ้าง?" : "ไม่พบสลิปบางธนาคาร?"}
             </Text>
-            <Text style={{ color: color.ink, fontSize: 16, lineHeight: 25 }}>
+            <Text style={{ color: theme.text, fontSize: 16, lineHeight: 25 }}>
               {slipInfo === "supported"
                 ? "หมูจดนับรูปทั้งหมดที่สร้างในช่วง 30 วันย้อนหลังจากอัลบั้ม Krungthai NEXT, K PLUS, Paotang และ TrueMoney โดยยังไม่ได้ตรวจว่าแต่ละภาพเป็นสลิปจริง และไม่ส่งภาพไปยังเซิร์ฟเวอร์ คุณเลือกนำเข้าสลิปเพื่อให้ AI อ่านรายการได้ภายหลัง"
                 : "ตรวจว่าในแอปรูปภาพมีอัลบั้มชื่อ Krungthai NEXT, K PLUS, Paotang หรือ TrueMoney และอนุญาตให้หมูจดเข้าถึงรูปภาพทั้งหมด รูปที่เก่ากว่า 30 วันจะไม่ถูกนับ"}
