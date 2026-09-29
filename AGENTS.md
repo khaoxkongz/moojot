@@ -35,3 +35,17 @@ Before writing any Effect code, first read `node_modules/effect/AGENTS.md`
 
 If you need to learn more about particular Effect apis and concepts that the
 guide doesn't cover, search through the source code in `node_modules/effect/src`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local markdown files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), recorded as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context: root `CONTEXT-MAP.md` points to one `CONTEXT.md` per workspace (`packages/*`, `apps/*`). See `docs/agents/domain.md`.

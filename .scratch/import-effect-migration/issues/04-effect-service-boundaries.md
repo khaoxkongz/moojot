@@ -1,0 +1,21 @@
+# ออกแบบขอบเขต Effect สำหรับ Import Feature
+
+Type: grilling
+Label: wayfinder:grilling
+Status: resolved
+
+## Question
+
+จะแบ่ง `route`, `schema`, `service`, `error` และ provider สำหรับภาพสลิป, Gemini, configuration และ persistence อย่างไร เพื่อให้ทุกฟังก์ชันใน `features/import` ใช้ Effect รวมถึง helper ที่เดิมเป็น pure function? ระบุการประกอบ Layer กับ app runtime, การตรวจผลจาก AI และจุดที่แปลง Effect error เป็น oRPC error
+
+## Answer
+
+**ขอบเขตหลัก:** `ImportService.autoImportSlip(userId, input)` เป็น Effect ที่กำกับลำดับตรวจคำขอ → ตรวจภาพ → ตรวจ `slip:<assetId>` เดิม → ให้ Gemini อ่าน → ตรวจผล AI และความพร้อมบันทึก → ขอให้ Ledger สร้างรายการ → คืน `created`/`skipped` ตามสัญญาเดิมของ map. ใช้ `userId` จาก session เท่านั้น. `skipped` เป็นผลปกติ ไม่ใช่ error; ระบบอ่านหรือบันทึกล้มเหลวต้องอยู่ใน error channel.
+
+- `import.route.ts`: ประกาศ `protectedProcedure` สำหรับ `import.autoImportSlip` และ path ที่ตกลงแล้ว; อ่าน `context.session.user.id`; เรียก `context.runtime` ครั้งเดียวต่อคำขอ; แปลง tagged Effect errors เป็น oRPC errors เฉพาะที่ adapter นี้. `UNAUTHORIZED` เป็นหน้าที่ของ auth middleware. Route ไม่เรียก Gemini หรือ Prisma และไม่ตัดสินว่า candidate พร้อมบันทึกหรือไม่. Callback ของ oRPC ต้องคืน Promise ตาม API ของ framework จึงเป็นขอบเขตแปลง Effect; ฟังก์ชันงานที่เราเขียนเองใน feature รวมทั้ง helper ที่เคย pure ต้องคืน Effect.
+- `import.schema.ts`: ใช้ Effect Schema กำหนด input, tagged output, รูปผล Gemini ที่ยังไม่เชื่อถือ และชนิด candidate; ใช้การ decode ที่คืน Effect ในการตรวจข้อมูลจริง. แยกการผิดชนิด/โครงสร้าง JSON หรือ `kind` ที่ไม่รู้จักเป็น `AI_INVALID_RESPONSE` จาก candidate ที่โครงสร้างถูกแต่ `amountSatang`/`occurredOn` เป็น `null` หรือไม่ผ่านกฎรายการพร้อมบันทึก ซึ่งเป็น `skipped: incomplete_candidate`. อาร์เรย์ว่างเป็น `skipped: no_candidate`; ชื่อที่ว่างใช้ “รายการจากสลิป” พร้อม warning ตามคำตัดสินก่อนหน้า. เก็บ `issues` เป็น warnings, ไม่คำนวณ `confidence`, ไม่ทิ้ง candidate ที่ผิดรูปเงียบ ๆ. ขีดจำกัดจำนวน candidate และนโยบายทรัพยากรให้ ticket “กำหนดนโยบายทรัพยากรและความล้มเหลวของ Import” ตัดสิน.
+- `import.service.ts`: เป็น `Context.Service` ที่เปิดเมธอด Effect สำหรับ orchestration. ตัวตรวจ `assetId`, base64, byte size และ JPEG/PNG signature เป็น Effect helpers ใน feature (แยกไฟล์ได้ถ้าอ่านง่าย) ไม่ต้องสร้าง provider สำหรับงานคำนวณนี้. Helper ที่เคยคืนค่า/throw ตรง ๆ เปลี่ยนเป็น `Effect.fnUntraced` หรือ Effect Schema decode; ขั้นตอนที่ควร trace ใช้ `Effect.fn`. ไม่แอบเรียก `Promise` หรือ throw error ธุรกิจจาก helper.
+- Gemini เป็น provider `Context.Service` แยกจาก `ImportService`: รับ bytes/MIME ที่ผ่านการตรวจแล้ว, ส่ง prompt/JSON schema ด้วย `store: false`, และห่อ SDK call ด้วย Effect พร้อมแปลง upstream/ผลผิดรูปเป็น tagged errors. Server ส่ง Gemini key และ model ผ่าน configuration Layer ตอนสร้าง app runtime; ไม่อ่าน `process.env` ระหว่างคำขอ และไม่ส่ง key ผ่าน oRPC context. Configuration ที่ขาดหรือใช้ไม่ได้ต้องตรวจระหว่างเริ่ม server ก่อนรับคำขอ.
+- Persistence ใช้ `LedgerService` เป็น provider ที่สร้าง `FinanceTransaction` ทางเดียว; `ImportService` ไม่เข้าถึง Prisma. ให้ Ledger เปิดการตรวจ `dedupeKey` ของผู้ใช้ซึ่งรวมแถว soft-delete. ตรวจล่วงหน้าเพื่อลดการอ่าน AI ซ้ำได้ แต่ unique constraint ยังคงตัดสินเมื่อคำขอแข่งกัน. ถ้า `createTransaction` พบ conflict ให้ตรวจ identity เดียวกันผ่าน Ledger อีกครั้ง: พบ `slip:<assetId>` เดิมจึงคืน `skipped: duplicate`; ถ้าไม่พบต้องส่ง persistence error. ห้ามแปลง `FinanceConflictError` ทุกกรณีเป็น duplicate.
+- `import.error.ts`: กำหนด tagged errors ที่แยก input/image, AI, configuration และ persistence; ไม่มี `ORPCError` ใน service/provider. Route แปลงเป็น HTTP/code ตาม ticket “กำหนดสัญญา API นำเข้าที่บันทึกอัตโนมัติ”; ต้องไม่ปล่อยให้ schema validation กลายเป็น `BAD_REQUEST` ทั่วไปเมื่อสัญญาระบุ `INVALID_ASSET_ID`, `FILE_REQUIRED`, `INVALID_FILE`, `UNSUPPORTED_IMAGE` หรือ `UNSUPPORTED_FILE`. Defect ที่ไม่คาดคิดเป็น 5xx และบันทึกเหตุภายในโดยไม่ส่ง secret ให้ client. รหัส timeout, concurrency และ retry รายละเอียดเป็นของ ticket “กำหนดนโยบายทรัพยากรและความล้มเหลวของ Import”.
+- `createAppRuntime` ประกอบ configuration Layer → Gemini provider → ImportService พร้อม `LedgerService` ตัวเดิม แล้วสร้าง `ManagedRuntime` ร่วมหนึ่งชุดให้ server ใช้ซ้ำ. `features/index.ts` ชี้ไป `import.route.ts`; การปรับ session exception, body-limit path และการถอด route เก่าเป็นเกณฑ์ cutover ใน ticket “กำหนดหลักฐานความถูกต้องและการตัดระบบ Import เดิม”.
