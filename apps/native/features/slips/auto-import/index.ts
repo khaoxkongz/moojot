@@ -1,4 +1,4 @@
-import { File } from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { Album, Asset, AssetField, MediaType, Query, getPermissionsAsync } from "expo-media-library";
 import { useSyncExternalStore } from "react";
@@ -6,10 +6,11 @@ import { useSyncExternalStore } from "react";
 import { entriesQueryOptions } from "@/features/entries/query-options";
 import { accessStatus } from "@/features/slips/library-scan";
 import { setLocalSlipImage } from "@/lib/local-slip-assets";
-import { orpc, queryClient, rpcFetch, rpcHeaders } from "@/utils/orpc";
+import { client, orpc, queryClient, rpcFetch, rpcHeaders } from "@/utils/orpc";
 import { getServerBaseUrl } from "@/utils/server-url";
 
 import { MAX_IMAGE_BYTES, type LocalImage } from "./image";
+import { createImportedTransactionLookup } from "./ledger-identity";
 import { createSlipScanSession, type PhotoAccess } from "./scan-session";
 import { createAutoImportTransport } from "./transport";
 
@@ -44,8 +45,23 @@ async function shrink(image: LocalImage): Promise<LocalImage> {
   throw new Error("Image cannot be reduced below the upload limit");
 }
 
+/** One file per account: outcomes, retry times and transaction IDs by asset ID, never photo data or session details. */
+const scanMemoryFile = (accountId: string) =>
+  new File(Paths.document, `moojot-slip-scan-v1.${encodeURIComponent(accountId)}.json`);
+
 export const slipScanSession = createSlipScanSession({
   now: () => Date.now(),
+  store: {
+    async read(accountId) {
+      const file = scanMemoryFile(accountId);
+      return file.exists ? file.text() : null;
+    },
+    async write(accountId, text) {
+      const file = scanMemoryFile(accountId);
+      if (!file.exists) file.create();
+      file.write(text);
+    },
+  },
   async photoAccess(): Promise<PhotoAccess> {
     if (process.env.EXPO_OS !== "ios" && process.env.EXPO_OS !== "android") return "unsupported";
     return accessStatus(await getPermissionsAsync(false, ["photo"]));
@@ -63,7 +79,11 @@ export const slipScanSession = createSlipScanSession({
       .limit(limit)
       .offset(offset)
       .exeForMetadata();
-    return assets.map((asset) => ({ id: asset.id, creationTime: asset.creationTime }));
+    return assets.map((asset) => ({
+      id: asset.id,
+      creationTime: asset.creationTime,
+      modificationTime: asset.modificationTime,
+    }));
   },
   readOriginal: async (assetId) => localImage(await new Asset(assetId).getUri()),
   shrink,
@@ -72,6 +92,9 @@ export const slipScanSession = createSlipScanSession({
     fetch: (request, init) => rpcFetch(request, init) as unknown as Promise<Response>,
     headers: rpcHeaders,
   }),
+  findImportedTransactions: createImportedTransactionLookup((input, options) =>
+    client.ledger.listTransactions(input, options)
+  ),
   bindImage: setLocalSlipImage,
   async refreshLedger() {
     await Promise.all([

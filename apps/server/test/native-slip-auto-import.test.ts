@@ -7,11 +7,12 @@ import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
 import { ImportError } from "@moojot/api/features/import/import.error";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
+import { createImportedTransactionLookup } from "../../native/features/slips/auto-import/ledger-identity";
 import { createSlipScanSession, type SlipScanPorts } from "../../native/features/slips/auto-import/scan-session";
 import { createAutoImportTransport } from "../../native/features/slips/auto-import/transport";
 
 // The native scan session and transport against the real authenticated route, Import, Ledger and MongoDB.
-// Only the photo library, local image store and Gemini are replaced.
+// Only the photo library, device storage, local image store and Gemini are replaced.
 
 const env = {
   BETTER_AUTH_URL: "https://localhost:3333",
@@ -32,6 +33,30 @@ const images: Record<string, Buffer> = {};
 const modelInputs: string[] = [];
 const modelOutput = new Map<string, Effect.Effect<string | undefined, ImportError>>();
 const requests: { path: string; csrf: string | null; cookie: string | null }[] = [];
+const AUTO_IMPORT = "/rpc/import/slip/auto-import";
+const autoImports = () => requests.filter((request) => request.path === AUTO_IMPORT);
+
+function recordedFetch(request: Request) {
+  requests.push({
+    path: new URL(request.url).pathname,
+    csrf: request.headers.get("x-csrf-token"),
+    cookie: request.headers.get("cookie"),
+  });
+  return app.fetch(request);
+}
+
+/** A signed-in RPC call, as the app's ledger client makes it. */
+async function rpc<T>(path: string, input: unknown): Promise<T> {
+  const response = await recordedFetch(
+    new Request(`${env.BETTER_AUTH_URL}/rpc/${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie, "x-csrf-token": "orpc" },
+      body: JSON.stringify({ json: input }),
+    })
+  );
+  expect(response.status).toBe(200);
+  return ((await response.json()) as { json: T }).json;
+}
 
 const readable = (title: string, amountSatang: number) =>
   Effect.succeed(
@@ -99,30 +124,50 @@ const library: Record<string, { album: string; age: number; image: keyof typeof 
   "ph://camera": { album: "Camera Roll", age: 1, image: "receipt" },
 };
 
-function scanSession(options: { authenticated?: boolean } = {}) {
+function scanSession(
+  options: {
+    authenticated?: boolean;
+    /** Device storage that outlives one app run; a fresh one models reinstalling or lost local state. */
+    store?: Map<string, string>;
+    clock?: { now: number };
+    /** Photos in the library; all of `library` by default. */
+    photos?: string[];
+    /** Assets whose next response is lost after the server has handled the request. */
+    loseResponse?: Set<string>;
+    bindImage?: SlipScanPorts["bindImage"];
+  } = {}
+) {
   const bindings: { accountId: string; transactionId: string; uri: string }[] = [];
+  const store = options.store ?? new Map<string, string>();
+  const clock = options.clock ?? { now };
+  const photos = Object.entries(library).filter(([id]) => !options.photos || options.photos.includes(id));
   let refreshes = 0;
   const send = createAutoImportTransport({
     baseUrl: env.BETTER_AUTH_URL,
     fetch: async (request) => {
-      requests.push({
-        path: new URL(request.url).pathname,
-        csrf: request.headers.get("x-csrf-token"),
-        cookie: request.headers.get("cookie"),
-      });
-      return app.fetch(request);
+      const { assetId } = ((await request.clone().json()) as { json: { assetId: string } }).json;
+      const response = await recordedFetch(request);
+      if (options.loseResponse?.delete(assetId)) throw new TypeError("Network request failed");
+      return response;
     },
     headers: (): Record<string, string> => (options.authenticated === false ? {} : { Cookie: cookie }),
   });
   const ports: SlipScanPorts = {
-    now: () => now,
+    now: () => clock.now,
+    random: () => 0,
+    store: {
+      read: async (accountId) => store.get(accountId) ?? null,
+      write: async (accountId, text) => {
+        store.set(accountId, text);
+      },
+    },
     photoAccess: async () => "all",
     albums: async () =>
       ["K PLUS", "Krungthai NEXT", "Paotang", "TrueMoney", "Camera Roll"].map((title) => ({ key: title, title })),
     pageAssets: async (album, query) =>
-      Object.entries(library)
+      photos
         .filter(([, photo]) => photo.album === album)
-        .map(([id, photo]) => ({ id, creationTime: now - photo.age * day }))
+        .map(([id, photo]) => ({ id, creationTime: now - photo.age * day, modificationTime: null }))
         .filter((asset) => asset.creationTime >= query.from && asset.creationTime <= query.to)
         .slice(query.offset, query.offset + query.limit),
     readOriginal: async (assetId) => {
@@ -138,9 +183,14 @@ function scanSession(options: { authenticated?: boolean } = {}) {
       throw new Error("Synthetic photos never exceed the limit");
     },
     send,
-    bindImage: async (accountId, transactionId, uri) => {
-      bindings.push({ accountId, transactionId, uri });
-    },
+    findImportedTransactions: createImportedTransactionLookup((input) =>
+      rpc<{ id: string; dedupeKey: string | null }[]>("ledger/listTransactions", input)
+    ),
+    bindImage:
+      options.bindImage ??
+      (async (accountId, transactionId, uri) => {
+        bindings.push({ accountId, transactionId, uri });
+      }),
     refreshLedger: async () => {
       refreshes++;
     },
@@ -207,30 +257,113 @@ it("saves slips through the auto-import route and binds each local photo to its 
   );
 });
 
-it("does not create another transaction when photos are sent again after local memory is lost", async () => {
+it("does not create another transaction when local memory is lost, and binds the photos to their existing rows", async () => {
   await scanSession().session.request({ accountId: ownerId, trigger: "home" });
+  const rows = await database.db.financeTransaction.findMany();
   requests.length = 0;
 
   const { session, bindings } = scanSession();
   const round = await session.request({ accountId: ownerId, trigger: "home" });
 
   expect(round).toMatchObject({ created: 0, skipped: 3 });
-  expect(bindings).toHaveLength(0);
   expect(await database.db.financeTransaction.count()).toBe(2);
-  expect(requests.every((request) => request.path === "/rpc/import/slip/auto-import")).toBe(true);
+  // Each duplicate is matched to the row saved under its own asset identity, not by title, amount or date.
+  const idFor = (assetId: string) => rows.find((row) => row.dedupeKey === `slip:${assetId}`)!.id;
+  expect(bindings).toEqual(
+    expect.arrayContaining([
+      { accountId: ownerId, transactionId: idFor("ph://receipt"), uri: "file:///library/receipt" },
+      { accountId: ownerId, transactionId: idFor("ph://receipt-jpeg"), uri: "file:///library/receipt-jpeg" },
+    ])
+  );
+  expect(bindings).toHaveLength(2);
+  expect(requests.filter((request) => request.path !== AUTO_IMPORT)).toEqual([
+    { path: "/rpc/ledger/listTransactions", csrf: "orpc", cookie },
+  ]);
 });
 
-it("resends only a temporarily failed photo in the next round of the same session", async () => {
-  const { session } = scanSession();
-  await session.request({ accountId: ownerId, trigger: "home" });
+it("remembers outcomes across reopening and resends only a temporarily failed photo once its wait has passed", async () => {
+  const store = new Map<string, string>();
+  const clock = { now };
+  await scanSession({ store, clock }).session.request({ accountId: ownerId, trigger: "home" });
   requests.length = 0;
   modelInputs.length = 0;
 
-  const round = await session.request({ accountId: ownerId, trigger: "refresh" });
+  // Reopened before the 45-second Retry-After: nothing is due.
+  clock.now = now + 44_000;
+  const early = await scanSession({ store, clock }).session.request({ accountId: ownerId, trigger: "home" });
+  expect(early).toMatchObject({ status: "completed", deferred: 1, created: 0, skipped: 0, failed: 0 });
+  expect(requests).toHaveLength(0);
 
-  expect(requests).toHaveLength(1);
+  clock.now = now + 45_000;
+  const round = await scanSession({ store, clock }).session.request({ accountId: ownerId, trigger: "refresh" });
+
+  expect(autoImports()).toHaveLength(1);
   expect(round).toMatchObject({ created: 0, skipped: 0, failed: 1 });
+  expect(round.failures[0]).toMatchObject({ assetId: "ph://limited", code: "AI_RATE_LIMITED" });
   expect(modelInputs).toEqual([images.limited!.toString("base64")]);
+  expect(await database.db.financeTransaction.count()).toBe(2);
+});
+
+it("recovers a response lost after the server saved it by resending the same asset ID, without a second row", async () => {
+  const store = new Map<string, string>();
+  const clock = { now };
+  const lost = scanSession({ store, clock, photos: ["ph://receipt"], loseResponse: new Set(["ph://receipt"]) });
+  const first = await lost.session.request({ accountId: ownerId, trigger: "home" });
+  expect(first).toMatchObject({ created: 0, failed: 1 });
+  expect(first.failures[0]).toMatchObject({ kind: "network", retryAt: now + 30_000 });
+  expect(lost.bindings).toHaveLength(0);
+  const [row] = await database.db.financeTransaction.findMany();
+  expect(row).toMatchObject({ dedupeKey: "slip:ph://receipt", deletedAt: null });
+
+  clock.now = now + 30_000;
+  const later = scanSession({ store, clock, photos: ["ph://receipt"] });
+  const round = await later.session.request({ accountId: ownerId, trigger: "home" });
+
+  expect(round).toMatchObject({ created: 0, skipped: 1, failed: 0 });
+  expect(later.bindings).toEqual([{ accountId: ownerId, transactionId: row!.id, uri: "file:///library/receipt" }]);
+  expect(autoImports()).toHaveLength(2);
+  expect(modelInputs).toHaveLength(1);
+  expect(await database.db.financeTransaction.count()).toBe(1);
+
+  // Recovered: later rounds send nothing more.
+  await later.session.request({ accountId: ownerId, trigger: "refresh" });
+  expect(autoImports()).toHaveLength(2);
+});
+
+it("keeps a deleted import deleted and leaves its photo unbound when the photo is found again", async () => {
+  await scanSession({ photos: ["ph://receipt"] }).session.request({ accountId: ownerId, trigger: "home" });
+  const [row] = await database.db.financeTransaction.findMany();
+  await rpc("ledger/deleteTransaction", { id: row!.id });
+
+  const { session, bindings } = scanSession({ photos: ["ph://receipt"] });
+  const round = await session.request({ accountId: ownerId, trigger: "home" });
+
+  expect(round).toMatchObject({ created: 0, skipped: 1 });
+  expect(bindings).toHaveLength(0);
+  const rows = await database.db.financeTransaction.findMany();
+  expect(rows).toHaveLength(1);
+  expect(rows[0]!.deletedAt).not.toBeNull();
+});
+
+it("repairs a failed local binding from the remembered transaction ID without another import request", async () => {
+  const store = new Map<string, string>();
+  const failing = scanSession({
+    store,
+    bindImage: async () => {
+      throw new Error("disk full");
+    },
+  });
+  const first = await failing.session.request({ accountId: ownerId, trigger: "home" });
+  expect(first).toMatchObject({ created: 2, skipped: 1, failed: 2 });
+  const rows = await database.db.financeTransaction.findMany();
+  requests.length = 0;
+
+  const { session, bindings } = scanSession({ store });
+  const round = await session.request({ accountId: ownerId, trigger: "home" });
+
+  expect(round).toMatchObject({ created: 0, skipped: 0, failed: 0, deferred: 1 });
+  expect(requests).toHaveLength(0);
+  expect(bindings.map((binding) => binding.transactionId).sort()).toEqual(rows.map((row) => row.id).sort());
   expect(await database.db.financeTransaction.count()).toBe(2);
 });
 

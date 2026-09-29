@@ -143,6 +143,7 @@ export default function HomeScreen() {
   const { appliedWalletFilter, setAppliedWalletFilter } = useAppData();
   const { data: session } = authClient.useSession();
   const accountId = session?.user.id ?? null;
+  const sessionId = session?.session.id ?? null;
   const slipScan = useSlipScanState();
 
   const handledUndoId = useRef<string | null>(null);
@@ -300,8 +301,8 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (accountId) void slipScanSession.request({ accountId, trigger: "home" });
-    }, [accountId])
+      if (accountId) void slipScanSession.request({ accountId, sessionId, trigger: "home" });
+    }, [accountId, sessionId])
   );
 
   const showReadingBubble = slipScan.scanning || refreshing;
@@ -340,7 +341,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     for (const query of dataQueries) if (query.isEnabled) void query.refetch();
     try {
-      if (accountId) await slipScanSession.request({ accountId, trigger: "refresh" });
+      if (accountId) await slipScanSession.request({ accountId, sessionId, trigger: "refresh" });
     } finally {
       setRefreshing(false);
     }
