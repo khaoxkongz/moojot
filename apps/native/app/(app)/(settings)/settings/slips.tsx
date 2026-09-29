@@ -28,10 +28,6 @@ export default function SlipsSettingsScreen() {
             ผลการอ่านด้วย AI ขึ้นอยู่กับความชัดของภาพและรูปแบบไฟล์ หมูจดจะแสดงรายการให้คุณตรวจและเลือกบันทึกทุกครั้ง
           </Text>
         </SettingsPanel>
-        <SettingsAction
-          label="เลือกรูปสลิป"
-          onPress={() => router.push({ pathname: "/import", params: { type: "slip" } })}
-        />
         <SettingsAction label="ดูวิธีแก้เมื่ออ่านไม่สำเร็จ" onPress={() => router.push("/settings/slip-help")} secondary />
       </SettingsScroll>
     </SettingsPage>

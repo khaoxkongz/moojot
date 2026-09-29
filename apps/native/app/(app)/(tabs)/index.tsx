@@ -12,6 +12,7 @@ import { Text } from "@/components/ui/typography";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
+import { authClient } from "@/lib/auth-client";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
@@ -22,7 +23,7 @@ import { selectedHomePeriod, weekStartForDate, type CalendarPeriod } from "@/fea
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
-import { scanAndProcessNewSlips } from "@/features/slips/auto-batch-scanner";
+import { slipScanSession, useSlipScanState } from "@/features/slips/auto-import";
 import { streakQueryOptions } from "@/features/streak/query-options";
 import { computeStreakStats } from "@/features/streak/streak";
 import type { StreakSettings } from "@/features/streak/types";
@@ -140,6 +141,9 @@ export default function HomeScreen() {
   const { deletedId } = useLocalSearchParams<{ deletedId?: string }>();
 
   const { appliedWalletFilter, setAppliedWalletFilter } = useAppData();
+  const { data: session } = authClient.useSession();
+  const accountId = session?.user.id ?? null;
+  const slipScan = useSlipScanState();
 
   const handledUndoId = useRef<string | null>(null);
 
@@ -159,8 +163,6 @@ export default function HomeScreen() {
     selectAllWalletSources(emptyWalletOptions)
   );
   const [addOpen, setAddOpen] = useState(false);
-  const [isReadingSlips, setIsReadingSlips] = useState(false);
-  const [readingDay, setReadingDay] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const restoreTransactionMutation = useMutation(entriesMutationOptions.restore());
@@ -298,25 +300,11 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void scanAndProcessNewSlips({
-        onStart: () => setIsReadingSlips(true),
-        onDayStart: ({ date }) => {
-          setIsReadingSlips(true);
-          setReadingDay(date);
-        },
-        onComplete: () => {
-          setIsReadingSlips(false);
-          setReadingDay(null);
-        },
-        onError: (cause) => {
-          console.warn("[auto-batch-scanner]", cause);
-          setIsReadingSlips(false);
-          setReadingDay(null);
-        },
-      });
-    }, [])
+      if (accountId) void slipScanSession.request({ accountId, trigger: "home" });
+    }, [accountId])
   );
 
+  const showReadingBubble = slipScan.scanning || refreshing;
   const grouped = useMemo(() => {
     const map = new Map<string, FinanceTransaction[]>();
     for (const item of transactions) map.set(item.occurredOn, [...(map.get(item.occurredOn) ?? []), item]);
@@ -351,23 +339,11 @@ export default function HomeScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     for (const query of dataQueries) if (query.isEnabled) void query.refetch();
-    await scanAndProcessNewSlips({
-      onStart: () => setIsReadingSlips(true),
-      onDayStart: ({ date }) => {
-        setIsReadingSlips(true);
-        setReadingDay(date);
-      },
-      onComplete: () => {
-        setIsReadingSlips(false);
-        setReadingDay(null);
-      },
-      onError: (cause) => {
-        console.warn("[auto-batch-scanner]", cause);
-        setIsReadingSlips(false);
-        setReadingDay(null);
-      },
-    });
-    setRefreshing(false);
+    try {
+      if (accountId) await slipScanSession.request({ accountId, trigger: "refresh" });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -437,7 +413,7 @@ export default function HomeScreen() {
           ) : null}
 
           <View style={styles.speechBubble}>
-            {isReadingSlips || refreshing ? (
+            {showReadingBubble ? (
               <>
                 <Text style={styles.speechTitle}>หมูกำลังอ่านสลิปใหม่</Text>
                 <Text style={styles.speechBody}>เปิดแอปไว้ก่อนน้า</Text>
@@ -452,22 +428,26 @@ export default function HomeScreen() {
                     ? `มี ${pendingToday} รายการรอเลือกหมวด`
                     : (todayActivity?.transactionCount ?? 0) > 0
                       ? "วันนี้เลือกหมวดครบแล้ว"
-                      : "เลือกสลิปหรือใบแจ้งยอดให้หมูช่วยอ่าน"}
+                      : slipScan.access === null || slipScan.access === "all"
+                        ? "หมูอ่านสลิปใหม่ให้อัตโนมัติ"
+                        : "แตะ “จดเพิ่ม” เพื่อจดรายการเอง"}
                 </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push(pendingToday > 0 ? "/pending-categories" : "/import")}
-                  style={styles.speechLink}
-                >
-                  <Text style={styles.speechLinkText}>{pendingToday > 0 ? "เลือกหมวดต่อเนื่อง" : "เริ่มนำเข้า"}</Text>
-                  <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
-                </Pressable>
+                {pendingToday > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push("/pending-categories")}
+                    style={styles.speechLink}
+                  >
+                    <Text style={styles.speechLinkText}>เลือกหมวดต่อเนื่อง</Text>
+                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
+                  </Pressable>
+                ) : null}
               </>
             )}
             <View style={styles.speechTail} />
           </View>
 
-          {isReadingSlips || refreshing ? (
+          {showReadingBubble ? (
             <View style={styles.flowCardSlot}>
               <SlipFlowCards />
             </View>
@@ -553,7 +533,7 @@ export default function HomeScreen() {
                 <Text style={styles.errorText}>ลองอีกครั้ง</Text>
               </Pressable>
             </View>
-          ) : isReadingSlips && grouped.length === 0 ? (
+          ) : slipScan.scanning && grouped.length === 0 ? (
             <View style={styles.dayGroup}>
               <View style={styles.dayRail}>
                 <View style={[styles.dayAccent, { backgroundColor: theme.accent }]} />
@@ -590,7 +570,7 @@ export default function HomeScreen() {
                 date={date}
                 items={items}
                 categories={categoryById}
-                showSkeleton={isReadingSlips && (readingDay ? date === readingDay : index === 0)}
+                showSkeleton={slipScan.scanning && index === 0}
               />
             ))
           )}
@@ -634,28 +614,6 @@ export default function HomeScreen() {
             >
               <HomeIcon name="edit" color={theme.accentText} size={20} />
               <Text style={styles.addOptionText}>จดรายการเอง</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAddOpen(false);
-                router.push("/import?type=slip");
-              }}
-              style={styles.addOption}
-            >
-              <Text style={styles.addOptionEmoji}>🧾</Text>
-              <Text style={styles.addOptionText}>อ่านสลิป</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAddOpen(false);
-                router.push("/import?type=statement");
-              }}
-              style={styles.addOption}
-            >
-              <Text style={styles.addOptionEmoji}>💳</Text>
-              <Text style={styles.addOptionText}>ใบแจ้งยอด</Text>
             </Pressable>
           </View>
         ) : null}
@@ -890,7 +848,6 @@ function createStyles(theme: AppTheme) {
       alignItems: "center",
       gap: 10,
     },
-    addOptionEmoji: { fontSize: 20 },
     addOptionText: { color: theme.background, fontSize: 14, fontWeight: "800" },
     addButton: {
       backgroundColor: theme.accent,

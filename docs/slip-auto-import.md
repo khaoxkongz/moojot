@@ -100,11 +100,12 @@ This is an intentional API cutover. The removed `/rpc/import/slip` and
 `/rpc/import/statement` operations return 404. Historical `source = statement` rows
 remain readable and unchanged.
 
-`apps/native/features/imports/client.ts` still calls `import.slip` and
-`import.statement` (lines 65 and 67 at cutover). Native typechecking and consequently
-the repository-wide type gate fail for those two removed operations. Home autoScan
-and import/review screens will not import until the separate native migration lands.
-No full application compatibility is claimed.
+At cutover, `apps/native/features/imports/client.ts` still called `import.slip` and
+`import.statement`, so native and repository-wide type checks failed. Native ticket 01
+(`.scratch/native-slip-auto-import/`) removed that client and the import/review screens;
+Home now scans through `apps/native/features/slips/auto-import/`, and both type gates
+pass. `apps/server/test/native-slip-auto-import.test.ts` drives the native transport
+and scan session against this route.
 
 The follow-up should send the original JPEG/PNG when below 10 MiB, resize only when
 needed, bind the local image after receiving `transactionId`, and count created,

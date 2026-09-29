@@ -172,13 +172,6 @@ function SavedCards({ cards }: { cards: SavedCard[] }) {
         ))}
       </View>
       <PrimaryAction label="จดรายการบัตรเครดิต" onPress={() => router.push("/entry")} />
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push({ pathname: "/import", params: { type: "statement" } })}
-        style={styles.importLink}
-      >
-        <Text style={styles.importLinkText}>นำเข้าใบแจ้งยอด PDF ›</Text>
-      </Pressable>
     </View>
   );
 }
@@ -297,20 +290,6 @@ function createStyles(theme: AppTheme) {
       textAlign: "center",
       marginTop: 25,
       maxWidth: 310,
-    },
-    importLink: {
-      minHeight: 44,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 10,
-      marginTop: 3,
-    },
-    importLinkText: {
-      color: theme.accentText,
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "700",
-      textAlign: "center",
     },
     savedContent: { width: "100%", maxWidth: 560, paddingTop: 12, paddingBottom: 32, gap: 15 },
     savedHeading: { color: theme.text, fontSize: 19, fontWeight: "800" },

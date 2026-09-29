@@ -1,8 +1,5 @@
-import { router } from "expo-router";
-
 import { Text } from "@/components/ui/typography";
 import {
-  SettingsAction,
   SettingsBullet,
   SettingsPage,
   SettingsPanel,
@@ -26,7 +23,6 @@ export default function SlipHelpSettingsScreen() {
             ต้องเชื่อมต่ออินเทอร์เน็ตและตรวจผลก่อนบันทึกทุกครั้ง
           </Text>
         </SettingsPanel>
-        <SettingsAction label="ไปหน้านำเข้า" onPress={() => router.push("/import")} secondary />
       </SettingsScroll>
     </SettingsPage>
   );

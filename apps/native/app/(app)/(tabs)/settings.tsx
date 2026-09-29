@@ -513,7 +513,6 @@ export default function SettingsScreen() {
               <SettingsRow icon="plan" title="งบประมาณและแผน" onPress={() => router.push("/plan")} />
               <SettingsRow icon="repeat" title="รายการจดซ้ำ" onPress={() => router.push("/recurring-form")} />
               <SettingsRow icon="streak" title="สถิติแครอต" onPress={() => router.push("/streak-stats")} />
-              <SettingsRow icon="import" title="นำเข้าสลิปและใบแจ้งยอด" onPress={() => router.push("/import")} />
             </>
           ) : null}
         </View>

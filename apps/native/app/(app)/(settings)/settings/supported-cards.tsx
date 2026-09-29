@@ -20,10 +20,6 @@ export default function SupportedCardsSettingsScreen() {
           </Text>
           <Text style={settingsPageStyles.caption}>แอปยังไม่มีรายชื่อผู้ให้บริการบัตรที่รับประกันการอ่านได้ทุกไฟล์</Text>
         </SettingsPanel>
-        <SettingsAction
-          label="ลองนำเข้าใบแจ้งยอด PDF"
-          onPress={() => router.push({ pathname: "/import", params: { type: "statement" } })}
-        />
         <SettingsAction label="จดรายการเอง" onPress={() => router.push("/entry")} secondary />
       </SettingsScroll>
     </SettingsPage>
