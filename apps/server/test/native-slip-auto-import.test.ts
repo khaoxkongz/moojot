@@ -7,7 +7,9 @@ import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
 import { ImportError } from "@moojot/api/features/import/import.error";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
+import { countSlipPhotos } from "../../native/features/slips/auto-import/discovery";
 import { createImportedTransactionLookup } from "../../native/features/slips/auto-import/ledger-identity";
+import type { PhotoAccess } from "../../native/features/slips/auto-import/photo-access";
 import { createSlipScanSession, type SlipScanPorts } from "../../native/features/slips/auto-import/scan-session";
 import { createAutoImportTransport } from "../../native/features/slips/auto-import/transport";
 
@@ -135,6 +137,8 @@ function scanSession(
     /** Assets whose next response is lost after the server has handled the request. */
     loseResponse?: Set<string>;
     bindImage?: SlipScanPorts["bindImage"];
+    /** Photo permission when each round starts; full access by default. */
+    access?: () => PhotoAccess;
   } = {}
 ) {
   const bindings: { accountId: string; transactionId: string; uri: string }[] = [];
@@ -161,7 +165,7 @@ function scanSession(
         store.set(accountId, text);
       },
     },
-    photoAccess: async () => "all",
+    photoAccess: async () => options.access?.() ?? "all",
     albums: async () =>
       ["K PLUS", "Krungthai NEXT", "Paotang", "TrueMoney", "Camera Roll"].map((title) => ({ key: title, title })),
     pageAssets: async (album, query) =>
@@ -195,7 +199,7 @@ function scanSession(
       refreshes++;
     },
   };
-  return { session: createSlipScanSession(ports), bindings, refreshes: () => refreshes };
+  return { session: createSlipScanSession(ports), library: ports, bindings, refreshes: () => refreshes };
 }
 
 it("saves slips through the auto-import route and binds each local photo to its transaction", async () => {
@@ -376,4 +380,34 @@ it("stops the round without writing when the session is not authenticated", asyn
   expect(bindings).toHaveLength(0);
   expect(modelInputs).toHaveLength(0);
   expect(await database.db.financeTransaction.count()).toBe(0);
+});
+
+it("counts photos in onboarding without importing, pauses without full access, and reads once it is restored", async () => {
+  let access: PhotoAccess = "all";
+  const { session, library } = scanSession({ access: () => access, photos: ["ph://receipt", "ph://receipt-jpeg"] });
+
+  // Onboarding: photos are counted from album metadata only.
+  expect(await countSlipPhotos(library, now)).toEqual({
+    counts: { krungthai: 1, kplus: 1, paotang: 0, truemoney: 0 },
+    total: 2,
+    matchedAlbums: 4,
+  });
+
+  // Home before full access, including access narrowed to selected photos.
+  for (const narrowed of ["denied", "limited", "permission-required"] as const) {
+    access = narrowed;
+    expect(await session.request({ accountId: ownerId, trigger: "home" })).toMatchObject({ status: "no-access" });
+  }
+  expect(requests).toHaveLength(0);
+  expect(modelInputs).toHaveLength(0);
+  expect(await database.db.financeTransaction.count()).toBe(0);
+
+  // Access restored in Settings: the next Home round reads and saves both slips.
+  access = "all";
+  expect(await session.request({ accountId: ownerId, trigger: "home" })).toMatchObject({
+    status: "completed",
+    created: 2,
+  });
+  expect(autoImports()).toHaveLength(2);
+  expect(await database.db.financeTransaction.count({ where: { userId: ownerId, source: "slip" } })).toBe(2);
 });

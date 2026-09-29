@@ -2,7 +2,16 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useFocusEffect, useIsFocused, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HomeIcon } from "@/components/ui/home-icon";
@@ -24,6 +33,8 @@ import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { slipScanSession, useSlipScanState } from "@/features/slips/auto-import";
+import { photoAccessPrompt } from "@/features/slips/auto-import/photo-access";
+import { requestPhotoAccess } from "@/features/slips/library-scan";
 import { streakQueryOptions } from "@/features/streak/query-options";
 import { computeStreakStats } from "@/features/streak/streak";
 import type { StreakSettings } from "@/features/streak/types";
@@ -299,11 +310,37 @@ export default function HomeScreen() {
     return () => clearInterval(timer);
   }, []);
 
+  const requestHomeRound = useCallback(
+    () => (accountId ? slipScanSession.request({ accountId, sessionId, trigger: "home" }) : null),
+    [accountId, sessionId]
+  );
+
   useFocusEffect(
     useCallback(() => {
-      if (accountId) void slipScanSession.request({ accountId, sessionId, trigger: "home" });
-    }, [accountId, sessionId])
+      void requestHomeRound();
+      // Coming back from Settings: check the photo permission again and start reading once it allows it.
+      const subscription = AppState.addEventListener("change", (next) => {
+        if (next === "active" && slipScanSession.getState().access !== "all") void requestHomeRound();
+      });
+      return () => subscription.remove();
+    }, [requestHomeRound])
   );
+
+  const photoPrompt = photoAccessPrompt(slipScan.access);
+  const allowPhotoAccess = async () => {
+    try {
+      if (photoPrompt?.action === "settings") {
+        await Linking.openSettings();
+        return;
+      }
+      const access = await requestPhotoAccess();
+      const round = await requestHomeRound();
+      // The prompt's return to the app can start a round before the answer is recorded; read again with the answer.
+      if (access === "all" && round?.status === "no-access") void requestHomeRound();
+    } catch (cause) {
+      console.warn("[photo-access]", cause instanceof Error ? cause.name : typeof cause);
+    }
+  };
 
   const showReadingBubble = slipScan.scanning || refreshing;
   const grouped = useMemo(() => {
@@ -425,14 +462,27 @@ export default function HomeScreen() {
                   {autoToday > 0 ? `วันนี้หมูจดให้ ${autoToday} รายการ` : "วันนี้หมูพร้อมช่วยจด"}
                 </Text>
                 <Text style={styles.speechBody}>
-                  {pendingToday > 0
-                    ? `มี ${pendingToday} รายการรอเลือกหมวด`
-                    : (todayActivity?.transactionCount ?? 0) > 0
-                      ? "วันนี้เลือกหมวดครบแล้ว"
-                      : slipScan.access === null || slipScan.access === "all"
-                        ? "หมูอ่านสลิปใหม่ให้อัตโนมัติ"
-                        : "แตะ “จดเพิ่ม” เพื่อจดรายการเอง"}
+                  {photoPrompt
+                    ? photoPrompt.message
+                    : pendingToday > 0
+                      ? `มี ${pendingToday} รายการรอเลือกหมวด`
+                      : (todayActivity?.transactionCount ?? 0) > 0
+                        ? "วันนี้เลือกหมวดครบแล้ว"
+                        : slipScan.access === "unsupported"
+                          ? "แตะ “จดเพิ่ม” เพื่อจดรายการเอง"
+                          : "หมูอ่านสลิปใหม่ให้อัตโนมัติ"}
                 </Text>
+                {photoPrompt ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityHint={photoPrompt.hint}
+                    onPress={() => void allowPhotoAccess()}
+                    style={styles.speechLink}
+                  >
+                    <Text style={styles.speechLinkText}>{photoPrompt.label}</Text>
+                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
+                  </Pressable>
+                ) : null}
                 {pendingToday > 0 ? (
                   <Pressable
                     accessibilityRole="button"

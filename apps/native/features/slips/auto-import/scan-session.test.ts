@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { MAX_IMAGE_BYTES } from "./image";
-import { createSlipScanSession, type PhotoAccess, type SlipScanPorts } from "./scan-session";
+import type { PhotoAccess } from "./photo-access";
+import { createSlipScanSession, type SlipScanPorts } from "./scan-session";
 import { AutoImportRequestError, type AutoImportInput, type AutoImportOutcome } from "./transport";
 
 const day = 24 * 60 * 60 * 1000;
@@ -21,6 +22,10 @@ type Photo = {
   size?: number;
 };
 
+/** Busy-state changes from the first busy state on, with repeats collapsed: one round reads as `[true, false]`. */
+const busyRuns = (states: boolean[]) =>
+  states.slice(Math.max(0, states.indexOf(true))).filter((state, index, all) => state !== all[index - 1]);
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => (resolve = done));
@@ -31,7 +36,8 @@ function harness(
   options: {
     photos?: Photo[];
     albums?: string[];
-    access?: PhotoAccess;
+    /** Photo permission at the start of each round; a function lets it change between rounds. */
+    access?: PhotoAccess | (() => PhotoAccess);
     pageSize?: number;
     respond?: (input: AutoImportInput) => Promise<AutoImportOutcome> | AutoImportOutcome;
     bindImage?: SlipScanPorts["bindImage"];
@@ -74,7 +80,7 @@ function harness(
         store.set(accountId, text);
       },
     },
-    photoAccess: async () => options.access ?? "all",
+    photoAccess: async () => (typeof options.access === "function" ? options.access() : (options.access ?? "all")),
     albums: async () => {
       if (options.libraryError) throw options.libraryError;
       return albums.map((title) => ({ key: title, title }));
@@ -313,21 +319,61 @@ describe("slip scan session", () => {
     expect(await first).toBe(await second);
     expect(sent).toHaveLength(2);
     expect(session.getState().scanning).toBe(false);
-    expect(states[0]).toBe(true);
-    expect(states.at(-1)).toBe(false);
+    expect(busyRuns(states)).toEqual([true, false]);
   });
 
   it.each(["limited", "denied", "permission-required", "unsupported"] as const)(
-    "sends nothing without full photo access (%s)",
+    "sends nothing and never shows the reading state without full photo access (%s)",
     async (access) => {
       const { session, sent, pageQueries } = harness({ access, photos: [photo("a")] });
+      const states: boolean[] = [];
+      session.subscribe(() => states.push(session.getState().scanning));
+
       const round = await session.request({ accountId: "alice", trigger: "home" });
+
       expect(round).toMatchObject({ status: "no-access", discovered: 0 });
       expect(sent).toHaveLength(0);
       expect(pageQueries).toHaveLength(0);
-      expect(session.getState()).toMatchObject({ scanning: false, access });
+      expect(states).not.toContain(true);
+      expect(session.getState()).toMatchObject({ scanning: false, access, lastRound: round });
     }
   );
+
+  it("reads on the next request once full access is restored, and pauses again when it is revoked", async () => {
+    let access: PhotoAccess = "denied";
+    const photos = [photo("a")];
+    const { session, sent } = harness({ access: () => access, photos });
+
+    expect(await session.request({ accountId: "alice", trigger: "home" })).toMatchObject({ status: "no-access" });
+    expect(session.getState().access).toBe("denied");
+
+    // Returning from Settings with full access: the same account reads without onboarding again.
+    access = "all";
+    expect(await session.request({ accountId: "alice", trigger: "home" })).toMatchObject({
+      status: "completed",
+      created: 1,
+    });
+    expect(sent.map((input) => input.assetId)).toEqual(["a"]);
+    expect(session.getState().access).toBe("all");
+
+    // Narrowed to selected photos later: a new photo is not sent.
+    access = "limited";
+    photos.push(photo("b", "K PLUS", 2));
+    expect(await session.request({ accountId: "alice", trigger: "refresh" })).toMatchObject({ status: "no-access" });
+    expect(sent).toHaveLength(1);
+    expect(session.getState()).toMatchObject({ scanning: false, access: "limited" });
+  });
+
+  it("finishes a round with full access and nothing new as a normal completed round", async () => {
+    const { session, sent } = harness({ albums: ["Camera Roll"], photos: [photo("camera", "Camera Roll")] });
+
+    expect(await session.request({ accountId: "alice", trigger: "home" })).toMatchObject({
+      status: "completed",
+      discovered: 0,
+    });
+    expect(sent).toHaveLength(0);
+    expect(session.getState()).toMatchObject({ scanning: false, access: "all" });
+  });
 
   it("ends the busy state when discovery finds nothing or the photo library throws", async () => {
     const empty = harness();
@@ -980,7 +1026,7 @@ describe("slip scan session", () => {
       const round = await run.session.request({ accountId: "alice", trigger: "home" });
 
       expect(round).toMatchObject({ status: "completed", discovered: 1, deferred: 1, created: 0, failed: 0 });
-      expect([...new Set(states)]).toEqual([true, false]);
+      expect(busyRuns(states)).toEqual([true, false]);
       expect(run.sent).toHaveLength(1);
     });
 

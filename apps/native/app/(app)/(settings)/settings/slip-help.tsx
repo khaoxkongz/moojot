@@ -12,15 +12,16 @@ export default function SlipHelpSettingsScreen() {
   return (
     <SettingsPage title="หมูไม่อ่านสลิป?">
       <SettingsScroll>
-        <SettingsPanel title="ตรวจไฟล์ก่อน">
-          <SettingsBullet>ใช้ภาพสลิปต้นฉบับที่เห็นวันที่ ยอดเงิน และชื่อผู้รับชัดเจน</SettingsBullet>
-          <SettingsBullet>หากเป็น PDF ให้ลองไฟล์ใบแจ้งยอดต้นฉบับและใส่รหัสผ่านเมื่อไฟล์ถูกล็อก</SettingsBullet>
+        <SettingsPanel title="ตรวจก่อน">
+          <SettingsBullet>อนุญาตให้หมูจดเข้าถึงรูปภาพทั้งหมด ถ้าให้เฉพาะบางรูป หน้าแรกจะมีปุ่มไปที่การตั้งค่า</SettingsBullet>
+          <SettingsBullet>ให้แอปธนาคารบันทึกสลิปลงอัลบั้ม Krungthai NEXT, K PLUS, Paotang หรือ TrueMoney</SettingsBullet>
+          <SettingsBullet>สลิปต้องเป็นรูปในช่วง 30 วันย้อนหลัง และเห็นวันที่ ยอดเงิน และชื่อผู้รับชัดเจน</SettingsBullet>
           <SettingsBullet>ถ้ายังอ่านไม่ได้ คุณสามารถจดรายการเองได้</SettingsBullet>
         </SettingsPanel>
-        <SettingsPanel title="บริการอ่านเอกสาร">
+        <SettingsPanel title="บริการอ่านสลิป">
           <Text style={settingsPageStyles.copy}>
-            หมูจดส่งเฉพาะไฟล์ที่คุณเลือกผ่านเซิร์ฟเวอร์หมูจดไปยัง Google Gemini 3.8 Flash เพื่อวิเคราะห์ข้อมูล
-            ต้องเชื่อมต่ออินเทอร์เน็ตและตรวจผลก่อนบันทึกทุกครั้ง
+            เมื่อเปิดหน้าแรก หมูจดส่งรูปจากอัลบั้มที่รองรับผ่านเซิร์ฟเวอร์หมูจดไปให้ Google Gemini อ่าน แล้วบันทึกรายการให้อัตโนมัติ
+            ต้องเชื่อมต่ออินเทอร์เน็ต รูปที่อ่านไม่สำเร็จชั่วคราวจะลองใหม่ภายหลัง
           </Text>
         </SettingsPanel>
       </SettingsScroll>

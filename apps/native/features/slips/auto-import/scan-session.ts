@@ -1,33 +1,20 @@
-import { dayInMilliseconds, slipLookbackDays, sourceForAlbum } from "./albums";
+import { discoverSlipPhotos, type PhotoAssetMetadata, type PhotoLibrary } from "./discovery";
 import { prepareSlipUpload, SlipImageError, type LocalImage } from "./image";
 import { createScanMemory, type AssetRecord, type ScanMemoryStorage } from "./scan-memory";
+import type { PhotoAccess } from "./photo-access";
 import { AutoImportRequestError, type AutoImportTransport } from "./transport";
 
-export type PhotoAccess = "all" | "limited" | "denied" | "permission-required" | "unsupported";
 export type ScanTrigger = "home" | "refresh";
 
-export interface PhotoAssetMetadata {
-  id: string;
-  creationTime: number | null;
-  /** Changes when the photo itself is edited, which makes a rejected or skipped photo worth reading again. */
-  modificationTime: number | null;
-}
-
 /** Device, network and storage boundaries used by one scan session. */
-export interface SlipScanPorts {
+export interface SlipScanPorts extends PhotoLibrary {
   now(): number;
   /** Uniform in [0, 1), for retry jitter. Defaults to `Math.random`. */
   random?(): number;
   /** Outcome memory that survives app restarts, one entry per account. */
   store: ScanMemoryStorage;
+  /** The current permission, read without prompting: asking is always the person's own action. */
   photoAccess(): Promise<PhotoAccess>;
-  albums(): Promise<{ key: string; title: string }[]>;
-  /** One page of image metadata from an album, newest first, filtered by asset creation time. */
-  pageAssets(
-    albumKey: string,
-    query: { from: number; to: number; offset: number; limit: number }
-  ): Promise<PhotoAssetMetadata[]>;
-  pageSize?: number;
   readOriginal(assetId: string): Promise<LocalImage>;
   /** Produce a smaller JPEG copy of an image that exceeds the upload limit. */
   shrink(image: LocalImage): Promise<LocalImage>;
@@ -109,7 +96,6 @@ function isSettled(record: AssetRecord | undefined, asset: PhotoAssetMetadata) {
 }
 
 export function createSlipScanSession(ports: SlipScanPorts) {
-  const pageSize = ports.pageSize ?? 200;
   const listeners = new Set<() => void>();
   /** Per account, the sign-in session the server rejected with 401. Sending resumes once a different one is used. */
   const rejectedSessions = new Map<string, string | null>();
@@ -151,23 +137,6 @@ export function createSlipScanSession(ports: SlipScanPorts) {
     })().finally(() => {
       refreshing = null;
     });
-  }
-
-  async function discover(): Promise<PhotoAssetMetadata[]> {
-    const to = ports.now();
-    const from = to - slipLookbackDays * dayInMilliseconds;
-    const albums = (await ports.albums()).filter((album) => sourceForAlbum(album.title) !== null);
-    const found = new Map<string, PhotoAssetMetadata>();
-    await Promise.all(
-      albums.map(async (album) => {
-        for (let offset = 0; ; offset += pageSize) {
-          const page = await ports.pageAssets(album.key, { from, to, offset, limit: pageSize });
-          for (const asset of page) if (asset.id && !found.has(asset.id)) found.set(asset.id, asset);
-          if (page.length < pageSize) break;
-        }
-      })
-    );
-    return [...found.values()].sort((a, b) => (b.creationTime ?? 0) - (a.creationTime ?? 0));
   }
 
   async function run(entry: ActiveRound): Promise<ScanRound> {
@@ -344,7 +313,9 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         return round;
       }
       rejectedSessions.delete(accountId);
-      const assets = await discover();
+      // Reading starts only past the permission and sign-in gates, so a round with nothing it may do never shows it.
+      if (current === entry) setState({ scanning: true });
+      const { assets } = await discoverSlipPhotos(ports, ports.now());
       round.discovered = assets.length;
       account.retain(new Set(assets.map((asset) => asset.id)), ports.now());
       const startedAt = ports.now();
@@ -434,7 +405,6 @@ export function createSlipScanSession(ports: SlipScanPorts) {
         });
         setState({ scanning: false, lastRound: round });
       });
-      setState({ scanning: true });
       return entry.done;
     },
     /**

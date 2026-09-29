@@ -1,17 +1,17 @@
 import { File, Paths } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import { Album, Asset, AssetField, MediaType, Query, getPermissionsAsync } from "expo-media-library";
+import { Asset } from "expo-media-library";
 import { useSyncExternalStore } from "react";
 
 import { entriesQueryOptions } from "@/features/entries/query-options";
-import { accessStatus } from "@/features/slips/library-scan";
+import { nativePhotoLibrary, readPhotoAccess } from "@/features/slips/library-scan";
 import { setLocalSlipImage } from "@/lib/local-slip-assets";
 import { client, orpc, queryClient, rpcFetch, rpcHeaders } from "@/utils/orpc";
 import { getServerBaseUrl } from "@/utils/server-url";
 
 import { MAX_IMAGE_BYTES, type LocalImage } from "./image";
 import { createImportedTransactionLookup } from "./ledger-identity";
-import { createSlipScanSession, type PhotoAccess } from "./scan-session";
+import { createSlipScanSession } from "./scan-session";
 import { createAutoImportTransport } from "./transport";
 
 function localImage(uri: string): LocalImage {
@@ -62,29 +62,8 @@ export const slipScanSession = createSlipScanSession({
       file.write(text);
     },
   },
-  async photoAccess(): Promise<PhotoAccess> {
-    if (process.env.EXPO_OS !== "ios" && process.env.EXPO_OS !== "android") return "unsupported";
-    return accessStatus(await getPermissionsAsync(false, ["photo"]));
-  },
-  async albums() {
-    return Promise.all((await Album.getAll()).map(async (album) => ({ key: album.id, title: await album.getTitle() })));
-  },
-  async pageAssets(albumKey, { from, to, offset, limit }) {
-    const assets = await new Query()
-      .album(new Album(albumKey))
-      .eq(AssetField.MEDIA_TYPE, MediaType.IMAGE)
-      .gte(AssetField.CREATION_TIME, from)
-      .lte(AssetField.CREATION_TIME, to)
-      .orderBy({ key: AssetField.CREATION_TIME, ascending: false })
-      .limit(limit)
-      .offset(offset)
-      .exeForMetadata();
-    return assets.map((asset) => ({
-      id: asset.id,
-      creationTime: asset.creationTime,
-      modificationTime: asset.modificationTime,
-    }));
-  },
+  ...nativePhotoLibrary,
+  photoAccess: readPhotoAccess,
   readOriginal: async (assetId) => localImage(await new Asset(assetId).getUri()),
   shrink,
   send: createAutoImportTransport({
