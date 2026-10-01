@@ -19,10 +19,9 @@ export const themes = {
     onInverse: "#F9F9F7",
     inverseAccent: "#E1A68E",
     shade: "rgba(30,27,25,0.42)",
-    /** @deprecated Older screens' name for `success`. */
-    successText: "#006F30",
-    /** @deprecated Older screens' name for `danger`. */
-    dangerText: "#AD3414",
+    /** Fills behind `onAccent` text or icons (badges, chart bars). `success`/`danger` are text colors. */
+    successFill: "#00C853",
+    dangerFill: "#FF5F38",
     /** Light accent tint kept for the existing plan gradient. */
     accentSoft: "#E1A68E",
   },
@@ -42,10 +41,9 @@ export const themes = {
     onInverse: "#2D2D2B",
     inverseAccent: "#8D472D",
     shade: "rgba(0,0,0,0.55)",
-    /** @deprecated Older screens' name for `success`. */
-    successText: "#20D269",
-    /** @deprecated Older screens' name for `danger`. */
-    dangerText: "#FF9984",
+    /** Fills behind `onAccent` text or icons (badges, chart bars). `success`/`danger` are text colors. */
+    successFill: "#00C853",
+    dangerFill: "#FF5F38",
     /** Light accent tint kept for the existing plan gradient. */
     accentSoft: "#E1A68E",
   },
@@ -54,7 +52,7 @@ export const themes = {
 export type AppTheme = { [K in keyof typeof themes.light]: string };
 export type AppThemeMode = keyof typeof themes;
 
-/** Hero 20, cards and grouped lists 16, chips/tiles 12–14, sheets 24 (top), tab bar 17 (top). */
+/** Hero 20, cards and grouped lists 16, tiles 14, chips 20 (half their 40 height), sheets 24 (top), tab bar 17 (top). */
 export const radius = {
   hero: 20,
   card: 16,

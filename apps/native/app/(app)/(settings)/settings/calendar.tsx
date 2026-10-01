@@ -696,13 +696,13 @@ function createStyles(theme: AppTheme) {
     radioLabel: { color: theme.text, fontSize: 17 },
     periodCaption: { color: theme.muted, fontSize: 15, paddingHorizontal: 17, paddingTop: 16 },
     message: {
-      color: theme.successText,
+      color: theme.success,
       fontSize: 13,
       lineHeight: 19,
       paddingHorizontal: 17,
       paddingTop: 12,
     },
-    error: { color: theme.dangerText, fontSize: 13, lineHeight: 19, paddingHorizontal: 17, paddingTop: 12 },
+    error: { color: theme.danger, fontSize: 13, lineHeight: 19, paddingHorizontal: 17, paddingTop: 12 },
     footer: { backgroundColor: theme.background, paddingTop: 10, alignItems: "center" },
     saveButton: {
       width: "64%",

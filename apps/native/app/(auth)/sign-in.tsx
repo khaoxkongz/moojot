@@ -98,7 +98,7 @@ export default function SignInRoute() {
             )}
           </form.Field>
           {error ? (
-            <Text accessibilityRole="alert" selectable style={{ color: theme.dangerText, fontSize: 15 }}>
+            <Text accessibilityRole="alert" selectable style={{ color: theme.danger, fontSize: 15 }}>
               {error}
             </Text>
           ) : null}

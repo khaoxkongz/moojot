@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Amount, bahtFontSize } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
@@ -96,10 +97,13 @@ function TimelineRow({ item, category }: { item: FinanceTransaction; category?: 
           {item.title}
         </Text>
       </View>
-      <Text selectable style={[styles.transactionAmount, item.kind === "income" && { color: theme.successText }]}>
-        {item.kind === "income" ? "+" : ""}
-        {amountLabel(item.amountSatang)}
-      </Text>
+      <Amount
+        selectable
+        showBaht={false}
+        size={15}
+        value={(item.kind === "income" ? "+" : "") + amountLabel(item.amountSatang)}
+        color={item.kind === "income" ? theme.success : theme.text}
+      />
     </Pressable>
   );
 }
@@ -133,7 +137,7 @@ function DayGroup({
       <View style={styles.dayContents}>
         <View style={styles.daySubtotal}>
           <Text style={styles.daySubtotalTitle}>{expense > 0 ? "รายจ่าย" : income > 0 ? "รายรับ" : "ย้ายเงิน"}</Text>
-          <Text style={styles.daySubtotalAmount}>{amountLabel(total)}</Text>
+          <Amount showBaht={false} size={17} value={amountLabel(total)} />
         </View>
         {showSkeleton ? (
           <SkeletonReveal loading={showSkeleton} skeleton={<TimelineSkeletonRow />}>
@@ -547,12 +551,14 @@ export default function HomeScreen() {
             <View style={styles.monthBottom}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.monthCaption}>ยอดใช้จ่าย</Text>
-                <SpinningCounter
-                  value={formatBaht(summary?.expenseSatang ?? 0)}
-                  suffix=" ฿"
-                  style={styles.monthAmount}
-                  cellHeight={42}
-                />
+                <View style={styles.monthAmountRow}>
+                  <SpinningCounter
+                    value={formatBaht(summary?.expenseSatang ?? 0)}
+                    style={styles.monthAmount}
+                    cellHeight={42}
+                  />
+                  <Text style={styles.monthBaht}> ฿</Text>
+                </View>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -792,6 +798,14 @@ function createStyles(theme: AppTheme) {
     rangeMonthLabel: { fontSize: 13 },
     monthBottom: { marginTop: 19, flexDirection: "row", alignItems: "flex-end", gap: 8 },
     monthCaption: { color: theme.onAccent, fontSize: 13 },
+    monthAmountRow: { flexDirection: "row", alignItems: "flex-end" },
+    monthBaht: {
+      color: theme.onAccent,
+      fontSize: bahtFontSize(36),
+      fontWeight: "400",
+      fontVariant: ["tabular-nums"],
+      marginBottom: 5,
+    },
     monthAmount: {
       color: theme.onAccent,
       fontSize: 36,
@@ -824,12 +838,6 @@ function createStyles(theme: AppTheme) {
       paddingRight: 17,
     },
     daySubtotalTitle: { color: theme.muted, fontSize: 13 },
-    daySubtotalAmount: {
-      color: theme.text,
-      fontSize: 17,
-      fontWeight: "500",
-      fontVariant: ["tabular-nums"],
-    },
     transaction: {
       minHeight: 86,
       backgroundColor: theme.surface,
@@ -863,12 +871,6 @@ function createStyles(theme: AppTheme) {
     transactionCopy: { flex: 1, minWidth: 0, gap: 2 },
     transactionKind: { color: theme.text, fontSize: 16, fontWeight: "900" },
     transactionTitle: { color: theme.text, fontSize: 14 },
-    transactionAmount: {
-      color: theme.text,
-      fontSize: 15,
-      fontWeight: "500",
-      fontVariant: ["tabular-nums"],
-    },
     loading: { marginTop: 35 },
     messagePanel: {
       marginLeft: 58,
@@ -879,7 +881,7 @@ function createStyles(theme: AppTheme) {
       backgroundColor: theme.raised,
       gap: 4,
     },
-    errorText: { color: theme.dangerText, fontSize: 13 },
+    errorText: { color: theme.danger, fontSize: 13 },
     emptyTitle: { color: theme.text, fontSize: 16, fontWeight: "800" },
     emptyBody: { color: theme.muted, fontSize: 12, lineHeight: 18 },
     floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },

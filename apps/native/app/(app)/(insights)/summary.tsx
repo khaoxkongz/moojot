@@ -354,7 +354,7 @@ export default function SummaryScreen() {
             <View style={styles.metricsRow}>
               <View style={styles.metric}>
                 <Text style={styles.metricLabel}>↓ รายรับ</Text>
-                <Text selectable style={[styles.metricValue, { color: theme.successText }]}>
+                <Text selectable style={[styles.metricValue, { color: theme.success }]}>
                   {formatBaht(summary?.incomeSatang ?? 0)}
                 </Text>
               </View>
@@ -604,7 +604,7 @@ export default function SummaryScreen() {
                               style={[
                                 styles.trendBar,
                                 {
-                                  backgroundColor: theme.success,
+                                  backgroundColor: theme.successFill,
                                   height: Math.max(3, Math.round((item.incomeSatang / trendMax) * 84)),
                                   opacity: item.incomeSatang ? 1 : 0.22,
                                 },
@@ -850,6 +850,6 @@ function createStyles(theme: AppTheme) {
     trendLabel: { color: theme.muted, fontSize: 10, textAlign: "center" },
     trendEmpty: { color: theme.muted, fontSize: 12, marginTop: 17 },
     errorBox: { marginTop: 30, backgroundColor: theme.raised, borderRadius: 16, padding: 18 },
-    errorText: { color: theme.dangerText, fontSize: 13 },
+    errorText: { color: theme.danger, fontSize: 13 },
   });
 }

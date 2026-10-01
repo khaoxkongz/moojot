@@ -117,7 +117,6 @@ function createStyles(theme: AppTheme) {
     secondaryAction: { backgroundColor: theme.raised, borderWidth: 1, borderColor: theme.border },
     secondaryActionText: { color: theme.text },
     rowTitle: { color: theme.text, fontSize: 15, lineHeight: 22 },
-    themePreview: { height: 125, flexDirection: "row", overflow: "hidden", borderRadius: 16 },
     selectedRow: {
       flexDirection: "row",
       alignItems: "center",
@@ -130,7 +129,7 @@ function createStyles(theme: AppTheme) {
     },
     faqCard: { backgroundColor: theme.surface, borderRadius: 18, padding: 18 },
     faqHeader: { flexDirection: "row", gap: 10, alignItems: "center" },
-    error: { color: theme.dangerText, fontSize: 14, lineHeight: 21, textAlign: "center", padding: 10 },
+    error: { color: theme.danger, fontSize: 14, lineHeight: 21, textAlign: "center", padding: 10 },
   });
 }
 

@@ -8,11 +8,18 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { fontFamilyForWeight } from "@/constants/fonts";
+import { fontFaces } from "@/constants/fonts";
 
 // null means a parent explicitly uses the platform font for tabular numerals.
 type InheritedFont = string | null | undefined;
 const FontContext = React.createContext<InheritedFont>(undefined);
+
+/** Amounts are weight 500 at most. A nested piece with no weight inherits its parent's. */
+function amountWeight(weight: TextStyle["fontWeight"], nested: boolean): TextStyle["fontWeight"] {
+  if (weight == null) return nested ? undefined : "500";
+  if (weight === "bold" || Number(weight) > 500) return "500";
+  return weight;
+}
 
 function withAppFont(
   style: TextProps["style"] | TextInputProps["style"],
@@ -27,16 +34,8 @@ function withAppFont(
     resolvedStyle.fontVariant?.includes("tabular-nums") ||
     (inheritedFont === null && resolvedStyle.fontFamily == null)
   ) {
-    const { fontWeight } = resolvedStyle;
-    const amountWeight =
-      fontWeight == null
-        ? inheritedFont === null
-          ? undefined
-          : "500"
-        : fontWeight === "bold" || Number(fontWeight) > 500
-          ? "500"
-          : fontWeight;
-    return { style: { ...resolvedStyle, fontFamily: undefined, fontWeight: amountWeight }, family: null };
+    const fontWeight = amountWeight(resolvedStyle.fontWeight, inheritedFont === null);
+    return { style: { ...resolvedStyle, fontFamily: undefined, fontWeight }, family: null };
   }
 
   // A nested Text with no weight keeps its parent's face instead of resetting
@@ -50,7 +49,7 @@ function withAppFont(
 
   // Weight is dropped: the one Regular face carries no faux bold.
   const styleWithoutWeight = { ...resolvedStyle, fontWeight: undefined };
-  const family = styleWithoutWeight.fontFamily ?? fontFamilyForWeight();
+  const family = styleWithoutWeight.fontFamily ?? fontFaces.regular;
   return {
     style: { ...styleWithoutWeight, fontFamily: family },
     family,

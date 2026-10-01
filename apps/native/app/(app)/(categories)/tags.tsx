@@ -366,7 +366,7 @@ function createStyles(theme: AppTheme) {
     },
     addPlus: { color: theme.onAccent, fontSize: 32, lineHeight: 38, fontWeight: "300" },
     addText: { color: theme.onAccent, fontSize: 20, fontWeight: "900" },
-    pageError: { color: theme.dangerText, textAlign: "center", paddingHorizontal: 20, paddingTop: 24 },
+    pageError: { color: theme.danger, textAlign: "center", paddingHorizontal: 20, paddingTop: 24 },
     savedContent: { paddingTop: 25, paddingHorizontal: 16, gap: 4 },
     savedHeading: { color: theme.text, fontSize: 20, fontWeight: "800", paddingBottom: 2 },
     savedHint: { color: theme.muted, fontSize: 13, lineHeight: 19, paddingBottom: 20 },
@@ -391,7 +391,7 @@ function createStyles(theme: AppTheme) {
     tagName: { flex: 1, color: theme.text, fontSize: 16, fontWeight: "700", paddingLeft: 5 },
     rowAction: { minHeight: 42, paddingHorizontal: 5, justifyContent: "center" },
     editText: { color: theme.accentText, fontSize: 13, fontWeight: "700" },
-    deleteText: { color: theme.dangerText, fontSize: 13, fontWeight: "700" },
+    deleteText: { color: theme.danger, fontSize: 13, fontWeight: "700" },
     modalRoot: { flex: 1, alignItems: "center", justifyContent: "center" },
     modalBackdrop: {
       position: "absolute",
@@ -429,7 +429,7 @@ function createStyles(theme: AppTheme) {
     },
     colorSelected: { borderWidth: 2, borderColor: theme.text },
     colorCheck: { color: theme.text, fontSize: 22, fontWeight: "900" },
-    modalError: { color: theme.dangerText, fontSize: 13 },
+    modalError: { color: theme.danger, fontSize: 13 },
     modalActions: { flexDirection: "row", gap: 12, paddingTop: 12 },
     cancelButton: {
       flex: 1,

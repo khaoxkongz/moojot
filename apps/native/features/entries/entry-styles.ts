@@ -161,7 +161,7 @@ function createStyles(theme: AppTheme) {
       position: "absolute",
       left: 20,
       right: 20,
-      color: theme.dangerText,
+      color: theme.danger,
       textAlign: "center",
       fontSize: 13,
       zIndex: 3,
@@ -193,7 +193,7 @@ function createStyles(theme: AppTheme) {
       gap: 9,
       paddingHorizontal: 18,
     },
-    menuDeleteText: { color: theme.dangerText, fontSize: 17, fontWeight: "800" },
+    menuDeleteText: { color: theme.danger, fontSize: 17, fontWeight: "800" },
     exitOverlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, .64)",

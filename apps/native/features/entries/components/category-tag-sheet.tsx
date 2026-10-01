@@ -454,7 +454,7 @@ function createStyles(theme: AppTheme) {
       justifyContent: "center",
     },
     suggestionText: { color: theme.accentText, fontSize: 14, fontWeight: "700" },
-    errorText: { color: theme.dangerText, paddingTop: 12, paddingHorizontal: 18, fontSize: 13 },
+    errorText: { color: theme.danger, paddingTop: 12, paddingHorizontal: 18, fontSize: 13 },
     disabled: { opacity: 0.5 },
   });
 }

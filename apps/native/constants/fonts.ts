@@ -12,8 +12,3 @@ const fontAssets = {
 export function useAppFonts() {
   return useFonts(fontAssets);
 }
-
-/** Every requested weight renders as Regular; older screens still pass weights until they are restyled. */
-export function fontFamilyForWeight() {
-  return fontFaces.regular;
-}

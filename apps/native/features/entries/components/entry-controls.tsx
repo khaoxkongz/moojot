@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 
 import { CategoryGlyph } from "@/components/ui/category-glyph";
+import { bahtFontSize } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
 import { EntryIcon } from "@/features/entries/components/entry-icon";
 import { dateLabel } from "@/features/entries/date";
@@ -94,7 +95,7 @@ export function EntryAmountCard({
       <EntryIcon
         name={kind === "expense" ? "up" : kind === "income" ? "down" : "transfer"}
         size={44}
-        color={kind === "expense" ? theme.dangerText : kind === "income" ? theme.successText : theme.accent}
+        color={kind === "expense" ? theme.danger : kind === "income" ? theme.success : theme.accent}
       />
       <View style={styles.amountTextBlock}>
         {active && history ? <Text style={styles.amountHistory}>{history}</Text> : null}
@@ -110,7 +111,7 @@ export function EntryAmountCard({
           >
             {amountCardText}
           </Text>
-          <Text style={[styles.baht, { fontSize: Math.round(entryAmountSize(amountCardText) * 0.55) }]}>฿</Text>
+          <Text style={[styles.baht, { fontSize: bahtFontSize(entryAmountSize(amountCardText)) }]}>฿</Text>
         </View>
       </View>
     </Pressable>

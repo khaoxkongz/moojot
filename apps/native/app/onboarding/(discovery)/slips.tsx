@@ -90,7 +90,7 @@ export default function OnboardingSlipsRoute() {
                 width: 76,
                 height: 42,
                 borderRadius: 24,
-                backgroundColor: theme.danger,
+                backgroundColor: theme.dangerFill,
                 alignItems: "center",
                 justifyContent: "center",
               }}

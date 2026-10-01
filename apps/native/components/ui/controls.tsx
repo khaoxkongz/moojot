@@ -14,12 +14,19 @@ import { useAppTheme } from "@/lib/use-app-theme";
 
 export type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
-/** A money figure: system font at 500 with tabular digits, and ฿ after it at about 55% size in the regular weight. */
+/** Secondary line under a row or option title: 12 on `muted`. */
+const subLine = { fontSize: 12, lineHeight: 17 } as const;
+
+/** The ฿ sign sits after an amount at about 55% of the amount's size. */
+export const bahtFontSize = (amountSize: number) => Math.round(amountSize * 0.55);
+
+/** A money figure: system font at 500 with tabular digits, and ฿ after it in the regular weight. */
 export function Amount({
   value,
   size = 15,
   color,
   showBaht = true,
+  selectable,
   style,
 }: {
   /** Already formatted, such as "1,234.50" or "+120". */
@@ -27,11 +34,13 @@ export function Amount({
   size?: number;
   color?: string;
   showBaht?: boolean;
+  selectable?: boolean;
   style?: StyleProp<TextStyle>;
 }) {
   const theme = useAppTheme();
   return (
     <Text
+      selectable={selectable}
       style={[
         {
           color: color ?? theme.text,
@@ -45,9 +54,7 @@ export function Amount({
       ]}
     >
       {value}
-      {showBaht ? (
-        <Text style={{ fontSize: Math.round(size * 0.55), fontWeight: "400", letterSpacing: 0 }}> ฿</Text>
-      ) : null}
+      {showBaht ? <Text style={{ fontSize: bahtFontSize(size), fontWeight: "400", letterSpacing: 0 }}> ฿</Text> : null}
     </Text>
   );
 }
@@ -97,7 +104,7 @@ export function IconButton({
  * The 52-tall pill button. It is never greyed out: with missing input the screen explains what to fix.
  * While `busy` it shows `busyLabel` and ignores taps, so one tap saves once.
  */
-export function PrimaryButton({
+export function PillButton({
   label,
   busyLabel,
   busy = false,
@@ -313,7 +320,7 @@ export function RadioCard({
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{label}</Text>
-        {sub ? <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{sub}</Text> : null}
+        {sub ? <Text style={[subLine, { color: theme.muted }]}>{sub}</Text> : null}
       </View>
       {trailing}
     </Pressable>
@@ -381,7 +388,7 @@ export function GroupedRow({
       ) : null}
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
-        {sub ? <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{sub}</Text> : null}
+        {sub ? <Text style={[subLine, { color: theme.muted }]}>{sub}</Text> : null}
       </View>
       {value ? <Text style={{ color: theme.muted, fontSize: 14, lineHeight: 20 }}>{value}</Text> : null}
       {trailing}
@@ -423,10 +430,13 @@ export function InfoBox({
   action?: ReactNode;
 }) {
   const theme = useAppTheme();
-  const iconColor = tone === "danger" ? theme.danger : theme.accentText;
+  const look = {
+    info: { icon: theme.accentText, title: theme.text, role: undefined },
+    danger: { icon: theme.danger, title: theme.danger, role: "alert" as const },
+  }[tone];
   return (
     <View
-      accessibilityRole={tone === "danger" ? "alert" : undefined}
+      accessibilityRole={look.role}
       style={{
         backgroundColor: theme.raised,
         borderRadius: radius.tile,
@@ -437,11 +447,9 @@ export function InfoBox({
         alignItems: "flex-start",
       }}
     >
-      <MaterialCommunityIcons name={icon} size={20} color={iconColor} style={{ marginTop: 1 }} />
+      <MaterialCommunityIcons name={icon} size={20} color={look.icon} style={{ marginTop: 1 }} />
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: tone === "danger" ? theme.danger : theme.text, fontSize: 14, lineHeight: 20 }}>
-          {title}
-        </Text>
+        <Text style={{ color: look.title, fontSize: 14, lineHeight: 20 }}>{title}</Text>
         {body ? <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19 }}>{body}</Text> : null}
         {action}
       </View>

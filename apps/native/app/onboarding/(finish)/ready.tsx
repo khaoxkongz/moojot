@@ -92,7 +92,7 @@ export default function OnboardingReadyRoute() {
       {error ? (
         <Text
           accessibilityRole="alert"
-          style={{ color: theme.dangerText, textAlign: "center", paddingHorizontal: 18, paddingBottom: 8 }}
+          style={{ color: theme.danger, textAlign: "center", paddingHorizontal: 18, paddingBottom: 8 }}
         >
           {error}
         </Text>
