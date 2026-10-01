@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-human
+**Status:** done
+
+**Done in:** 28a2ba6 feat(native): add iOS theme foundation for the redesign; 4cdc481 fix(native): keep fills readable and put baht after amounts
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
@@ -31,3 +33,9 @@
 - Dynamic Type ขนาดใหญ่สุด: ยังกดบันทึก (หน้าจด) และปุ่มย้อนกลับในหน้าตั้งค่าได้
 - primary task เดิม: สร้าง แก้ และบันทึกรายการกับ API จริง
 - เก็บภาพ light/dark เป็นหลักฐาน (ภาพจำลองหน้า sign-in ที่ agent ถ่ายไว้ไม่พอสำหรับข้อนี้)
+
+**2026-10-01 — ผู้ใช้ตรวจบน iOS:** ผ่าน
+- เลือกธีมมืด → ปิดแล้วเปิดใหม่ ทุกหน้ามืด; เลือกธีมสว่าง → ปิดแล้วเปิดใหม่ ทุกหน้าสว่าง
+- ฿ ใน hero หน้าแรกวางเสมอแนวตัวเลข
+- จด แก้ และบันทึกรายการกับ API ทำงานเหมือนเดิม
+- Dynamic Type ขนาดใหญ่สุด: ไม่ได้ทดสอบ ผู้ใช้ตัดสินว่าไม่จำเป็นสำหรับตั๋วนี้
