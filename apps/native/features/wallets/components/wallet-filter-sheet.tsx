@@ -8,6 +8,7 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { HomeIcon } from "@/components/ui/home-icon";
+import { bankDisplayName } from "@/features/wallets/banks";
 import { FilterSourceIcon } from "@/features/wallets/components/filter-source-icon";
 import type { WalletCard, WalletFilterOptions, WalletFilterSelection } from "@/types/finance";
 
@@ -24,20 +25,6 @@ export type WalletFilterSheetProps = {
 
 function cardKey(card: WalletCard) {
   return JSON.stringify([card.cardName.trim(), card.cardLast4?.trim() || null]);
-}
-
-function bankLabel(name: string) {
-  const key = name
-    .trim()
-    .toLocaleLowerCase()
-    .replace(/[\s._-]+/g, "");
-  if (/kbank|kasikorn|กสิกร/.test(key)) return "กสิกรไทย";
-  if (/truemoney|ทรูมันนี่|ทรูมันนี/.test(key)) return "ทรูมันนี่";
-  if (/krungthai|กรุงไทย|ktb/.test(key)) return "กรุงไทย";
-  if (/scb|siamcommercial|ไทยพาณิชย์/.test(key)) return "ไทยพาณิชย์";
-  if (/bangkokbank|bbl|ธนาคารกรุงเทพ|กรุงเทพ/.test(key)) return "กรุงเทพ";
-  if (/ttb|ทหารไทย|ธนชาต|ทีทีบี/.test(key)) return "ทหารไทยธนชาต";
-  return name;
 }
 
 function TabIcon({ tab, color }: { tab: FilterTab; color: string }) {
@@ -248,7 +235,7 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
                   {options.banks.map((bank) => (
                     <SourceRow
                       key={bank}
-                      label={bankLabel(bank)}
+                      label={bankDisplayName(bank)}
                       kind="bank"
                       bankName={bank}
                       selected={selectedBanks.has(bank)}
