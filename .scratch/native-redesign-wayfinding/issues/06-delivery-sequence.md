@@ -4,7 +4,7 @@ Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: ready-for-human
-Blocked by: 01, 02, 03, 04, 05
+Blocked by: 01, 02, 03, 04, 05, 07
 Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
 
 ## Question
