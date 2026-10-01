@@ -48,7 +48,7 @@ Default five roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 
 ### Domain docs
 
-Multi-context: root `CONTEXT-MAP.md` points to one `CONTEXT.md` per workspace (`packages/*`, `apps/*`). See `docs/agents/domain.md`.
+Multi-context: root `GLOSSARY-MAP.md` points to one `GLOSSARY.md` per workspace (`packages/*`, `apps/*`). See `docs/agents/domain.md`.
 
 ## Git workflow
 

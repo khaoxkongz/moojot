@@ -6,7 +6,7 @@ This repo is **multi-context**: one context per workspace (`packages/*`, `apps/*
 
 ## Before exploring, read these
 
-- **`CONTEXT-MAP.md`** at the repo root: it points at one `CONTEXT.md` per workspace. Read each one relevant to the topic.
+- **`GLOSSARY-MAP.md`** at the repo root: it points at one `GLOSSARY.md` per workspace. Read each one relevant to the topic.
 - **`docs/adr/`**: read system-wide ADRs that touch the area you're about to work in. Also check `<workspace>/docs/adr/` (e.g. `packages/api/docs/adr/`) for context-scoped decisions.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
@@ -15,29 +15,29 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 
 ```
 /
-├── CONTEXT-MAP.md                     ← lists contexts
+├── GLOSSARY-MAP.md                     ← lists contexts
 ├── docs/adr/                          ← system-wide decisions
 ├── packages/
 │   ├── api/
-│   │   ├── CONTEXT.md                 ← Finance Import
+│   │   ├── GLOSSARY.md                 ← Finance Import
 │   │   └── docs/adr/                  ← context-specific decisions
 │   └── db/
-│       ├── CONTEXT.md
+│       ├── GLOSSARY.md
 │       └── docs/adr/
 └── apps/
     ├── native/
-    │   ├── CONTEXT.md
+    │   ├── GLOSSARY.md
     │   └── docs/adr/
     └── web/
-        ├── CONTEXT.md
+        ├── GLOSSARY.md
         └── docs/adr/
 ```
 
-When a new workspace gets a `CONTEXT.md`, add a row for it in `CONTEXT-MAP.md`.
+When a new workspace gets a `GLOSSARY.md`, add a row for it in `GLOSSARY-MAP.md`.
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in the relevant `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in the relevant `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 

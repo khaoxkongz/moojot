@@ -42,7 +42,8 @@
     "lint": "vp lint",
     "format": "vp fmt",
     "staged": "vp staged",
-    "hooks:setup": "vp config",
+    "hooks:setup": "vp config --no-agent",
+    "prepare": "vp config --no-agent",
     "dev:native": "vp run --filter native dev",
     "dev:web": "vp run --filter web dev",
     "dev:server": "vp run --filter server dev",
@@ -51,7 +52,7 @@
     "db:generate": "vp run --filter @moojot/db db:generate",
     "db:migrate": "vp run --filter @moojot/db db:migrate",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/ && vp run --filter @moojot/db db:generate:client",
     "auth:generate": "cd apps/server && bun run auth:generate"
   },
   "dependencies": {

@@ -18,11 +18,31 @@ export default defineConfig({
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
       "docs/design/**",
+      ".agents/**",
     ],
     options: {
       typeAware: false,
       typeCheck: false,
     },
+    overrides: [
+      {
+        // Shared native layers sit below features; a feature may import them, never the reverse.
+        files: ["apps/native/lib/**", "apps/native/components/**", "apps/native/constants/**"],
+        rules: {
+          "no-restricted-imports": [
+            "error",
+            {
+              patterns: [
+                {
+                  group: ["@/features/**", "**/features/**"],
+                  message: "Shared layers must not import from features/. Move the shared code down instead.",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
   },
   fmt: {
     ignorePatterns: [
@@ -41,6 +61,8 @@ export default defineConfig({
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
       "docs/design/**",
+      ".agents/**",
+      "skills-lock.json",
     ],
     endOfLine: "lf",
     semi: true,

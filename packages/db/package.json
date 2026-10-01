@@ -10,6 +10,7 @@
     "check-types": "node scripts/patch-prisma-generated.mjs && tsc -b",
     "db:push": "prisma db push && node scripts/patch-prisma-generated.mjs",
     "db:generate": "prisma generate && node scripts/patch-prisma-generated.mjs",
+    "db:generate:client": "node scripts/generate-client.mjs",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio"
