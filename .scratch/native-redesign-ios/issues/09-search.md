@@ -18,3 +18,7 @@
 - [ ] ผล pending ไปคิวและผลอื่นไป editor; prefilled query รองรับ exact card name+last4 scope เพื่อใช้จากหน้าบัตรภายหลัง
 - [ ] คำขอเก่าหรือ error ไม่ทับผลของคำล่าสุด และ recovery ไม่ทำคำค้นหาย
 - [ ] ตรวจ authenticated query contract กับ >1,000 rows และหลายใบชื่อเดียวกัน พร้อมเดิน search→edit/queue บน iOS
+
+## Comments
+
+**จากงาน 04 (review):** รายการเก็บธนาคารเป็น identity แบบที่สลิปใช้ ("KBank", "SCB", "KTB", "BBL", "Krungsri", "ttb", "TrueMoney") และแสดงชื่อไทยด้วย `bankDisplayName` (`apps/native/features/wallets/banks.ts`) แถวเก่าอาจเป็นชื่อไทย ("กสิกรไทย") ตอนนี้ server ค้น `bank contains search` ตรงตัว ค้น "กสิกร" จึงไม่เจอแถว "KBank" งานนี้ต้องค้นด้วยทุกชื่อของธนาคารเดียวกัน (เช่นแปลงคำค้นเป็นกลุ่ม identity ก่อนส่ง หรือย้ายตาราง alias ไปไว้ที่ใช้ร่วมกับ server)
