@@ -4,7 +4,7 @@
 
 **Blocked by:** 21 — [เริ่มข้อมูลทดลองใหม่ในบัญชีเดิม](21-scoped-cutover.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

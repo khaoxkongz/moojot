@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 — [จดเองและแก้รายการ](04-manual-entry.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

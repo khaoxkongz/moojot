@@ -4,7 +4,7 @@
 
 **Blocked by:** 07 — [ผลอ่านสลิปและงานต้องช่วยหมู](07-slip-work-queue.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

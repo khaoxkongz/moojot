@@ -4,7 +4,7 @@
 
 **Blocked by:** 11 — [เพิ่มและเลือกบัตร](11-first-card.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

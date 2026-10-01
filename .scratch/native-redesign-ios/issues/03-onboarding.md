@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — [สมัครและเข้าสู่ระบบ](02-auth-flow.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

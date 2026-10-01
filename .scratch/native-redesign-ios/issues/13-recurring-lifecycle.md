@@ -4,7 +4,7 @@
 
 **Blocked by:** 10 — [ตั้งงบและเอางบกลับคืน](10-budgets.md); 12 — [ตั้งกฎจดซ้ำและจดย้อนตามกำหนด](12-recurring-create.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

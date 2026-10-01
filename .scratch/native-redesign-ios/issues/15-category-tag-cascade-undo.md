@@ -4,7 +4,7 @@
 
 **Blocked by:** 13 — [แก้ หยุด และเปิดกฎจดซ้ำ](13-recurring-lifecycle.md); 14 — [สร้างและจัดการหมวดกับแท็ก](14-category-tag-management.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — [ตัวอักษรและธีมบน iOS](01-ios-theme-foundation.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

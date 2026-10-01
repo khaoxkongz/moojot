@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 — [เริ่มใช้งานสี่ขั้น](03-onboarding.md); 08 — [สรุปยอดและแนวโน้ม](08-summary.md); 15 — [ลบหมวดหรือแท็กแล้วกู้คืนครบ](15-category-tag-cascade-undo.md); 16 — [ตั้งค่าปฏิทินแล้วใช้ทันที](16-calendar.md); 17 — [แครอต สตรีค และบทสอน](17-streak.md); 18 — [ส่งออก CSV พร้อมวันเวลาจริง](18-csv.md); 19 — [ดูรายการและยอดของบัตร](19-card-dashboard.md); 20 — [หน้า พี่มนุษย์ และคำแนะนำ](20-profile.md)
 
-**Status:** draft — awaiting breakdown approval
+**Status:** ready-for-agent
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
