@@ -5,6 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start --clear",
+    "dev:go": "expo start --clear --go",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",
