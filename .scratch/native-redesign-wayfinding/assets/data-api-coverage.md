@@ -75,6 +75,6 @@ Handoff ระบุ `statement` เป็น source ของข้อมูล
 - new-rule backfill, edit next-only, resume policy และ editor→rule ไม่จด original ซ้ำ
 - งานสลิปหลัง restart/>30 วัน, permission/photo unavailable, incomplete ไม่ส่งซ้ำ, transient retry และ manual-vs-inflight dedupe
 - CSV 10 columns, Thai BOM, wallet labels, known/unknown actual time และ client/server format ตรงกัน
-- Auth error mapping กับ onboarding guard, loading/error/empty states และ keyboard/safe-area/layout บน iOS/Android
+- Auth error mapping กับ onboarding guard, loading/error/empty states และ keyboard/safe-area/layout บน iOS ในรอบนี้; Android verification เลื่อนไปภายหลังตามคำสั่งล่าสุด โดยไม่ถือผล iOS เป็นผลตรวจ Android
 
 ชุดทดสอบเดิมที่ผ่านไม่ใช่หลักฐานว่าพฤติกรรมใหม่เหล่านี้ทำครบแล้ว ต้องเพิ่มการตรวจที่ตรงผลลัพธ์ใหม่ในงานลงมือทำ
