@@ -1,15 +1,7 @@
 import { orpc, queryClient } from "@/utils/orpc";
 
+// Saving, deleting and restoring entries go through `useEntryActions`, which refreshes every reader.
 export const entriesMutationOptions = {
-  create: () => orpc.ledger.createTransaction.mutationOptions(),
-  update: () =>
-    orpc.ledger.updateTransaction.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.ledger.listTransactions.queryKey() });
-      },
-    }),
-  delete: () => orpc.ledger.deleteTransaction.mutationOptions(),
-  restore: () => orpc.ledger.restoreTransaction.mutationOptions(),
   addRecentSearch: () =>
     orpc.financePreferences.addRecentSearch.mutationOptions({
       onSuccess: async (terms) => {
