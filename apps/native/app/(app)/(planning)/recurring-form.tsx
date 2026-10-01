@@ -302,7 +302,7 @@ export default function RecurringFormScreen() {
           <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 35 }} />
         ) : loadError ? (
           <Card>
-            <Text selectable style={{ color: theme.dangerText }}>
+            <Text selectable style={{ color: theme.danger }}>
               {loadError}
             </Text>
             <Button
@@ -326,7 +326,7 @@ export default function RecurringFormScreen() {
                     form.setFieldValue("kind", value);
                     form.setFieldValue("categoryId", null);
                   }}
-                  color={value === "income" ? theme.successText : value === "transfer" ? theme.muted : theme.accentText}
+                  color={value === "income" ? theme.success : value === "transfer" ? theme.muted : theme.accentText}
                 />
               ))}
             </View>
@@ -493,7 +493,7 @@ export default function RecurringFormScreen() {
               </Text>
             ) : null}
             {error || queryError || missingRule ? (
-              <Text selectable style={{ color: theme.dangerText, textAlign: "center", fontSize: 13 }}>
+              <Text selectable style={{ color: theme.danger, textAlign: "center", fontSize: 13 }}>
                 {error ?? queryError ?? "ไม่พบรายการจดซ้ำนี้"}
               </Text>
             ) : null}
@@ -504,7 +504,7 @@ export default function RecurringFormScreen() {
             />
             {existing ? (
               <Pressable onPress={remove} disabled={saving} style={{ alignItems: "center", padding: 14 }}>
-                <Text style={{ color: theme.dangerText, fontWeight: "800" }}>ลบกฎจดซ้ำนี้</Text>
+                <Text style={{ color: theme.danger, fontWeight: "800" }}>ลบกฎจดซ้ำนี้</Text>
               </Pressable>
             ) : null}
           </>

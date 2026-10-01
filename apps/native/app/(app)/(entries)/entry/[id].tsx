@@ -345,7 +345,7 @@ function EditEntryScreen({
                 <Path
                   d="M4 6h16M9 6V4h6v2m-9 0 1 15h10l1-15M10 10v8m4-8v8"
                   fill="none"
-                  stroke={theme.dangerText}
+                  stroke={theme.danger}
                   strokeWidth={1.9}
                   strokeLinecap="round"
                   strokeLinejoin="round"

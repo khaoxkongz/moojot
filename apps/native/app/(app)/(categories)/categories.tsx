@@ -361,7 +361,7 @@ function createStyles(theme: AppTheme) {
       paddingHorizontal: 20,
       paddingTop: 16,
     },
-    inlineError: { color: theme.dangerText, textAlign: "center", padding: 18 },
+    inlineError: { color: theme.danger, textAlign: "center", padding: 18 },
     addButton: {
       position: "absolute",
       alignSelf: "center",
@@ -425,7 +425,7 @@ function createStyles(theme: AppTheme) {
     swatches: { flexDirection: "row", flexWrap: "wrap", gap: 9, paddingVertical: 4 },
     swatch: { width: 30, height: 30, borderRadius: 15 },
     selectedSwatch: { borderWidth: 3, borderColor: theme.text },
-    formError: { color: theme.dangerText, fontSize: 13 },
+    formError: { color: theme.danger, fontSize: 13 },
     modalActions: { flexDirection: "row", gap: 9, paddingTop: 9 },
     modalAction: {
       flex: 1,
@@ -439,6 +439,6 @@ function createStyles(theme: AppTheme) {
     saveAction: { backgroundColor: theme.accent },
     saveText: { color: theme.onAccent, fontWeight: "800", fontSize: 15 },
     deleteAction: { alignItems: "center", paddingTop: 6 },
-    deleteText: { color: theme.dangerText, fontSize: 13, fontWeight: "700" },
+    deleteText: { color: theme.danger, fontSize: 13, fontWeight: "700" },
   });
 }

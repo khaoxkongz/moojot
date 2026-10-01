@@ -338,7 +338,7 @@ function CalculatorContents({
           {error ? (
             <Text
               accessibilityRole="alert"
-              style={{ color: theme.dangerText, fontSize: 12, textAlign: "center", paddingTop: 5 }}
+              style={{ color: theme.danger, fontSize: 12, textAlign: "center", paddingTop: 5 }}
             >
               {error}
             </Text>

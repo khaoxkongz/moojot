@@ -177,7 +177,7 @@ export default function PlanScreen() {
           </View>
           {error ? (
             <Card style={{ gap: 10 }}>
-              <Text selectable style={{ color: theme.dangerText }}>
+              <Text selectable style={{ color: theme.danger }}>
                 {error.message}
               </Text>
               <Button
@@ -210,11 +210,7 @@ export default function PlanScreen() {
               const category = categoryById.get(status.budget.categoryId ?? "");
               const tag = tagById.get(status.budget.tagId ?? "");
               const name = category ? `${category.icon} ${category.name}` : tag ? `# ${tag.name}` : "💰 งบรวม";
-              const color = status.isOverLimit
-                ? theme.dangerText
-                : status.isNearLimit
-                  ? theme.accent
-                  : theme.successText;
+              const color = status.isOverLimit ? theme.danger : status.isNearLimit ? theme.accent : theme.success;
               return (
                 <Pressable
                   key={status.budget.id}
@@ -286,7 +282,7 @@ export default function PlanScreen() {
                     <Text
                       selectable
                       style={{
-                        color: status.isOverLimit ? theme.dangerText : theme.muted,
+                        color: status.isOverLimit ? theme.danger : theme.muted,
                         fontSize: 12,
                       }}
                     >
@@ -354,7 +350,7 @@ export default function PlanScreen() {
                   <Text
                     selectable
                     style={{
-                      color: rule.kind === "income" ? theme.successText : theme.text,
+                      color: rule.kind === "income" ? theme.success : theme.text,
                       fontSize: 14,
                       fontWeight: "800",
                       fontVariant: ["tabular-nums"],

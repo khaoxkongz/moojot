@@ -768,7 +768,7 @@ function createStyles(theme: AppTheme) {
       gap: 2,
     },
     noteText: { color: theme.muted, fontSize: 15, lineHeight: 23 },
-    inlineError: { color: theme.dangerText, fontSize: 14, textAlign: "center", padding: 20 },
+    inlineError: { color: theme.danger, fontSize: 14, textAlign: "center", padding: 20 },
     overlay: {
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, .58)",
@@ -793,7 +793,7 @@ function createStyles(theme: AppTheme) {
     dialogTitle: { color: theme.text, fontSize: 20, lineHeight: 27, fontWeight: "800", flex: 1 },
     closeText: { color: theme.text, fontSize: 31, lineHeight: 31 },
     dialogCopy: { color: theme.muted, fontSize: 15, lineHeight: 25 },
-    dialogError: { color: theme.dangerText, fontSize: 14, lineHeight: 20 },
+    dialogError: { color: theme.danger, fontSize: 14, lineHeight: 20 },
     input: {
       minHeight: 50,
       borderRadius: 12,
@@ -846,7 +846,7 @@ function createStyles(theme: AppTheme) {
       justifyContent: "center",
     },
     clearDataText: { color: theme.raised, fontSize: 16, fontWeight: "800" },
-    dialogNotice: { color: theme.successText, fontSize: 14, lineHeight: 20 },
+    dialogNotice: { color: theme.success, fontSize: 14, lineHeight: 20 },
   });
 }
 

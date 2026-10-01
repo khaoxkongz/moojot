@@ -151,7 +151,7 @@ function ResultRow({
         </Text>
         <MatchingDetail item={item} query={query} />
       </View>
-      <Text selectable style={[styles.resultAmount, item.kind === "income" && { color: theme.successText }]}>
+      <Text selectable style={[styles.resultAmount, item.kind === "income" && { color: theme.success }]}>
         {item.kind === "income" ? "+" : ""}
         {amount}
       </Text>
@@ -516,7 +516,7 @@ function createStyles(theme: AppTheme) {
       marginTop: 16,
     },
     loading: { marginTop: 80 },
-    error: { color: theme.dangerText, fontSize: 15, margin: 22, textAlign: "center" },
+    error: { color: theme.danger, fontSize: 15, margin: 22, textAlign: "center" },
     history: { paddingTop: 0 },
     historyTitle: {
       color: theme.text,

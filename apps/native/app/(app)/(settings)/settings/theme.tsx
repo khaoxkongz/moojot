@@ -3,7 +3,6 @@ import { Pressable, View } from "react-native";
 import { InfoBox, RadioCard } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
 import { themes, type AppThemeMode } from "@/constants/theme";
-import type { ThemeChoice } from "@/features/settings/theme-preference";
 import { themePreference, useColorScheme, useThemePreference } from "@/lib/use-color-scheme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import {
@@ -13,11 +12,11 @@ import {
   useSettingsPageStyles,
 } from "@/features/settings/components/settings-page";
 
-const OPTIONS: readonly { value: ThemeChoice; label: string; sub: string }[] = [
+const OPTIONS: readonly { value: AppThemeMode; label: string; sub: string }[] = [
   { value: "light", label: "สว่าง", sub: "พื้นครีม ตัวอักษรเทาเข้ม" },
   { value: "dark", label: "มืด", sub: "พื้นเทาเข้ม ตัวอักษรครีม" },
 ];
-const LABEL: Record<ThemeChoice, string> = { light: "สว่าง", dark: "มืด" };
+const LABEL = Object.fromEntries(OPTIONS.map((option) => [option.value, option.label])) as Record<AppThemeMode, string>;
 
 function Swatch({ mode }: { mode: AppThemeMode }) {
   const colors = themes[mode];
@@ -49,7 +48,7 @@ export default function ThemeSettingsScreen() {
   const { choice, loadFailed, saveFailed } = useThemePreference();
 
   // The snapshot already records a failed save; the screen shows it from there.
-  const choose = (next: ThemeChoice) => void themePreference.choose(next).catch(() => {});
+  const choose = (next: AppThemeMode) => void themePreference.choose(next).catch(() => {});
 
   return (
     <SettingsPage title="ธีม">
@@ -61,7 +60,7 @@ export default function ThemeSettingsScreen() {
                 key={option.value}
                 label={option.label}
                 sub={option.sub}
-                selected={colorScheme === option.value}
+                selected={choice === option.value}
                 onPress={() => choose(option.value)}
                 trailing={<Swatch mode={option.value} />}
               />

@@ -146,7 +146,7 @@ export default function PendingCategoriesScreen() {
         </View>
       </View>
       {pendingQuery.data !== undefined && pendingQuery.error ? (
-        <Text selectable style={{ color: theme.dangerText, padding: 14 }}>
+        <Text selectable style={{ color: theme.danger, padding: 14 }}>
           {pendingQuery.error.message}
         </Text>
       ) : null}

@@ -1,4 +1,4 @@
-export type ThemeChoice = "light" | "dark";
+import type { AppThemeMode } from "@/constants/theme";
 
 /** Raw text kept on this device, such as one small file. */
 export interface ThemePreferenceStorage {
@@ -9,14 +9,14 @@ export interface ThemePreferenceStorage {
 export type ThemePreferenceSnapshot = {
   status: "loading" | "ready";
   /** null follows the device setting: nothing was chosen yet, or the saved choice could not be read. */
-  choice: ThemeChoice | null;
+  choice: AppThemeMode | null;
   /** The saved choice could not be read, so the device setting is shown instead. */
   loadFailed: boolean;
   /** The last choice that could not be saved; the screen keeps the saved theme until a save succeeds. */
-  saveFailed: ThemeChoice | null;
+  saveFailed: AppThemeMode | null;
 };
 
-const parseChoice = (stored: string | null): ThemeChoice | null =>
+const parseChoice = (stored: string | null): AppThemeMode | null =>
   stored === "light" || stored === "dark" ? stored : null;
 
 export function createThemePreference(storage: ThemePreferenceStorage) {
@@ -47,7 +47,7 @@ export function createThemePreference(storage: ThemePreferenceStorage) {
       }
     },
     /** Saves one choice at a time, so the theme on screen and on disk end on the last tap. */
-    choose(choice: ThemeChoice) {
+    choose(choice: AppThemeMode) {
       const save = saves.then(async () => {
         try {
           await storage.write(choice);

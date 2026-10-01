@@ -44,7 +44,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         <Text style={{ color: theme.text, fontSize: 30, fontWeight: "900" }}>หมูจด</Text>
         {error ? (
           <>
-            <Text selectable style={{ color: theme.dangerText, textAlign: "center" }}>
+            <Text selectable style={{ color: theme.danger, textAlign: "center" }}>
               {error.message}
             </Text>
             <Pressable

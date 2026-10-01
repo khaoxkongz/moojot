@@ -282,7 +282,7 @@ export default function StreakSettingsScreen() {
                 void settingsQuery.refetch();
               }}
             >
-              <Text selectable style={{ color: theme.dangerText }}>
+              <Text selectable style={{ color: theme.danger }}>
                 {loadError} · ลองอีกครั้ง
               </Text>
             </Pressable>
@@ -375,7 +375,7 @@ export default function StreakSettingsScreen() {
         </View>
       )}
       {error || (settings && settingsQuery.error) ? (
-        <Text selectable style={{ color: theme.dangerText, textAlign: "center", padding: 16 }}>
+        <Text selectable style={{ color: theme.danger, textAlign: "center", padding: 16 }}>
           {error ?? settingsQuery.error?.message}
         </Text>
       ) : null}

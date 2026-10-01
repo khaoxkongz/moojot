@@ -21,7 +21,9 @@ describe("native app theme", () => {
         expect(contrast(text, surface), `${mode}: ${text} on ${surface}`).toBeGreaterThanOrEqual(4.5);
       }
     }
-    expect(contrast(theme.onAccent, theme.accent)).toBeGreaterThanOrEqual(4.5);
+    for (const fill of [theme.accent, theme.successFill, theme.dangerFill]) {
+      expect(contrast(theme.onAccent, fill), `${mode}: onAccent on ${fill}`).toBeGreaterThanOrEqual(4.5);
+    }
     expect(contrast(theme.onInverse, theme.inverse)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(theme.inverseAccent, theme.inverse)).toBeGreaterThanOrEqual(4.5);
   });
