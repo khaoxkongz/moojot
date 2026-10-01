@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 import { IconButton } from "@/components/ui/controls";
-import { accentRing, radius, type AppTheme } from "@/constants/theme";
+import { accentRing, radius, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { Text, TextInput } from "@/components/ui/typography";
 import type { Category, Tag } from "@/types/finance";
@@ -339,7 +339,7 @@ function createStyles(theme: AppTheme) {
       paddingHorizontal: 12,
       borderWidth: 1.2,
       borderColor: theme.border,
-      borderRadius: 18,
+      borderRadius: radius.chip,
       justifyContent: "center",
     },
     tagChipSelected: { backgroundColor: theme.accent, borderColor: theme.accent },
@@ -352,7 +352,7 @@ function createStyles(theme: AppTheme) {
       borderWidth: 1.2,
       borderStyle: "dashed",
       borderColor: theme.accent,
-      borderRadius: 18,
+      borderRadius: radius.chip,
       flexDirection: "row",
       alignItems: "center",
       gap: 4,
@@ -396,8 +396,8 @@ function createStyles(theme: AppTheme) {
     errorText: { color: theme.danger, paddingTop: 8, fontSize: 13, lineHeight: 19 },
     saveTag: {
       marginTop: 16,
-      minHeight: 52,
-      borderRadius: 26,
+      minHeight: touch.button,
+      borderRadius: radius.pill,
       backgroundColor: theme.accent,
       alignItems: "center",
       justifyContent: "center",

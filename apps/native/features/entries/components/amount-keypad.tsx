@@ -4,6 +4,7 @@ import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
+import { radius, touch } from "@/constants/theme";
 import { calculatorKeyForHardware, type CalculatorKey, type CalculatorState } from "@/features/entries/calculator";
 import { useAppTheme } from "@/lib/use-app-theme";
 
@@ -100,7 +101,7 @@ export function AmountKeypad({
           accessibilityLabel="วางจำนวนเงิน"
           onPress={onPaste}
           style={({ pressed }) => ({
-            minHeight: 44,
+            minHeight: touch.min,
             paddingHorizontal: 10,
             flexDirection: "row",
             alignItems: "center",
@@ -139,7 +140,7 @@ export function AmountKeypad({
                   style={({ pressed }) => ({
                     ...(cell > 0 ? { width: key === "AC" ? cell * 2 + 8 : cell } : { flex: key === "AC" ? 2 : 1 }),
                     height: 50,
-                    borderRadius: 12,
+                    borderRadius: radius.key,
                     alignItems: "center",
                     justifyContent: "center",
                     borderWidth: outlined ? 1 : 0,

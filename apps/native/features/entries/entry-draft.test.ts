@@ -3,8 +3,8 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   blankEntryDraft,
   changeEntryKind,
-  entryDraftError,
-  entryInputFromDraft,
+  checkEntryDraft,
+  entrySaveLabel,
   entrySourceChoices,
   entryTitlePlaceholder,
   hasEntryChanges,
@@ -15,6 +15,11 @@ import {
 
 const today = "2026-09-30";
 const draft = (patch: Partial<EntryDraft> = {}): EntryDraft => ({ ...blankEntryDraft(today), ...patch });
+const entryInputFromDraft = (value: EntryDraft, options: { today: string; categoryName?: string }) => {
+  const checked = checkEntryDraft(value, options);
+  if (!checked.ok) throw new Error(checked.message);
+  return checked.input;
+};
 
 describe("switching the entry type", () => {
   it("clears a category of the old type but keeps tags", () => {
@@ -69,14 +74,27 @@ describe("saving a manual entry", () => {
   });
 
   it("asks for an amount above zero", () => {
-    expect(entryDraftError(draft({ amount: "" }), today)).toBe("กรุณาใส่จำนวนเงินที่มากกว่า 0 บาท");
-    expect(entryDraftError(draft({ amount: "0" }), today)).toBe("กรุณาใส่จำนวนเงินที่มากกว่า 0 บาท");
-    expect(entryDraftError(draft({ amount: "12" }), today)).toBeUndefined();
+    const amountMissing = { ok: false, field: "amount", message: "กรุณาใส่จำนวนเงินที่มากกว่า 0 บาท" };
+    expect(checkEntryDraft(draft({ amount: "" }), { today })).toEqual(amountMissing);
+    expect(checkEntryDraft(draft({ amount: "0" }), { today })).toEqual(amountMissing);
+    expect(checkEntryDraft(draft({ amount: "12" }), { today }).ok).toBe(true);
   });
 
   it("refuses a day in the future", () => {
-    expect(entryDraftError(draft({ amount: "12", occurredOn: "2026-10-01" }), today)).toBe("เลือกวันที่ในอนาคตไม่ได้");
-    expect(() => entryInputFromDraft(draft({ amount: "12", occurredOn: "2026-10-01" }), { today })).toThrow();
+    expect(checkEntryDraft(draft({ amount: "12", occurredOn: "2026-10-01" }), { today })).toEqual({
+      ok: false,
+      field: "occurredOn",
+      message: "เลือกวันที่ในอนาคตไม่ได้",
+    });
+  });
+
+  it("names what to fix on the save button before it is pressed", () => {
+    const label = (value: EntryDraft) => entrySaveLabel(value, checkEntryDraft(value, { today }));
+    expect(label(draft({ amount: "" }))).toBe("ใส่จำนวนเงินก่อนบันทึก");
+    expect(label(draft({ amount: "12", occurredOn: "2026-10-01" }))).toBe("เลือกวันที่ที่ยังไม่เลยวันนี้");
+    expect(label(draft({ amount: "12" }))).toBe("บันทึก · ยังไม่เลือกหมวด");
+    expect(label(draft({ amount: "12", categoryId: "expense-food" }))).toBe("บันทึก");
+    expect(label(draft({ amount: "12", kind: "transfer" }))).toBe("บันทึก");
   });
 
   it("notices any change to the draft", () => {
@@ -106,10 +124,14 @@ describe("choosing the bank or card", () => {
     expect(labels.filter((label) => label === "กสิกรไทย")).toHaveLength(1);
   });
 
-  it("saves a bank under its Thai name and without a card", () => {
+  it("saves a bank under the identity slips use, shown by its Thai name, and without a card", () => {
     const bank = entrySourceChoices({ banks: [], cards }, draft()).find((choice) => choice.label === "ไทยพาณิชย์")!;
     const input = entryInputFromDraft(selectEntrySource(draft({ amount: "5" }), bank), { today });
-    expect(input).toMatchObject({ bank: "ไทยพาณิชย์", cardName: null, cardLast4: null });
+    expect(input).toMatchObject({ bank: "SCB", cardName: null, cardLast4: null });
+  });
+
+  it("saves an older spelling of a bank under its identity", () => {
+    expect(entryInputFromDraft(draft({ amount: "5", bank: "กสิกรไทย" }), { today })).toMatchObject({ bank: "KBank" });
   });
 
   it("keeps two cards with the same name apart by their last four digits", () => {

@@ -83,12 +83,13 @@ describe("toast", () => {
     expect(restore).not.toHaveBeenCalled();
   });
 
-  it("tells subscribers about every change", () => {
+  it("lets subscribers see every toast that is shown and dismissed", () => {
     const toast = createToastStore();
-    const listener = vi.fn();
-    toast.subscribe(listener);
-    toast.show({ message: "a" });
+    const seen: (string | null)[] = [];
+    toast.subscribe(() => seen.push(toast.getSnapshot()?.message ?? null));
+    toast.show({ message: "บันทึกแล้ว" });
+    toast.show({ message: "ลบรายการแล้ว" });
     toast.dismiss();
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(seen).toEqual(["บันทึกแล้ว", "ลบรายการแล้ว", null]);
   });
 });

@@ -349,6 +349,26 @@ export function GroupedList({ children, style }: { children: ReactNode; style?: 
   );
 }
 
+/** The 36px `raised` circle at the start of a grouped row, with an icon or an emoji. */
+export function RowIcon({ icon, emoji }: { icon?: IconName; emoji?: string }) {
+  const theme = useAppTheme();
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: theme.raised,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {emoji ? <Text style={{ fontSize: 18 }}>{emoji}</Text> : null}
+      {!emoji && icon ? <MaterialCommunityIcons name={icon} size={19} color={theme.text} /> : null}
+    </View>
+  );
+}
+
 export function GroupedRow({
   title,
   sub,
@@ -371,21 +391,7 @@ export function GroupedRow({
   const theme = useAppTheme();
   const content = (
     <>
-      {icon || emoji ? (
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: theme.raised,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {emoji ? <Text style={{ fontSize: 18 }}>{emoji}</Text> : null}
-          {!emoji && icon ? <MaterialCommunityIcons name={icon} size={19} color={theme.text} /> : null}
-        </View>
-      ) : null}
+      {icon || emoji ? <RowIcon icon={icon} emoji={emoji} /> : null}
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
         {sub ? <Text style={[subLine, { color: theme.muted }]}>{sub}</Text> : null}

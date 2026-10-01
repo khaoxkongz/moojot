@@ -3,7 +3,7 @@ import { Modal, Pressable, View } from "react-native";
 
 import { IconButton } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
-import { radius, shadow } from "@/constants/theme";
+import { radius, shadow, touch } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 
 /** Asked when the editor is closed with changes: “บันทึกรายการมั้ย?” with “ไม่บันทึก” and “บันทึก”. */
@@ -23,7 +23,7 @@ export function EntryExitDialog({
   const theme = useAppTheme();
   const button = {
     flex: 1,
-    minHeight: 52,
+    minHeight: touch.button,
     borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
@@ -42,7 +42,7 @@ export function EntryExitDialog({
           style={{
             width: "100%",
             maxWidth: 360,
-            borderRadius: 20,
+            borderRadius: radius.dialog,
             overflow: "hidden",
             backgroundColor: theme.surface,
             ...shadow.dialog,

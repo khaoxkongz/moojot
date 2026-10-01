@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
-import { shadow } from "@/constants/theme";
+import { radius, shadow, touch } from "@/constants/theme";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 
@@ -42,7 +42,7 @@ export function ToastHost({ bottomOffset = 132 }: { bottomOffset?: number }) {
         <View
           style={{
             minHeight: 48,
-            borderRadius: 12,
+            borderRadius: radius.toast,
             paddingLeft: 16,
             paddingRight: current.action ? 6 : 16,
             paddingVertical: 6,
@@ -62,8 +62,8 @@ export function ToastHost({ bottomOffset = 132 }: { bottomOffset?: number }) {
               onPress={current.busy ? undefined : () => void toast.runAction()}
               hitSlop={4}
               style={({ pressed }) => ({
-                minHeight: 44,
-                minWidth: 44,
+                minHeight: touch.min,
+                minWidth: touch.min,
                 paddingHorizontal: 10,
                 justifyContent: "center",
                 opacity: pressed ? 0.7 : 1,

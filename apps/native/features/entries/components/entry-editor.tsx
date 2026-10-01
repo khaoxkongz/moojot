@@ -7,13 +7,21 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Animated, Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Chip, IconButton, PillButton, SegmentedControl, bahtFontSize } from "@/components/ui/controls";
+import {
+  Chip,
+  GroupedList,
+  GroupedRow,
+  IconButton,
+  PillButton,
+  RowIcon,
+  SegmentedControl,
+  bahtFontSize,
+} from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
-import { radius, raisedRing, shadow, type AppTheme } from "@/constants/theme";
+import { radius, raisedRing, shadow, touch, type AppTheme } from "@/constants/theme";
 import { categoriesMutationOptions } from "@/features/categories/mutation-options";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import {
-  amountFromClipboard,
   finishCalculator,
   groupAmountDigits,
   openCalculator,
@@ -29,9 +37,9 @@ import { EntryExitDialog } from "@/features/entries/components/entry-exit-dialog
 import { SlipSourceCard } from "@/features/entries/components/slip-source-card";
 import { dateLabel } from "@/features/entries/date";
 import {
-  AMOUNT_REQUIRED,
   changeEntryKind,
-  entryDraftError,
+  checkEntryDraft,
+  entrySaveLabel,
   entrySourceChoices,
   entryTitlePlaceholder,
   hasEntryChanges,
@@ -169,12 +177,7 @@ export function EntryEditor(props: EntryEditorProps) {
       setCalc((state) => ({ ...state, error: "ไม่สามารถวางจำนวนเงินได้" }));
       return;
     }
-    const pasted = amountFromClipboard(text);
-    if (!pasted || pasted === "0") {
-      setCalc((state) => ({ ...state, error: "คลิปบอร์ดไม่มีจำนวนเงิน" }));
-      return;
-    }
-    const step = pasteIntoCalculator(calc, pasted);
+    const step = pasteIntoCalculator(calc, text);
     setCalc(step.state);
     if (step.amount !== undefined) update(withAmount(draft, step.amount));
   };
@@ -184,24 +187,21 @@ export function EntryEditor(props: EntryEditorProps) {
     setMenuOpen(false);
     const next = committedDraft();
     if (!next) return;
-    const invalid = entryDraftError(next);
-    if (invalid === AMOUNT_REQUIRED) {
-      setAmountError(invalid);
-      setCalc(openCalculator(next.amount));
-      setKeypadOpen(true);
+    const checked = checkEntryDraft(next, { categoryName: category?.name });
+    if (!checked.ok) {
       pendingExit.current = null;
-      return;
-    }
-    if (invalid) {
-      setError(invalid);
-      pendingExit.current = null;
+      if (checked.field === "amount") {
+        setAmountError(checked.message);
+        setCalc(openCalculator(next.amount));
+        setKeypadOpen(true);
+      } else setError(checked.message);
       return;
     }
     busyRef.current = true;
     setBusy("save");
     setError(null);
     try {
-      await actions.save({ id: editing?.id, draft: next, categoryName: category?.name });
+      await actions.save({ id: editing?.id, input: checked.input });
       pendingExit.current ??= goBack;
       setAllowExit(true);
     } catch (cause) {
@@ -270,6 +270,8 @@ export function EntryEditor(props: EntryEditorProps) {
         categoryId: next.categoryId ?? "",
         tagIds: next.tagIds.join(","),
         bank: next.bank,
+        cardName: next.cardName,
+        cardLast4: next.cardLast4,
       },
     });
   };
@@ -281,6 +283,7 @@ export function EntryEditor(props: EntryEditorProps) {
       : "0";
   const size = amountSize(amountText);
   const today = todayISO();
+  const saveLabel = entrySaveLabel(draft, checkEntryDraft(draft, { today, categoryName: category?.name }));
 
   return (
     <KeyboardAvoidingView
@@ -305,7 +308,7 @@ export function EntryEditor(props: EntryEditorProps) {
               }}
             />
           ) : (
-            <View style={{ width: 44 }} />
+            <View style={{ width: touch.min }} />
           )}
         </View>
         <View style={styles.segment}>
@@ -365,39 +368,34 @@ export function EntryEditor(props: EntryEditorProps) {
           ) : null}
         </Pressable>
 
-        <View style={[styles.group, raisedRing(theme)]}>
+        <GroupedList style={styles.group}>
           {draft.kind !== "transfer" ? (
-            <>
-              <DetailRow
-                label="หมวด"
-                onPress={() => {
-                  committedDraft();
-                  guided.current = false;
-                  setPickerOpen(true);
-                }}
-                icon={
-                  category ? (
-                    <View style={styles.iconCircle}>
-                      <Text style={{ fontSize: 18 }}>{category.icon}</Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.iconCircle, styles.iconPending]}>
-                      <MaterialCommunityIcons name="shape-outline" size={18} color={theme.accentText} />
-                    </View>
-                  )
-                }
-              >
-                <Text numberOfLines={2} style={[styles.value, !category && { color: theme.accentText }]}>
-                  {category?.name ?? "เลือกหมวด"}
+            <DetailRow
+              label="หมวด"
+              onPress={() => {
+                committedDraft();
+                guided.current = false;
+                setPickerOpen(true);
+              }}
+              icon={
+                category ? (
+                  <RowIcon emoji={category.icon} />
+                ) : (
+                  <View style={styles.iconPending}>
+                    <MaterialCommunityIcons name="shape-outline" size={18} color={theme.accentText} />
+                  </View>
+                )
+              }
+            >
+              <Text numberOfLines={2} style={[styles.value, !category && { color: theme.accentText }]}>
+                {category?.name ?? "เลือกหมวด"}
+              </Text>
+              {selectedTags.length > 0 ? (
+                <Text numberOfLines={1} style={styles.caption12}>
+                  {selectedTags.map((tag) => "#" + tag.name).join(" ")}
                 </Text>
-                {selectedTags.length > 0 ? (
-                  <Text numberOfLines={1} style={styles.caption12}>
-                    {selectedTags.map((tag) => "#" + tag.name).join(" ")}
-                  </Text>
-                ) : null}
-              </DetailRow>
-              <Divider />
-            </>
+              ) : null}
+            </DetailRow>
           ) : null}
           <DetailRow
             label="วันที่"
@@ -405,14 +403,13 @@ export function EntryEditor(props: EntryEditorProps) {
               committedDraft();
               setCalendarOpen(true);
             }}
-            icon={<RowIcon name="calendar-blank-outline" />}
+            icon={<RowIcon icon="calendar-blank-outline" />}
           >
             <Text style={styles.value}>
               {(draft.occurredOn === today ? "วันนี้ · " : "") + dateLabel(draft.occurredOn)}
             </Text>
           </DetailRow>
-          <Divider />
-          <DetailRow label="ชื่อรายการ" icon={<RowIcon name="pencil-outline" />}>
+          <DetailRow label="ชื่อรายการ" icon={<RowIcon icon="pencil-outline" />}>
             <TextInput
               accessibilityLabel="ชื่อรายการ"
               value={draft.title}
@@ -426,8 +423,7 @@ export function EntryEditor(props: EntryEditorProps) {
               style={styles.input}
             />
           </DetailRow>
-          <Divider />
-          <DetailRow label="โน้ต" icon={<RowIcon name="note-text-outline" />}>
+          <DetailRow label="โน้ต" icon={<RowIcon icon="note-text-outline" />}>
             <TextInput
               accessibilityLabel="โน้ต"
               value={draft.note}
@@ -441,7 +437,7 @@ export function EntryEditor(props: EntryEditorProps) {
               style={styles.input}
             />
           </DetailRow>
-        </View>
+        </GroupedList>
 
         {fromSlip && editing ? (
           <View style={{ marginTop: 10 }}>
@@ -468,7 +464,9 @@ export function EntryEditor(props: EntryEditorProps) {
                   icon="plus"
                   onPress={() => {
                     committedDraft();
-                    router.push("/settings/cards");
+                    // Adding a card is ticket 11. Until then the cards screen goes back to this editor and its draft
+                    // instead of opening a second editor on top.
+                    router.push({ pathname: "/settings/cards", params: { from: "entry" } });
                   }}
                 />
               ) : null}
@@ -483,12 +481,9 @@ export function EntryEditor(props: EntryEditorProps) {
         ) : !fromSlip ? (
           <>
             <Text style={styles.sectionLabel}>เพิ่มเติม</Text>
-            <View style={[styles.group, raisedRing(theme), { marginTop: 0 }]}>
-              <DetailRow onPress={beginRecurring} icon={<RowIcon name="repeat" />}>
-                <Text style={styles.value}>จดซ้ำล่วงหน้า</Text>
-                <Text style={styles.caption12}>ตั้งครั้งเดียว จดให้ทุกเดือน</Text>
-              </DetailRow>
-            </View>
+            <GroupedList>
+              <GroupedRow title="จดซ้ำล่วงหน้า" sub="ตั้งครั้งเดียว จดให้ทุกเดือน" icon="repeat" onPress={beginRecurring} />
+            </GroupedList>
           </>
         ) : null}
       </ScrollView>
@@ -511,7 +506,7 @@ export function EntryEditor(props: EntryEditorProps) {
           </Text>
         ) : null}
         <PillButton
-          label="บันทึก"
+          label={saveLabel}
           busy={busy !== null}
           busyLabel={busy === "delete" ? "กำลังลบ…" : "กำลังบันทึก…"}
           onPress={() => void save()}
@@ -582,13 +577,14 @@ export function EntryEditor(props: EntryEditorProps) {
   );
 }
 
+/** A grouped row with a small label above its value, which can be a text field. */
 function DetailRow({
   label,
   icon,
   onPress,
   children,
 }: {
-  label?: string;
+  label: string;
   icon: ReactNode;
   onPress?: () => void;
   children: ReactNode;
@@ -598,14 +594,14 @@ function DetailRow({
     <>
       {icon}
       <View style={{ flex: 1, minWidth: 0 }}>
-        {label ? <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{label}</Text> : null}
+        <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{label}</Text>
         {children}
       </View>
       {onPress ? <MaterialCommunityIcons name="chevron-right" size={22} color={theme.muted} /> : null}
     </>
   );
   const style = {
-    minHeight: 64,
+    minHeight: touch.row,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
@@ -622,29 +618,6 @@ function DetailRow({
       {content}
     </Pressable>
   );
-}
-
-function RowIcon({ name }: { name: "calendar-blank-outline" | "pencil-outline" | "note-text-outline" | "repeat" }) {
-  const theme = useAppTheme();
-  return (
-    <View
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: theme.raised,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <MaterialCommunityIcons name={name} size={19} color={theme.text} />
-    </View>
-  );
-}
-
-function Divider() {
-  const theme = useAppTheme();
-  return <View style={{ height: 1, marginLeft: 62, backgroundColor: theme.raised }} />;
 }
 
 /** The accent caret that blinks every 1.05 s while the keypad is open. */
@@ -693,16 +666,17 @@ function createStyles(theme: AppTheme) {
     amount: { flexShrink: 1, fontWeight: "500", fontVariant: ["tabular-nums"], letterSpacing: -0.3 },
     baht: { color: theme.muted, marginLeft: 6 },
     amountError: { color: theme.danger, fontSize: 13, lineHeight: 18 },
-    group: { marginTop: 10, borderRadius: radius.card, backgroundColor: theme.surface, overflow: "hidden" },
-    iconCircle: {
+    group: { marginTop: 10 },
+    iconPending: {
       width: 36,
       height: 36,
-      borderRadius: 18,
-      backgroundColor: theme.raised,
+      borderRadius: radius.pill,
       alignItems: "center",
       justifyContent: "center",
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      borderColor: theme.accent,
     },
-    iconPending: { backgroundColor: "transparent", borderWidth: 1.5, borderStyle: "dashed", borderColor: theme.accent },
     value: { color: theme.text, fontSize: 15, lineHeight: 21 },
     input: { color: theme.text, fontSize: 16, lineHeight: 22, paddingVertical: 0, minHeight: 24 },
     sectionLabel: {
@@ -737,7 +711,7 @@ function createStyles(theme: AppTheme) {
       right: 12,
       minWidth: 200,
       paddingVertical: 5,
-      borderRadius: 14,
+      borderRadius: radius.tile,
       backgroundColor: theme.surface,
       ...shadow.dialog,
     },

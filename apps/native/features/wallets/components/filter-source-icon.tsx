@@ -1,3 +1,4 @@
+import { bankId } from "@/features/wallets/banks";
 import { useAppTheme } from "@/lib/use-app-theme";
 import Svg, { Circle, Line, Path, Rect, Text as SvgText } from "react-native-svg";
 
@@ -9,18 +10,17 @@ type FilterSourceIconProps = {
   size?: number;
 };
 
+const bankIcons: Record<string, string> = {
+  KBank: "kbank",
+  TrueMoney: "truemoney",
+  KTB: "krungthai",
+  SCB: "scb",
+  BBL: "bangkok",
+  ttb: "ttb",
+};
+
 function normalizeBank(name: string) {
-  const normalized = name
-    .trim()
-    .toLowerCase()
-    .replace(/[\s._-]+/g, "");
-  if (/kbank|kasikorn|กสิกร/.test(normalized)) return "kbank";
-  if (/truemoney|ทรูมันนี่|ทรูมันนี/.test(normalized)) return "truemoney";
-  if (/krungthai|กรุงไทย|ktb/.test(normalized)) return "krungthai";
-  if (/scb|siamcommercial|ไทยพาณิชย์/.test(normalized)) return "scb";
-  if (/bangkokbank|bbl|ธนาคารกรุงเทพ|กรุงเทพ/.test(normalized)) return "bangkok";
-  if (/ttb|ทหารไทย|ธนชาต|ทีทีบี/.test(normalized)) return "ttb";
-  return "unknown";
+  return bankIcons[bankId(name)] ?? "unknown";
 }
 
 /** Compact source badges for the transaction filter. Drawn as SVG for native and web. */

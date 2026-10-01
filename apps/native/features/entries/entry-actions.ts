@@ -1,9 +1,7 @@
 import type { AppRouterClient } from "@moojot/api/features/index";
 import { ORPCError } from "@orpc/client";
 
-import type { FinanceTransaction } from "../../types/finance";
-import { todayISO } from "../../utils/format";
-import { entryDraftError, entryInputFromDraft, type EntryDraft } from "./entry-draft";
+import type { FinanceTransaction, TransactionInput } from "../../types/finance";
 
 type LedgerClient = Pick<
   AppRouterClient["ledger"],
@@ -33,20 +31,10 @@ function failure(action: string, cause: unknown): EntryActionError {
  * Saving, deleting and restoring an entry from the editor. Deleting is immediate and restoring brings back the same
  * entry with the same ID and fields from the server, never a copy. Every failure is an EntryActionError in Thai.
  */
-export function createEntryActions(ledger: LedgerClient, today: () => string = todayISO) {
+export function createEntryActions(ledger: LedgerClient) {
   return {
-    async save({
-      id,
-      draft,
-      categoryName,
-    }: {
-      id?: string;
-      draft: EntryDraft;
-      categoryName?: string;
-    }): Promise<FinanceTransaction> {
-      const invalid = entryDraftError(draft, today());
-      if (invalid) throw new EntryActionError(invalid);
-      const input = entryInputFromDraft(draft, { today: today(), categoryName });
+    /** Saves a draft that `checkEntryDraft` accepted: a new manual entry, or the entry with this ID. */
+    async save({ id, input }: { id?: string; input: TransactionInput }): Promise<FinanceTransaction> {
       try {
         return id
           ? await ledger.updateTransaction({ id, patch: input })

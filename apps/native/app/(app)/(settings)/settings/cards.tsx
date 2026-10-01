@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { router, useIsFocused } from "expo-router";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
@@ -12,6 +12,15 @@ import { SettingsPage, useSettingsPageStyles } from "@/features/settings/compone
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 
 type SavedCard = { cardName: string; cardLast4: string | null };
+
+/**
+ * Starts an entry for a card. Opened from the editor's “เพิ่มบัตร” chip (`from=entry`), it goes back to that editor and
+ * its draft rather than stacking a second editor. Adding a card here is ticket 11.
+ */
+function useStartCardEntry() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  return () => (from === "entry" && router.canGoBack() ? router.back() : router.push("/entry"));
+}
 
 function CreditCardGlyph({ color, size = 27 }: { color?: string; size?: number }) {
   const theme = useAppTheme();
@@ -81,6 +90,7 @@ function PrimaryAction({ label, onPress }: { label: string; onPress: () => void 
 
 function EmptyCards() {
   const theme = useAppTheme();
+  const startEntry = useStartCardEntry();
   const styles = useCardsStyles();
   return (
     <View style={styles.emptyContent}>
@@ -96,7 +106,7 @@ function EmptyCards() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="จดรายการบัตรเครดิต"
-              onPress={() => router.push("/entry")}
+              onPress={startEntry}
               style={({ pressed }) => [styles.mockAdd, pressed && { opacity: 0.78 }]}
             >
               <HomeIcon name="edit" size={25} color={theme.onAccent} />
@@ -105,7 +115,7 @@ function EmptyCards() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="จดรายการบัตรเครดิต"
-              onPress={() => router.push("/entry")}
+              onPress={startEntry}
               style={styles.mockUp}
             >
               <HomeIcon name="chevronUp" size={30} color={theme.onAccent} strokeWidth={2.5} />
@@ -149,6 +159,7 @@ function EmptyCards() {
 
 function SavedCards({ cards }: { cards: SavedCard[] }) {
   const theme = useAppTheme();
+  const startEntry = useStartCardEntry();
   const styles = useCardsStyles();
   return (
     <View style={styles.savedContent}>
@@ -171,7 +182,7 @@ function SavedCards({ cards }: { cards: SavedCard[] }) {
           </View>
         ))}
       </View>
-      <PrimaryAction label="จดรายการบัตรเครดิต" onPress={() => router.push("/entry")} />
+      <PrimaryAction label="จดรายการบัตรเครดิต" onPress={startEntry} />
     </View>
   );
 }
