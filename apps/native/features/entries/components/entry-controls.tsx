@@ -9,6 +9,9 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, Tag, TransactionKind } from "@/types/finance";
 import { kindLabel } from "@/utils/format";
 
+/** Entry amount is 40, dropping to 32 above 10 characters and 26 above 14. */
+const entryAmountSize = (text: string) => (text.length > 14 ? 26 : text.length > 10 ? 32 : 40);
+
 export function EntryKindTabs({
   kind,
   onChange,
@@ -99,11 +102,15 @@ export function EntryAmountCard({
           <Text
             adjustsFontSizeToFit
             numberOfLines={1}
-            style={[styles.amountValue, amountCardText === "0" && styles.amountPlaceholder]}
+            style={[
+              styles.amountValue,
+              { fontSize: entryAmountSize(amountCardText) },
+              amountCardText === "0" && styles.amountPlaceholder,
+            ]}
           >
             {amountCardText}
           </Text>
-          <Text style={styles.baht}>฿</Text>
+          <Text style={[styles.baht, { fontSize: Math.round(entryAmountSize(amountCardText) * 0.55) }]}>฿</Text>
         </View>
       </View>
     </Pressable>

@@ -551,7 +551,7 @@ export default function HomeScreen() {
                   value={formatBaht(summary?.expenseSatang ?? 0)}
                   suffix=" ฿"
                   style={styles.monthAmount}
-                  cellHeight={35}
+                  cellHeight={42}
                 />
               </View>
               <Pressable
@@ -794,9 +794,9 @@ function createStyles(theme: AppTheme) {
     monthCaption: { color: theme.onAccent, fontSize: 13 },
     monthAmount: {
       color: theme.onAccent,
-      fontSize: 27,
-      fontWeight: "900",
-      letterSpacing: 0.4,
+      fontSize: 36,
+      fontWeight: "500",
+      letterSpacing: -0.3,
       fontVariant: ["tabular-nums"],
     },
     summaryButton: {
@@ -826,8 +826,8 @@ function createStyles(theme: AppTheme) {
     daySubtotalTitle: { color: theme.muted, fontSize: 13 },
     daySubtotalAmount: {
       color: theme.text,
-      fontSize: 20,
-      fontWeight: "800",
+      fontSize: 17,
+      fontWeight: "500",
       fontVariant: ["tabular-nums"],
     },
     transaction: {
@@ -865,8 +865,8 @@ function createStyles(theme: AppTheme) {
     transactionTitle: { color: theme.text, fontSize: 14 },
     transactionAmount: {
       color: theme.text,
-      fontSize: 17,
-      fontWeight: "800",
+      fontSize: 15,
+      fontWeight: "500",
       fontVariant: ["tabular-nums"],
     },
     loading: { marginTop: 35 },
