@@ -24,7 +24,7 @@ Label: wayfinder:map
 
 <!-- เติมเฉพาะ ticket ที่ resolved แล้ว พร้อม gist และลิงก์ไปยังคำตอบ -->
 
-- [กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่](issues/01-device-validation.md#answer): รองรับ iPhone และ Android; ทดลองด้วย iPhone 13 Pro และ Android จำลอง แล้วตรวจ Android จริงก่อนรับขั้นสุดท้าย เป็นแนวทางตั้งต้นที่ทบทวนได้
+- [กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่](issues/01-device-validation.md#answer): รองรับสองแพลตฟอร์ม; iPhone 13 Pro ผ่าน Expo Go และ iPhone 11 ผ่าน Device Hub; Android จำลองก่อนตรวจเครื่องจริง เป็นแนวทางตั้งต้นที่ทบทวนได้
 
 ## Not yet specified
 
