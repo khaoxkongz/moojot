@@ -17,6 +17,7 @@ export default defineConfig({
       "packages/api/dist/**",
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
+      "docs/design/**",
     ],
     options: {
       typeAware: false,
@@ -39,6 +40,7 @@ export default defineConfig({
       "packages/api/dist/**",
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
+      "docs/design/**",
     ],
     endOfLine: "lf",
     semi: true,

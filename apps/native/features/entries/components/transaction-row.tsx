@@ -50,7 +50,7 @@ export function TransactionRow({
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 3 }}>
-        <Text selectable style={{ color, fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"] }}>
+        <Text selectable style={{ color, fontSize: 15, fontWeight: "500", fontVariant: ["tabular-nums"] }}>
           {symbol}
           {formatMoney(item.amountSatang)}
         </Text>

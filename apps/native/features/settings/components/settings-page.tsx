@@ -3,8 +3,9 @@ import { useMemo, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ScreenHeader } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
-import type { AppTheme } from "@/constants/theme";
+import { raisedRing, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 
 function navigateBack() {
@@ -17,22 +18,8 @@ export function SettingsPage({ title, right, children }: { title: string; right?
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.screen}>
-      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="กลับไปหน้าพี่มนุษย์"
-          onPress={navigateBack}
-          hitSlop={10}
-          style={styles.back}
-        >
-          <Text style={styles.backText}>‹</Text>
-        </Pressable>
-        <Text numberOfLines={1} style={styles.headerTitle}>
-          {title}
-        </Text>
-        {right ?? <View style={{ width: 46 }} />}
-      </View>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <ScreenHeader title={title} onBack={navigateBack} backLabel="กลับไปหน้าพี่มนุษย์" right={right} />
       {children}
     </View>
   );
@@ -104,36 +91,17 @@ export function SettingsBullet({ children }: { children: ReactNode }) {
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: theme.background },
-    header: {
-      backgroundColor: theme.accent,
-      paddingHorizontal: 17,
-      minHeight: 105,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 10,
-    },
-    back: { width: 46, minHeight: 52, alignItems: "center", justifyContent: "center" },
-    backText: { color: theme.onAccent, fontSize: 44, lineHeight: 49, fontWeight: "300" },
-    headerTitle: {
-      flex: 1,
-      color: theme.onAccent,
-      fontSize: 20,
-      lineHeight: 28,
-      fontWeight: "900",
-      textAlign: "center",
-    },
-    scrollContent: { alignItems: "center", paddingHorizontal: 18, paddingTop: 24 },
+    scrollContent: { alignItems: "center", paddingHorizontal: 16, paddingTop: 12 },
     contentWidth: { width: "100%", maxWidth: 640, gap: 18 },
-    panel: { backgroundColor: theme.surface, borderRadius: 22, padding: 20, gap: 15 },
-    panelTitle: { color: theme.text, fontSize: 19, lineHeight: 26, fontWeight: "800" },
+    panel: { backgroundColor: theme.surface, borderRadius: 16, padding: 16, gap: 14, ...raisedRing(theme) },
+    panelTitle: { color: theme.text, fontSize: 17, lineHeight: 24 },
     copy: { color: theme.text, fontSize: 14, lineHeight: 23 },
     caption: { color: theme.muted, fontSize: 13, lineHeight: 20 },
     bulletRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
     bullet: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.accent, marginTop: 8 },
     action: {
-      minHeight: 51,
-      borderRadius: 999,
+      minHeight: 52,
+      borderRadius: 26,
       backgroundColor: theme.accent,
       alignItems: "center",
       justifyContent: "center",
@@ -142,14 +110,13 @@ function createStyles(theme: AppTheme) {
     },
     actionText: {
       color: theme.onAccent,
-      fontSize: 15,
-      lineHeight: 21,
-      fontWeight: "800",
+      fontSize: 16,
+      lineHeight: 22,
       textAlign: "center",
     },
     secondaryAction: { backgroundColor: theme.raised, borderWidth: 1, borderColor: theme.border },
     secondaryActionText: { color: theme.text },
-    rowTitle: { color: theme.text, fontSize: 15, fontWeight: "700", lineHeight: 22 },
+    rowTitle: { color: theme.text, fontSize: 15, lineHeight: 22 },
     themePreview: { height: 125, flexDirection: "row", overflow: "hidden", borderRadius: 16 },
     selectedRow: {
       flexDirection: "row",

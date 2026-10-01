@@ -10,7 +10,7 @@ export default function AppLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.background },
         headerTintColor: theme.text,
-        headerTitleStyle: { fontFamily: fontFaces.extraBold },
+        headerTitleStyle: { fontFamily: fontFaces.regular },
         contentStyle: { backgroundColor: theme.background },
         headerShadowVisible: false,
       }}
