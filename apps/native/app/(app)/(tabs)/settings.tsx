@@ -437,7 +437,7 @@ export default function SettingsScreen() {
 
           <SectionTitle>การแสดงผล</SectionTitle>
           <SettingsRow icon="calendar" title="ตั้งค่าปฏิทิน" onPress={() => router.push("/settings/calendar")} />
-          <SettingsRow icon="theme" title="เปลี่ยนธีม" onPress={() => router.push("/settings/theme")} />
+          <SettingsRow icon="theme" title="ธีม" onPress={() => router.push("/settings/theme")} />
           <SettingsRow icon="language" title="ภาษา / Language" onPress={() => router.push("/settings/language")} />
 
           <SectionTitle>วิธีการใช้งาน</SectionTitle>

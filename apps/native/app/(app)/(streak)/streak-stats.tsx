@@ -420,7 +420,7 @@ export default function StreakStatsScreen() {
           ) : (
             <>
               {refreshError ? (
-                <Text selectable style={{ color: theme.dangerText, padding: 12 }}>
+                <Text selectable style={{ color: theme.danger, padding: 12 }}>
                   {refreshError.message}
                 </Text>
               ) : null}
@@ -463,7 +463,7 @@ export default function StreakStatsScreen() {
                 </Pressable>
               </View>
               {feedError ? (
-                <Text selectable style={{ color: theme.dangerText, fontSize: 12, paddingTop: 6 }}>
+                <Text selectable style={{ color: theme.danger, fontSize: 12, paddingTop: 6 }}>
                   {feedError}
                 </Text>
               ) : null}

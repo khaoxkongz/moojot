@@ -11,7 +11,7 @@ export default function TabLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.background },
         headerShadowVisible: false,
-        headerTitleStyle: { color: theme.text, fontFamily: fontFaces.heavy, fontSize: 21 },
+        headerTitleStyle: { color: theme.text, fontFamily: fontFaces.regular, fontSize: 17 },
         sceneStyle: { backgroundColor: theme.background },
         tabBarActiveTintColor: theme.accentText,
         tabBarInactiveTintColor: theme.muted,
@@ -20,11 +20,10 @@ export default function TabLayout() {
           borderTopWidth: 0,
           borderTopLeftRadius: 17,
           borderTopRightRadius: 17,
-          height: 79,
-          paddingTop: 9,
-          paddingBottom: 3,
+          // The bar adds the real bottom safe area itself; no fixed mock-phone height.
+          paddingTop: 8,
         },
-        tabBarLabelStyle: { fontFamily: fontFaces.extraBold, fontSize: 14 },
+        tabBarLabelStyle: { fontFamily: fontFaces.regular, fontSize: 12 },
       }}
     >
       <Tabs.Screen
@@ -32,7 +31,9 @@ export default function TabLayout() {
         options={{
           title: "หน้าแรก",
           headerShown: false,
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="home-outline" size={29} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons name={focused ? "home" : "home-outline"} size={26} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -40,7 +41,9 @@ export default function TabLayout() {
         options={{
           title: "พี่มนุษย์",
           headerShown: false,
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-outline" size={29} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialCommunityIcons name={focused ? "account" : "account-outline"} size={26} color={color} />
+          ),
         }}
       />
     </Tabs>

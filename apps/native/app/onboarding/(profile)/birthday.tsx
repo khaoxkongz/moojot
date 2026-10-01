@@ -281,7 +281,7 @@ export default function OnboardingBirthdayRoute() {
                 }}
               />
               {error ? (
-                <Text accessibilityRole="alert" style={{ color: theme.dangerText }}>
+                <Text accessibilityRole="alert" style={{ color: theme.danger }}>
                   {error}
                 </Text>
               ) : null}

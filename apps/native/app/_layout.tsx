@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-naviga
 import { Stack } from "expo-router/stack";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 
@@ -11,11 +12,13 @@ import { AppDataProvider } from "@/context/app-data";
 import { OnboardingProvider, useOnboarding } from "@/context/onboarding";
 import { authClient } from "@/lib/auth-client";
 import { NAV_THEME, themes } from "@/constants/theme";
-import { useColorScheme } from "@/lib/use-color-scheme";
+import { themePreference, useColorScheme, useThemePreference } from "@/lib/use-color-scheme";
 import { queryClient } from "@/utils/orpc";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 void SplashScreen.preventAutoHideAsync();
+// The splash stays up until the saved theme is known, so the first screen never flashes the other palette.
+void themePreference.load();
 
 const LIGHT_THEME = {
   ...DefaultTheme,
@@ -35,14 +38,19 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { isDarkColorScheme } = useColorScheme();
+  const themeReady = useThemePreference().status === "ready";
+  const ready = (fontsLoaded || Boolean(fontError)) && themeReady;
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      void SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) return null;
+  // The root view shows behind modals and during transitions; keep it on the same palette.
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(themes[isDarkColorScheme ? "dark" : "light"].background);
+  }, [isDarkColorScheme]);
+
+  if (!ready) return null;
 
   return (
     <QueryClientProvider client={queryClient}>

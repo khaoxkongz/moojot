@@ -28,7 +28,7 @@ function SlipSourceLogo({ id }: { id: SlipSource["id"] }) {
           width: 38,
           height: 38,
           borderRadius: 9,
-          backgroundColor: theme.success,
+          backgroundColor: theme.successFill,
           alignItems: "center",
           justifyContent: "center",
         }}

@@ -80,7 +80,7 @@ export default function OnboardingSplashRoute() {
           <Animated.Text
             style={{
               color: theme.text,
-              fontFamily: fontFaces.heavy,
+              fontFamily: fontFaces.regular,
               fontSize: 42,
               marginTop: -10,
               opacity: titleOpacity,

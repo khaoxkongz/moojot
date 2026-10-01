@@ -231,7 +231,7 @@ export default function BudgetFormScreen() {
           <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 35 }} />
         ) : loadError ? (
           <Card>
-            <Text selectable style={{ color: theme.dangerText }}>
+            <Text selectable style={{ color: theme.danger }}>
               {loadError}
             </Text>
             <Button
@@ -336,7 +336,7 @@ export default function BudgetFormScreen() {
               </form.Field>
             </Card>
             {error || queryError || missingBudget ? (
-              <Text selectable style={{ color: theme.dangerText, textAlign: "center", fontSize: 13 }}>
+              <Text selectable style={{ color: theme.danger, textAlign: "center", fontSize: 13 }}>
                 {error ?? queryError ?? "ไม่พบงบประมาณนี้ กรุณากลับไปเลือกจากหน้าวางแผนอีกครั้ง"}
               </Text>
             ) : null}
@@ -347,7 +347,7 @@ export default function BudgetFormScreen() {
             />
             {existing ? (
               <Pressable onPress={remove} disabled={saving} style={{ alignItems: "center", padding: 14 }}>
-                <Text style={{ color: theme.dangerText, fontWeight: "800" }}>ลบงบประมาณนี้</Text>
+                <Text style={{ color: theme.danger, fontWeight: "800" }}>ลบงบประมาณนี้</Text>
               </Pressable>
             ) : null}
           </>

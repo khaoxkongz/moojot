@@ -1,6 +1,7 @@
 import { Pressable, View } from "react-native";
 
 import { CategoryGlyph } from "@/components/ui/category-glyph";
+import { bahtFontSize } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
 import { EntryIcon } from "@/features/entries/components/entry-icon";
 import { dateLabel } from "@/features/entries/date";
@@ -8,6 +9,9 @@ import { useEntryStyles } from "@/features/entries/entry-styles";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, Tag, TransactionKind } from "@/types/finance";
 import { kindLabel } from "@/utils/format";
+
+/** Entry amount is 40, dropping to 32 above 10 characters and 26 above 14. */
+const entryAmountSize = (text: string) => (text.length > 14 ? 26 : text.length > 10 ? 32 : 40);
 
 export function EntryKindTabs({
   kind,
@@ -91,7 +95,7 @@ export function EntryAmountCard({
       <EntryIcon
         name={kind === "expense" ? "up" : kind === "income" ? "down" : "transfer"}
         size={44}
-        color={kind === "expense" ? theme.dangerText : kind === "income" ? theme.successText : theme.accent}
+        color={kind === "expense" ? theme.danger : kind === "income" ? theme.success : theme.accent}
       />
       <View style={styles.amountTextBlock}>
         {active && history ? <Text style={styles.amountHistory}>{history}</Text> : null}
@@ -99,11 +103,15 @@ export function EntryAmountCard({
           <Text
             adjustsFontSizeToFit
             numberOfLines={1}
-            style={[styles.amountValue, amountCardText === "0" && styles.amountPlaceholder]}
+            style={[
+              styles.amountValue,
+              { fontSize: entryAmountSize(amountCardText) },
+              amountCardText === "0" && styles.amountPlaceholder,
+            ]}
           >
             {amountCardText}
           </Text>
-          <Text style={styles.baht}>฿</Text>
+          <Text style={[styles.baht, { fontSize: bahtFontSize(entryAmountSize(amountCardText)) }]}>฿</Text>
         </View>
       </View>
     </Pressable>

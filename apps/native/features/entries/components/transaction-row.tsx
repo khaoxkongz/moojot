@@ -1,9 +1,10 @@
 import { Pressable, View } from "react-native";
 
+import { Amount } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, FinanceTransaction } from "@/types/finance";
-import { formatMoney, sourceLabel } from "@/utils/format";
+import { formatBaht, sourceLabel } from "@/utils/format";
 
 export function TransactionRow({
   item,
@@ -15,7 +16,7 @@ export function TransactionRow({
   onPress: () => void;
 }) {
   const theme = useAppTheme();
-  const color = item.kind === "income" ? theme.successText : item.kind === "transfer" ? theme.muted : theme.text;
+  const color = item.kind === "income" ? theme.success : item.kind === "transfer" ? theme.muted : theme.text;
   const symbol = item.kind === "income" ? "+" : item.kind === "expense" ? "−" : "";
   return (
     <Pressable
@@ -50,10 +51,7 @@ export function TransactionRow({
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 3 }}>
-        <Text selectable style={{ color, fontSize: 15, fontWeight: "900", fontVariant: ["tabular-nums"] }}>
-          {symbol}
-          {formatMoney(item.amountSatang)}
-        </Text>
+        <Amount selectable value={symbol + formatBaht(item.amountSatang)} size={15} color={color} />
         <Text style={{ color: theme.muted, fontSize: 11 }}>
           {item.source === "slip" ? "จากสลิป" : item.source === "statement" ? "จากบัตร" : ""}
         </Text>

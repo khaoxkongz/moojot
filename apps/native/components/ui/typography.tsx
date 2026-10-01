@@ -8,11 +8,18 @@ import {
   type TextStyle,
 } from "react-native";
 
-import { fontFamilyForWeight } from "@/constants/fonts";
+import { fontFaces } from "@/constants/fonts";
 
 // null means a parent explicitly uses the platform font for tabular numerals.
 type InheritedFont = string | null | undefined;
 const FontContext = React.createContext<InheritedFont>(undefined);
+
+/** Amounts are weight 500 at most. A nested piece with no weight inherits its parent's. */
+function amountWeight(weight: TextStyle["fontWeight"], nested: boolean): TextStyle["fontWeight"] {
+  if (weight == null) return nested ? undefined : "500";
+  if (weight === "bold" || Number(weight) > 500) return "500";
+  return weight;
+}
 
 function withAppFont(
   style: TextProps["style"] | TextInputProps["style"],
@@ -20,13 +27,15 @@ function withAppFont(
 ): { style: TextStyle; family: InheritedFont } {
   const resolvedStyle = StyleSheet.flatten(style) ?? {};
 
-  // LINE Seed Sans TH has proportional digits, so keep the platform font for
-  // figures that explicitly request tabular numerals.
+  // LINE Seed Sans TH has proportional digits, so figures that request tabular
+  // numerals use the platform font. Amounts are weight 500 at most; a nested
+  // ฿ sign may ask for the regular weight.
   if (
     resolvedStyle.fontVariant?.includes("tabular-nums") ||
     (inheritedFont === null && resolvedStyle.fontFamily == null)
   ) {
-    return { style: { ...resolvedStyle, fontFamily: undefined }, family: null };
+    const fontWeight = amountWeight(resolvedStyle.fontWeight, inheritedFont === null);
+    return { style: { ...resolvedStyle, fontFamily: undefined, fontWeight }, family: null };
   }
 
   // A nested Text with no weight keeps its parent's face instead of resetting
@@ -38,20 +47,27 @@ function withAppFont(
     };
   }
 
-  const { fontWeight, ...styleWithoutWeight } = resolvedStyle;
-  const family = styleWithoutWeight.fontFamily ?? fontFamilyForWeight(fontWeight);
+  // Weight is dropped: the one Regular face carries no faux bold.
+  const styleWithoutWeight = { ...resolvedStyle, fontWeight: undefined };
+  const family = styleWithoutWeight.fontFamily ?? fontFaces.regular;
   return {
     style: { ...styleWithoutWeight, fontFamily: family },
     family,
   };
 }
 
+/**
+ * Dynamic Type stays on but is capped, as the handoff recommends, so larger
+ * system sizes don't push actions off rows. Pass a prop to override.
+ */
+export const MAX_FONT_SCALE = 1.3;
+
 export const Text = React.forwardRef<NativeText, TextProps>(function Text({ style, children, ...props }, ref) {
   const inheritedFont = React.useContext(FontContext);
   const resolved = withAppFont(style, inheritedFont);
   return (
     <FontContext.Provider value={resolved.family}>
-      <NativeText ref={ref} {...props} style={resolved.style}>
+      <NativeText ref={ref} maxFontSizeMultiplier={MAX_FONT_SCALE} {...props} style={resolved.style}>
         {children}
       </NativeText>
     </FontContext.Provider>
@@ -62,5 +78,7 @@ export const TextInput = React.forwardRef<NativeTextInput, TextInputProps>(funct
   { style, ...props },
   ref
 ) {
-  return <NativeTextInput ref={ref} {...props} style={withAppFont(style).style} />;
+  return (
+    <NativeTextInput ref={ref} maxFontSizeMultiplier={MAX_FONT_SCALE} {...props} style={withAppFont(style).style} />
+  );
 });
