@@ -19,7 +19,7 @@ import { HomeIcon } from "@/components/ui/home-icon";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
-import { shadow, type AppTheme } from "@/constants/theme";
+import { radius, shadow, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
 import { authClient } from "@/lib/auth-client";
@@ -814,9 +814,9 @@ function createStyles(theme: AppTheme) {
     floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },
     addButton: {
       backgroundColor: theme.accent,
-      borderRadius: 26,
+      borderRadius: radius.pill,
       minWidth: 140,
-      height: 52,
+      height: touch.button,
       paddingHorizontal: 20,
       flexDirection: "row",
       alignItems: "center",

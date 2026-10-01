@@ -9,15 +9,19 @@ import { createAppRuntime } from "@moojot/api/runtime";
 import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
+// The native modules are imported by path: the server's `@/` alias points at its own `src`, and the native app is not a
+// package the server depends on, so there is no package name to import them by.
 import {
   blankEntryDraft,
   changeEntryKind,
+  checkEntryDraft,
   draftFromTransaction,
   entrySourceChoices,
   selectEntrySource,
   type EntryDraft,
 } from "../../native/features/entries/entry-draft";
 import { createEntryActions } from "../../native/features/entries/entry-actions";
+import { bankFilterGroups } from "../../native/features/wallets/banks";
 
 // The native editor's save, delete and restore against the real authenticated Ledger routes and MongoDB.
 
@@ -50,7 +54,14 @@ async function signUp(email: string) {
     })
   );
   await client.ledger.initializeDatabase();
-  return { client, entries: createEntryActions(client.ledger, () => today) };
+  const actions = createEntryActions(client.ledger);
+  // What the editor does on save: check the draft once, then save what the check produced.
+  const save = ({ id, draft, categoryName }: { id?: string; draft: EntryDraft; categoryName?: string }) => {
+    const checked = checkEntryDraft(draft, { today, categoryName });
+    if (!checked.ok) throw new Error(checked.message);
+    return actions.save({ id, input: checked.input });
+  };
+  return { client, entries: { ...actions, save } };
 }
 
 const draft = (patch: Partial<EntryDraft>): EntryDraft => ({ ...blankEntryDraft(today), ...patch });
@@ -97,11 +108,54 @@ describe("manual entry", () => {
       note: "เที่ยง",
       categoryId: "expense-food",
       tagIds: [tag.id],
-      bank: "ไทยพาณิชย์",
+      bank: "SCB",
       cardName: null,
       cardLast4: null,
       source: "manual",
     });
+  });
+
+  it("puts a manual KBank entry in the same filter group as a slip KBank entry", async () => {
+    const { client, entries } = await signUp("bank-group@example.test");
+    const slip = await client.ledger.createTransaction({
+      kind: "expense",
+      amountSatang: 27500,
+      occurredOn: today,
+      title: "มื้อกลางวัน",
+      bank: "KBank",
+      source: "slip",
+    });
+    const kbank = entrySourceChoices({ banks: await client.analytics.listBanks(), cards: [] }, draft({})).filter(
+      (choice) => choice.label === "กสิกรไทย"
+    );
+    expect(kbank).toHaveLength(1);
+    const manual = await entries.save({ draft: selectEntrySource(draft({ amount: "20" }), kbank[0]!) });
+
+    const groups = bankFilterGroups((await client.analytics.listWalletFilterOptions()).banks);
+    expect(groups.map((group) => group.label)).toEqual(["กสิกรไทย"]);
+    const rows = await client.ledger.listTransactions({
+      walletFilter: { banks: groups[0]!.banks, cards: [], includeOther: false, includeDeletedCards: false },
+    });
+    expect(rows.map((row) => row.id).sort()).toEqual([slip.id, manual.id].sort());
+  });
+
+  it("groups every spelling of one bank under one filter row", async () => {
+    const { client } = await signUp("bank-spellings@example.test");
+    for (const bank of ["KBank", "กสิกรไทย", "SCB"])
+      await client.ledger.createTransaction({
+        kind: "expense",
+        amountSatang: 100,
+        occurredOn: today,
+        title: bank,
+        bank,
+      });
+
+    const groups = bankFilterGroups((await client.analytics.listWalletFilterOptions()).banks);
+    expect(groups.map((group) => group.label)).toEqual(["กสิกรไทย", "ไทยพาณิชย์"]);
+    const rows = await client.ledger.listTransactions({
+      walletFilter: { banks: groups[0]!.banks, cards: [], includeOther: false, includeDeletedCards: false },
+    });
+    expect(rows.map((row) => row.title).sort()).toEqual(["KBank", "กสิกรไทย"].sort());
   });
 
   it("saves an existing card by its name and last four digits", async () => {

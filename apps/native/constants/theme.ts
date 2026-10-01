@@ -61,6 +61,9 @@ export const radius = {
   sheet: 24,
   tabBar: 17,
   input: 14,
+  dialog: 20,
+  toast: 12,
+  key: 12,
   pill: 999,
 } as const;
 

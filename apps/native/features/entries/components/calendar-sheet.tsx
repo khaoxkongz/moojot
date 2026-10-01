@@ -3,7 +3,7 @@ import { Modal, Pressable, View } from "react-native";
 
 import { IconButton } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
-import { radius, shadow } from "@/constants/theme";
+import { radius, shadow, touch } from "@/constants/theme";
 import { fromISO, longMonths, toISO } from "@/features/entries/date";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { todayISO } from "@/utils/format";
@@ -68,7 +68,7 @@ function CalendarContents({
         style={{
           width: "100%",
           maxWidth: 380,
-          borderRadius: 20,
+          borderRadius: radius.dialog,
           backgroundColor: theme.surface,
           padding: 16,
           gap: 8,
@@ -87,7 +87,10 @@ function CalendarContents({
           />
           <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{monthTitle}</Text>
           {atCurrentMonth ? (
-            <View accessibilityLabel="เดือนถัดไปยังมาไม่ถึง" style={{ width: 44, height: 44, alignItems: "center" }} />
+            <View
+              accessibilityLabel="เดือนถัดไปยังมาไม่ถึง"
+              style={{ width: touch.min, height: touch.min, alignItems: "center" }}
+            />
           ) : (
             <IconButton
               icon="chevron-right"
@@ -122,7 +125,7 @@ function CalendarContents({
                   style={({ pressed }) => ({
                     width: 40,
                     height: 40,
-                    borderRadius: 20,
+                    borderRadius: radius.pill,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: selected ? theme.accent : pressed ? theme.raised : "transparent",

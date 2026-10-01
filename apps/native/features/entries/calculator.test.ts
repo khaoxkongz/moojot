@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
-  amountFromClipboard,
+  CLIPBOARD_HAS_NO_AMOUNT,
   calculatorKeyForHardware,
   finishCalculator,
   groupAmountDigits,
@@ -131,16 +131,18 @@ describe("pasting an amount", () => {
   });
 
   it("reads the first amount in the copied text", () => {
-    expect(amountFromClipboard("โอนเงิน ฿1,250.50 สำเร็จ")).toBe("1250.50");
-    expect(amountFromClipboard("45")).toBe("45");
+    const { state, amount } = pasteIntoCalculator(openCalculator("12"), "โอนเงิน ฿1,250.50 สำเร็จ");
+    expect(amount).toBe("1250.50");
+    expect(state.expression).toBe("1250.50");
+    expect(pasteIntoCalculator(openCalculator(""), "45").amount).toBe("45");
   });
 
-  it("refuses text without an amount", () => {
-    expect(amountFromClipboard("สวัสดี")).toBeNull();
-    expect(amountFromClipboard("")).toBeNull();
-  });
-
-  it("refuses an amount longer than the keypad accepts", () => {
-    expect(amountFromClipboard("1234567890123")).toBeNull();
+  it("refuses text without an amount and keeps what was on screen", () => {
+    for (const text of ["สวัสดี", "", "0", "1234567890123"]) {
+      const { state, amount } = pasteIntoCalculator(openCalculator("12"), text);
+      expect(amount).toBeUndefined();
+      expect(state.expression).toBe("12");
+      expect(state.error).toBe(CLIPBOARD_HAS_NO_AMOUNT);
+    }
   });
 });

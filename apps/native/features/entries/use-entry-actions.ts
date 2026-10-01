@@ -14,24 +14,23 @@ export function refreshEntryReaders() {
   ]);
 }
 
+/** Runs an action, then refreshes every reader before reporting success, so the next screen already shows the change. */
+function thenRefresh<Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) {
+  return async (...args: Args) => {
+    const result = await run(...args);
+    await refreshEntryReaders();
+    return result;
+  };
+}
+
 /** The editor's save, delete and restore; every success refreshes the screens that show entries. */
 export function useEntryActions(): EntryActions {
   return useMemo(() => {
     const actions = createEntryActions(client.ledger);
     return {
-      save: async (input) => {
-        const saved = await actions.save(input);
-        void refreshEntryReaders();
-        return saved;
-      },
-      remove: async (id) => {
-        await actions.remove(id);
-        void refreshEntryReaders();
-      },
-      restore: async (id) => {
-        await actions.restore(id);
-        await refreshEntryReaders();
-      },
+      save: thenRefresh(actions.save),
+      remove: thenRefresh(actions.remove),
+      restore: thenRefresh(actions.restore),
     };
   }, []);
 }

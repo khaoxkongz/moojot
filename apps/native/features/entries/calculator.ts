@@ -32,10 +32,11 @@ export type CalculatorState = {
   history: string | null;
   /** What the amount card shows while typing, like “120+45”. */
   expression: string;
-  error: string;
+  error: string | null;
 };
 
 export const CALCULATOR_ERROR = "ไม่สามารถคำนวณจำนวนนี้ได้";
+export const CLIPBOARD_HAS_NO_AMOUNT = "คลิปบอร์ดไม่มีจำนวนเงิน";
 const MAX_CHARACTERS = 12;
 
 function normalizeAmount(value: string): string {
@@ -51,18 +52,24 @@ function formatResult(value: number): string | null {
     .replace(/(\.\d)0$/, "$1");
 }
 
+const operations: Record<CalculatorOperator, (left: number, right: number) => number> = {
+  "+": (left, right) => left + right,
+  "−": (left, right) => left - right,
+  "×": (left, right) => left * right,
+  "÷": (left, right) => (right === 0 ? Number.NaN : left / right),
+};
+
 function calculate(left: number, right: number, operator: CalculatorOperator): string | null {
-  const result =
-    operator === "+"
-      ? left + right
-      : operator === "−"
-        ? left - right
-        : operator === "×"
-          ? left * right
-          : right === 0
-            ? Number.NaN
-            : left / right;
-  return formatResult(result);
+  return formatResult(operations[operator](left, right));
+}
+
+/** The next number on screen after a digit or the decimal point, kept to two decimals and 12 characters. */
+function typeDigit(display: string, replace: boolean, key: string): string {
+  if (replace || display === "0") return key === "." ? "0." : key;
+  if (key === "." && display.includes(".")) return display;
+  if (display.includes(".") && display.split(".")[1]!.length >= 2) return display;
+  if (display.length >= MAX_CHARACTERS) return display;
+  return display + key;
 }
 
 function withExpression(state: Omit<CalculatorState, "expression">): CalculatorState {
@@ -81,7 +88,7 @@ export function openCalculator(amount: string): CalculatorState {
     operator: null,
     replaceNext: false,
     history: null,
-    error: "",
+    error: null,
   });
 }
 
@@ -93,22 +100,10 @@ export function pressCalculator(
   current: CalculatorState,
   key: CalculatorKey
 ): { state: CalculatorState; amount?: string } {
-  const c = { ...current, error: "" };
+  const c: Omit<CalculatorState, "expression"> = { ...current, error: null };
   let amount: string | undefined;
   if (/^\d$/.test(key) || key === ".") {
-    const d = c.display;
-    const next =
-      c.replaceNext || d === "0"
-        ? key === "."
-          ? "0."
-          : key
-        : key === "." && d.includes(".")
-          ? d
-          : d.includes(".") && d.split(".")[1]!.length >= 2
-            ? d
-            : d.length >= MAX_CHARACTERS
-              ? d
-              : d + key;
+    const next = typeDigit(c.display, c.replaceNext, key);
     Object.assign(c, { display: next, replaceNext: false, history: null });
     if (!c.operator) amount = next;
   } else if (key === "AC") {
@@ -195,12 +190,17 @@ export function calculatorKeyForHardware(key: string, state: CalculatorState): C
   return hardwareKeys[key] ?? null;
 }
 
-/** Puts a pasted amount on screen; during a pending calculation it becomes the right side, not the entry amount. */
+/**
+ * Puts the first amount in copied text on screen; during a pending calculation it becomes the right side, not the
+ * entry amount. Text without an amount the keypad can take leaves the screen as it was and shows why.
+ */
 export function pasteIntoCalculator(
   current: CalculatorState,
-  pasted: string
+  copiedText: string
 ): { state: CalculatorState; amount?: string } {
-  const state = withExpression({ ...current, display: pasted, replaceNext: false, history: null, error: "" });
+  const pasted = amountFromText(copiedText);
+  if (!pasted) return { state: { ...current, error: CLIPBOARD_HAS_NO_AMOUNT } };
+  const state = withExpression({ ...current, display: pasted, replaceNext: false, history: null, error: null });
   return { state, amount: current.operator ? undefined : pasted };
 }
 
@@ -212,11 +212,11 @@ export function groupAmountDigits(text: string): string {
   });
 }
 
-/** The first amount in copied text, or null when there is none the keypad can take. */
-export function amountFromClipboard(text: string): string | null {
+/** The first amount above zero in copied text, or null when there is none the keypad can take. */
+function amountFromText(text: string): string | null {
   const match = text.match(/\d[\d,]*(?:\.\d{1,2})?/);
   if (!match) return null;
   const amount = normalizeAmount(match[0]);
-  if (amount.length > MAX_CHARACTERS) return null;
+  if (amount.length > MAX_CHARACTERS || !Number(amount)) return null;
   return amount;
 }

@@ -8,7 +8,8 @@ import Svg, { Circle, Path, Rect } from "react-native-svg";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { HomeIcon } from "@/components/ui/home-icon";
-import { bankDisplayName } from "@/features/wallets/banks";
+import { bankFilterGroups, type BankFilterGroup } from "@/features/wallets/banks";
+import { walletCardKey as cardKey } from "@/features/wallets/cards";
 import { FilterSourceIcon } from "@/features/wallets/components/filter-source-icon";
 import type { WalletCard, WalletFilterOptions, WalletFilterSelection } from "@/types/finance";
 
@@ -22,10 +23,6 @@ export type WalletFilterSheetProps = {
   onApply: () => void;
   onClose: () => void;
 };
-
-function cardKey(card: WalletCard) {
-  return JSON.stringify([card.cardName.trim(), card.cardLast4?.trim() || null]);
-}
 
 function TabIcon({ tab, color }: { tab: FilterTab; color: string }) {
   if (tab === "account") return <HomeIcon name="wallet" size={21} color={color} strokeWidth={1.8} />;
@@ -118,6 +115,8 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
   const [tab, setTab] = useState<FilterTab>("account");
 
   const selectedBanks = useMemo(() => new Set(value.banks), [value.banks]);
+  const bankGroups = useMemo(() => bankFilterGroups(options.banks), [options.banks]);
+  const groupSelected = (group: BankFilterGroup) => group.banks.every((bank) => selectedBanks.has(bank));
   const selectedCards = useMemo(() => new Set(value.cards.map(cardKey)), [value.cards]);
   const allBanksSelected = options.banks.every((bank) => selectedBanks.has(bank));
   const allCardsSelected = options.cards.every((card) => selectedCards.has(cardKey(card))) && value.includeDeletedCards;
@@ -130,10 +129,13 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
       includeDeletedCards: true,
     });
 
-  const toggleBank = (bank: string) =>
+  /** Every spelling of the bank is selected or cleared together. */
+  const toggleBank = (group: BankFilterGroup) =>
     onChange({
       ...value,
-      banks: selectedBanks.has(bank) ? value.banks.filter((name) => name !== bank) : [...value.banks, bank],
+      banks: groupSelected(group)
+        ? value.banks.filter((name) => !group.banks.includes(name))
+        : [...new Set([...value.banks, ...group.banks])],
     });
 
   const toggleCard = (card: WalletCard) =>
@@ -232,14 +234,14 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
                 <View style={styles.divider} />
                 <Text style={styles.sectionTitle}>เลือกดูรายการจากบัญชี...</Text>
                 <View style={styles.bankRows}>
-                  {options.banks.map((bank) => (
+                  {bankGroups.map((group) => (
                     <SourceRow
-                      key={bank}
-                      label={bankDisplayName(bank)}
+                      key={group.id}
+                      label={group.label}
                       kind="bank"
-                      bankName={bank}
-                      selected={selectedBanks.has(bank)}
-                      onPress={() => toggleBank(bank)}
+                      bankName={group.id}
+                      selected={groupSelected(group)}
+                      onPress={() => toggleBank(group)}
                     />
                   ))}
                   {options.banks.length === 0 ? (

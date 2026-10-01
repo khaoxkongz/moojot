@@ -2,6 +2,7 @@ import { Pressable, View } from "react-native";
 
 import { Amount } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
+import { bankDisplayName } from "@/features/wallets/banks";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { Category, FinanceTransaction } from "@/types/finance";
 import { formatBaht, sourceLabel } from "@/utils/format";
@@ -47,7 +48,7 @@ export function TransactionRow({
         </Text>
         <Text numberOfLines={1} style={{ color: theme.muted, fontSize: 12 }}>
           {category?.name ?? (item.kind === "transfer" ? "ย้ายเงิน" : "ไม่ระบุหมวด")} ·{" "}
-          {item.bank || item.cardName || sourceLabel(item.source)}
+          {(item.bank && bankDisplayName(item.bank)) || item.cardName || sourceLabel(item.source)}
         </Text>
       </View>
       <View style={{ alignItems: "flex-end", gap: 3 }}>
