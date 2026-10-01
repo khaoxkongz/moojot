@@ -1,0 +1,81 @@
+<div id="moojot-slip-work-queue-example">
+  <div class="viz-row">
+    <span class="text-small text-muted">ตัวอย่างสมมติ</span>
+    <span id="slip-example-day" class="viz-badge">เมื่อวาน</span>
+  </div>
+  <table class="table" aria-label="ตัวอย่างรูปสลิปและรายการที่บันทึกในแอป">
+    <thead>
+      <tr>
+        <th scope="col">รูปสลิป</th>
+        <th scope="col">สถานะ</th>
+        <th scope="col">รายการที่จดแล้ว</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">A · กาแฟ<br /><span class="text-small text-muted">ของเมื่อวาน</span></th>
+        <td id="slip-example-a-status">ต้องช่วยหมู</td>
+        <td id="slip-example-a-entry">ยังไม่ได้จด</td>
+      </tr>
+      <tr id="slip-example-b-row" hidden>
+        <th scope="row">B · ข้าว<br /><span class="text-small text-muted">ของวันนี้</span></th>
+        <td>จดให้แล้ว</td>
+        <td class="tabular-nums">ข้าว 120 บาท</td>
+      </tr>
+    </tbody>
+  </table>
+  <div id="slip-example-detail" aria-live="polite">สลิป A ยังรอให้ช่วยจด</div>
+  <div class="viz-controls">
+    <button id="slip-example-next" class="btn btn-primary" type="button">วันนี้มีสลิปใหม่เข้ามา</button>
+  </div>
+</div>
+<script>
+  (function () {
+    const root = document.getElementById("moojot-slip-work-queue-example");
+    if (!root) return;
+    const day = root.querySelector("#slip-example-day");
+    const aStatus = root.querySelector("#slip-example-a-status");
+    const aEntry = root.querySelector("#slip-example-a-entry");
+    const bRow = root.querySelector("#slip-example-b-row");
+    const detail = root.querySelector("#slip-example-detail");
+    const next = root.querySelector("#slip-example-next");
+    if (!day || !aStatus || !aEntry || !bRow || !detail || !next) return;
+
+    function restoredStep(snapshot) {
+      const saved = snapshot && (snapshot.privateContent || snapshot);
+      return saved && saved.version === 1 && Number.isInteger(saved.step) && saved.step >= 0 && saved.step <= 2
+        ? saved.step
+        : 0;
+    }
+    let step = restoredStep(window.openai && window.openai.widgetState);
+
+    function render() {
+      day.textContent = step === 0 ? "เมื่อวาน" : "วันนี้";
+      bRow.hidden = step === 0;
+      aStatus.textContent = step === 2 ? "จดเองแล้ว" : "ต้องช่วยหมู";
+      aEntry.textContent = step === 2 ? "กาแฟ 60 บาท" : "ยังไม่ได้จด";
+      aEntry.classList.toggle("tabular-nums", step === 2);
+      detail.textContent = step === 2 ? "จัดการสลิป A เสร็จแล้ว" : "สลิป A ยังรอให้ช่วยจด";
+      next.textContent =
+        step === 0 ? "วันนี้มีสลิปใหม่เข้ามา" : step === 1 ? "ช่วยจดสลิปกาแฟที่ค้างไว้" : "จัดการครบแล้ว";
+      next.disabled = step === 2;
+    }
+
+    next.addEventListener("click", function () {
+      if (step >= 2) return;
+      step += 1;
+      render();
+      if (window.openai && typeof window.openai.setWidgetState === "function") {
+        window.openai
+          .setWidgetState({ modelContent: null, privateContent: { version: 1, step: step } })
+          .catch(function () {});
+      }
+    });
+    window.addEventListener("openai:set_globals", function (event) {
+      if (!event.detail || !event.detail.globals || !("widgetState" in event.detail.globals)) return;
+      step = restoredStep(event.detail.globals.widgetState);
+      render();
+    });
+    render();
+  })();
+</script>
