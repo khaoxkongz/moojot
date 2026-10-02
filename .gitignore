@@ -59,3 +59,6 @@ coverage
 .cache
 tmp
 temp
+
+# Agent worktrees
+.claude/worktrees/

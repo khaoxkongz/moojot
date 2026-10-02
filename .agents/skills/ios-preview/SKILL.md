@@ -28,4 +28,5 @@ The dev build (`com.anonymous.moojot`) is already installed on the booted iPhone
 - `--theme` sets the simulator's appearance; a theme the user saved inside the app wins over it.
 - The floating gear on the right is Expo's dev-tools button. Ignore it in comparisons.
 - Maestro needs Java. The script points `JAVA_HOME` at Homebrew's openjdk; set it the same way for raw `maestro` commands: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home`.
+- A `Pressable`'s accessible name is all its text joined ("อาหาร 120 ฿ 3 รายการ"), so match a row by regex (`"อาหาร.*"`), and give icon-only buttons an `accessibilityLabel` (icon glyphs otherwise land in the name). Before guessing a selector after a failed `tapOn`/`assertVisible`/`scrollUntilVisible`, read the real names in the UI hierarchy the failure points to, or run `maestro hierarchy`.
 - `.env.preview.local` (gitignored) holds `PREVIEW_EMAIL` / `PREVIEW_PASSWORD`; `vp run setup:worktree` copies it into a worktree. Keep the login out of commits, notes and command lines.

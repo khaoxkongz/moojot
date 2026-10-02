@@ -18,6 +18,7 @@ export default defineConfig({
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
       "docs/design/**",
+      ".claude/worktrees/**",
       ".agents/**",
     ],
     options: {
@@ -61,6 +62,7 @@ export default defineConfig({
       "packages/auth/dist/**",
       "packages/db/prisma/generated/**",
       "docs/design/**",
+      ".claude/worktrees/**",
       ".agents/**",
       "skills-lock.json",
     ],
