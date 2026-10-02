@@ -25,6 +25,13 @@ export const planningRoutes = {
       runFinance(context, PlanningService, (service) => service.deleteBudget(context.session.user.id, input))
     ),
 
+  restoreBudget: protectedProcedure
+    .route({ method: "POST", path: "/restoreBudget", tags: ["Planning"] })
+    .input(planningInputs.restoreBudget)
+    .handler(({ input, context }) =>
+      runFinance(context, PlanningService, (service) => service.restoreBudget(context.session.user.id, input))
+    ),
+
   getBudgetStatuses: protectedProcedure
     .route({ method: "POST", path: "/getBudgetStatuses", tags: ["Planning"] })
     .input(planningInputs.getBudgetStatuses)

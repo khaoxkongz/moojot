@@ -1,0 +1,184 @@
+# Ticket 10 budget states, named <NN>-app-<state> to pair with the design shots in
+# .scratch/native-redesign-ios/notes/design-shots/. It saves one 120 baht อาหาร entry so the budgets have spending,
+# opens the plan from Summary, sets an all-category budget and an อาหาร budget, saves onto อาหาร again (replace
+# notice), edits it, deletes it and brings it back from the toast, then deletes the budgets and the entry again.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- waitForAnimationToEnd
+# One อาหาร expense of 120 baht today.
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- tapOn: "1"
+- tapOn: "2"
+- tapOn: "0"
+- tapOn: "เสร็จ"
+- extendedWaitUntil:
+    visible: "หมวด อาหาร"
+    timeout: 10000
+- tapOn: "หมวด อาหาร"
+- waitForAnimationToEnd
+- tapOn: "บันทึก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 15000
+- waitForAnimationToEnd
+# Home → Summary → plan on this month.
+- tapOn: "ดูสรุป"
+- extendedWaitUntil:
+    visible: "ภาพรวมเดือนนี้"
+    timeout: 15000
+- scrollUntilVisible:
+    element: "วางแผนงบ.*"
+- scroll
+- waitForAnimationToEnd
+- tapOn:
+    text: "วางแผนงบ.*"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "งบแยกหมวด"
+    timeout: 15000
+- waitForAnimationToEnd
+# Start from no budgets: delete any a stopped run left.
+- repeat:
+    while:
+      visible: "แก้ไขงบ.*"
+    commands:
+      - tapOn: "แก้ไขงบ.*"
+      - extendedWaitUntil:
+          visible: "แก้ไขงบ"
+          timeout: 10000
+      - scrollUntilVisible:
+          element: "ลบงบนี้"
+      - tapOn: "ลบงบนี้"
+      - extendedWaitUntil:
+          visible: "งบแยกหมวด"
+          timeout: 10000
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible: "ลบงบแล้ว.*"
+    timeout: 8000
+- takeScreenshot: 10-app-plan-empty
+# All-category budget: 100 baht, so this month's spending is over it.
+- tapOn: "ตั้งงบรวม"
+- extendedWaitUntil:
+    visible: "ตั้งงบใหม่"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-form-new
+- inputText: "100"
+- tapOn: "70%"
+- takeScreenshot: 10-app-form-all
+- tapOn: "ตั้งงบนี้"
+- extendedWaitUntil:
+    visible: "แก้ไขงบรวม.*"
+    timeout: 15000
+- waitForAnimationToEnd
+# A category budget: no category picked yet is an error in words.
+- tapOn: "ตั้งงบแยกหมวด"
+- extendedWaitUntil:
+    visible: "ตั้งงบใหม่"
+    timeout: 10000
+- waitForAnimationToEnd
+- inputText: "120"
+- tapOn: "ตั้งงบนี้"
+- extendedWaitUntil:
+    visible: "กรุณาเลือกหมวด"
+    timeout: 5000
+- takeScreenshot: 10-app-form-missing
+- scrollUntilVisible:
+    element: "อาหาร"
+    direction: UP
+- tapOn: "อาหาร"
+- tapOn: "ตั้งงบนี้"
+- extendedWaitUntil:
+    visible: "แก้ไขงบ อาหาร.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-plan
+# Saving อาหาร again says it replaces the 120 baht limit.
+- tapOn: "ตั้งงบแยกหมวด"
+- extendedWaitUntil:
+    visible: "ตั้งงบใหม่"
+    timeout: 10000
+- waitForAnimationToEnd
+- inputText: "2500"
+- scrollUntilVisible:
+    element: "อาหาร"
+    direction: UP
+- tapOn: "อาหาร"
+- extendedWaitUntil:
+    visible: "มีงบนี้อยู่แล้ว.*"
+    timeout: 5000
+- takeScreenshot: 10-app-form-replace
+- tapOn: "ตั้งงบนี้"
+- extendedWaitUntil:
+    visible: "แก้ไขงบ อาหาร.*2,500.*"
+    timeout: 15000
+- waitForAnimationToEnd
+# Edit, delete, and bring it back from the toast.
+- tapOn: "แก้ไขงบ อาหาร.*"
+- extendedWaitUntil:
+    visible: "แก้ไขงบ"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-form-edit
+- scrollUntilVisible:
+    element: "ลบงบนี้"
+- takeScreenshot: 10-app-form-edit-bottom
+- tapOn: "ลบงบนี้"
+- extendedWaitUntil:
+    notVisible: "ลบงบนี้"
+    timeout: 15000
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "ลบงบแล้ว"
+    timeout: 5000
+- takeScreenshot: 10-app-delete-toast
+- tapOn: "เอากลับคืน"
+- extendedWaitUntil:
+    visible: "แก้ไขงบ อาหาร.*2,500.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-restored
+# Clean up: the budgets, then the entry.
+- repeat:
+    while:
+      visible: "แก้ไขงบ.*"
+    commands:
+      - tapOn: "แก้ไขงบ.*"
+      - extendedWaitUntil:
+          visible: "แก้ไขงบ"
+          timeout: 10000
+      - scrollUntilVisible:
+          element: "ลบงบนี้"
+      - tapOn: "ลบงบนี้"
+      - extendedWaitUntil:
+          visible: "งบแยกหมวด"
+          timeout: 10000
+      - waitForAnimationToEnd
+- tapOn: "ย้อนกลับ"
+- waitForAnimationToEnd
+- tapOn: "กลับหน้าแรก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+- repeat:
+    while:
+      visible: "อาหาร 120 บาท อาหาร · จดเอง.*"
+    commands:
+      - tapOn:
+          text: "อาหาร 120 บาท อาหาร · จดเอง.*"
+          retryTapIfNoChange: true
+      - extendedWaitUntil:
+          visible: "ตัวเลือกเพิ่มเติม"
+          timeout: 10000
+      - tapOn: "ตัวเลือกเพิ่มเติม"
+      - tapOn: ".*ลบรายการ"
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
+      - waitForAnimationToEnd
