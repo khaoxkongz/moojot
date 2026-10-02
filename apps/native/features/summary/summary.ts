@@ -1,11 +1,8 @@
 import type { CategoryBreakdownItem, PeriodSummary, TagBreakdownItem, TransactionKind } from "../../types/finance";
 import { getPeriodBounds, getPeriodForDate, periodKeyParts, shiftPeriodKey } from "../../utils/dates";
-import { formatBaht, kindLabel, longThaiMonth, shortThaiDate, shortThaiMonth } from "../../utils/format";
+import { amountLabel, formatBaht, kindLabel, longThaiMonth, shortThaiDate, shortThaiMonth } from "../../utils/format";
 
 export type SummaryMode = "category" | "tag";
-
-/** Baht with satang only when there are some, as the prototype writes amounts: "750.50", "240". */
-export const amountLabel = (satang: number) => formatBaht(satang, satang % 100 === 0 ? 0 : 2);
 
 /** One Summary month: Summary always counts by month, from the user's month start day. */
 export type SummaryMonth = {

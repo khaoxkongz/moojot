@@ -1,3 +1,5 @@
+import { shortBuddhistYear } from "../../utils/dates";
+
 const weekdays = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์"];
 const shortMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 export const longMonths = [
@@ -40,6 +42,6 @@ export function dateLabel(value: string) {
     " " +
     shortMonths[date.getMonth()] +
     " " +
-    String(date.getFullYear() + 543).slice(-2)
+    shortBuddhistYear(date.getFullYear())
   );
 }

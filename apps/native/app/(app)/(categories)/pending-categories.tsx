@@ -34,10 +34,8 @@ import { useEntryActions } from "@/features/entries/use-entry-actions";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { FinanceTransaction } from "@/types/finance";
-import { formatBaht, todayISO } from "@/utils/format";
+import { amountLabel, todayISO } from "@/utils/format";
 import { queryClient } from "@/utils/orpc";
-
-const amountLabel = (satang: number) => formatBaht(satang, satang % 100 === 0 ? 0 : 2);
 
 /**
  * “เลือกหมวด” queue sheet. It opens over the screen that asked for it, for one scope: `ids` (comma separated, in

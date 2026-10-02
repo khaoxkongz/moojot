@@ -13,7 +13,7 @@ import { planningQueryOptions } from "@/features/planning/query-options";
 import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
-import { getPeriodForDate } from "@/utils/dates";
+import { getPeriodForDate, isoYear, shortBuddhistYear } from "@/utils/dates";
 import { isValidISODate } from "@/utils/format";
 
 type OpenPeriod = "month" | "fortnight" | "week";
@@ -65,12 +65,11 @@ function twoWeekStart(today: string, anchor: string): string {
 
 function shortDate(value: string, withYear = false): string {
   const date = parseISO(value);
-  const year = (date.getUTCFullYear() + 543) % 100;
-  return `${date.getUTCDate()} ${monthNames[date.getUTCMonth()]}${withYear ? ` ${year}` : ""}`;
+  return `${date.getUTCDate()} ${monthNames[date.getUTCMonth()]}${withYear ? ` ${shortBuddhistYear(isoYear(value))}` : ""}`;
 }
 
 function dateRange(from: string, through: string): string {
-  const sameYear = parseISO(from).getUTCFullYear() === parseISO(through).getUTCFullYear();
+  const sameYear = isoYear(from) === isoYear(through);
   return `${shortDate(from, !sameYear)} - ${shortDate(through, true)}`;
 }
 
@@ -308,7 +307,7 @@ export default function CalendarSettingsScreen() {
     if (preferences.openPeriod === "week") return `รอบนี้: ${dateRange(thisWeekStart, addDays(thisWeekStart, 6))}`;
     const period = getPeriodForDate(today, preferences.monthStartDay);
     const startMonth = parseISO(period.from);
-    return `รอบนี้: ${monthNames[startMonth.getUTCMonth()]} ${(startMonth.getUTCFullYear() + 543) % 100}`;
+    return `รอบนี้: ${monthNames[startMonth.getUTCMonth()]} ${shortBuddhistYear(isoYear(period.from))}`;
   })();
 
   const save = async () => {
