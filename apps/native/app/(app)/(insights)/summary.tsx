@@ -13,7 +13,6 @@ import { summaryMonthOffset } from "@/features/home/period";
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import {
-  amountLabel,
   kindTotal,
   planRowSubtitle,
   summaryEmpty,
@@ -31,7 +30,7 @@ import { walletsQueryOptions } from "@/features/wallets/query-options";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { TransactionKind, WalletFilterSelection } from "@/types/finance";
 import { nextMonthOffset } from "@/utils/dates";
-import { isValidISODate, todayISO } from "@/utils/format";
+import { amountLabel, isValidISODate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
 const kinds: Array<[TransactionKind, string]> = [

@@ -45,6 +45,12 @@ export function periodKeyParts(key: PeriodKey) {
   return { year, month };
 }
 
+/** The year of a date: 2026 for "2026-09-30". */
+export const isoYear = (iso: string) => Number(iso.slice(0, 4));
+
+/** The Buddhist-era year in two digits, as Thai short dates write it: "69" for 2026, "00" for 2057. */
+export const shortBuddhistYear = (year: number) => String((year + 543) % 100).padStart(2, "0");
+
 /** How many months `target` is before `current` (0 or fewer); 0 for a later or malformed key. */
 export function periodKeyOffset(current: PeriodKey, target: string): number {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(target)) return 0;

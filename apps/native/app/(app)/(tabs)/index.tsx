@@ -50,7 +50,7 @@ import { WalletFilterSheet } from "@/features/wallets/components/wallet-filter-s
 import { emptyWalletOptions, isAllWalletSources, selectAllWalletSources } from "@/features/wallets/filter";
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 import type { WalletFilterSelection } from "@/types/finance";
-import { formatBaht, isValidISODate, todayISO } from "@/utils/format";
+import { amountLabel, formatBaht, isValidISODate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
 
@@ -62,10 +62,6 @@ function subscribeAppState(listener: () => void) {
 const isAppActive = () => AppState.currentState !== "background" && AppState.currentState !== "inactive";
 
 const defaultStreakSettings: StreakSettings = { mode: "recorded", enabled: true, resetAfter: "" };
-
-function amountLabel(satang: number) {
-  return formatBaht(satang, satang % 100 === 0 ? 0 : 2);
-}
 
 function DayRow({ row, divider }: { row: HomeRow; divider: boolean }) {
   const theme = useAppTheme();

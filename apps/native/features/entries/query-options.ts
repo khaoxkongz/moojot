@@ -1,15 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { loadAllEntries } from "@/features/entries/all-entries";
+import { loadAllEntries, type AllEntriesFilters } from "@/features/entries/all-entries";
 import { needsCategory } from "@/features/entries/category-queue";
 import { searchFilters } from "@/features/search/search";
 import type { TransactionFilters, TransactionInput, WalletCard } from "@/types/finance";
 import { client, orpc } from "@/utils/orpc";
 
-type AllFilters = Omit<TransactionFilters, "limit" | "offset">;
-
 /** Every matching entry, all pages. Keyed under the Ledger, so refreshing entry readers refreshes it too. */
-const allEntries = (filters: AllFilters) =>
+const allEntries = (filters: AllEntriesFilters) =>
   queryOptions({
     queryKey: [...orpc.ledger.listTransactions.queryKey({ input: filters }), "all-pages"] as const,
     queryFn: () => loadAllEntries((page) => client.ledger.listTransactions(page), filters),

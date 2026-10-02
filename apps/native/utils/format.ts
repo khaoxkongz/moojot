@@ -7,6 +7,9 @@ export function formatBaht(amountSatang: number, digits = 2) {
   });
 }
 
+/** Baht with satang only when there are some, as the prototype writes amounts: "750.50", "240". */
+export const amountLabel = (satang: number) => formatBaht(satang, satang % 100 === 0 ? 0 : 2);
+
 export function formatMoney(amountSatang: number, digits = 2) {
   return `฿${formatBaht(amountSatang, digits)}`;
 }

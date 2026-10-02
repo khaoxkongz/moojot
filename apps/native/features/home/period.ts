@@ -1,4 +1,4 @@
-import { getPeriodBounds, getPeriodForDate, shiftPeriodKey } from "../../utils/dates";
+import { getPeriodBounds, getPeriodForDate, shiftPeriodKey, shortBuddhistYear } from "../../utils/dates";
 import { shortThaiDate, shortThaiMonth } from "../../utils/format";
 
 export type CalendarPeriod = "month" | "fortnight" | "week";
@@ -23,7 +23,6 @@ export type HomePeriod = {
 
 const parts = (iso: string) => iso.split("-").map(Number) as [number, number, number];
 /** Two-digit Buddhist year: 2026 → "69". */
-const thaiYear = (year: number) => String(year + 543).slice(-2);
 
 function utcDate(value: string) {
   const [year, month, day] = parts(value);
@@ -47,7 +46,7 @@ export function weekStartForDate(date: string, weekday: number) {
 function rangeLabel(from: string, to: string) {
   const fromYear = parts(from)[0];
   const toYear = parts(to)[0];
-  return `${shortThaiDate(from)}${fromYear !== toYear ? ` ${thaiYear(fromYear)}` : ""} – ${shortThaiDate(to)} ${thaiYear(toYear)}`;
+  return `${shortThaiDate(from)}${fromYear !== toYear ? ` ${shortBuddhistYear(fromYear)}` : ""} – ${shortThaiDate(to)} ${shortBuddhistYear(toYear)}`;
 }
 
 /** The period `offset` steps before (negative) the one holding `date`, in the calendar mode the user set. */
@@ -65,7 +64,7 @@ export function selectedHomePeriod(
     return {
       from,
       to,
-      label: `${shortThaiMonth(month)} ${thaiYear(year)}`,
+      label: `${shortThaiMonth(month)} ${shortBuddhistYear(year)}`,
       caption: calendar.monthStartDay === 1 ? "ยอดใช้จ่าย" : `ยอดใช้จ่าย · ${shortThaiDate(from)} – ${shortThaiDate(to)}`,
       previousLabel: "เดือนก่อน",
       nextLabel: "เดือนถัดไป",

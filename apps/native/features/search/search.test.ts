@@ -63,7 +63,7 @@ describe("searchResults", () => {
       { term: "grab", today, categories: [food] }
     );
     expect(results.summary).toBe("พบ 3 รายการ · รายจ่ายรวม 195.50 ฿");
-    expect(results.days.map((day) => [day.label, day.isToday, day.count, day.rows.length])).toEqual([
+    expect(results.days.map((day) => [day.label, day.isToday, day.countLabel, day.rows.length])).toEqual([
       ["พ. 30 ก.ย.", true, "2 รายการ", 2],
       // Another year says which one, since search covers every month.
       ["พ. 31 ธ.ค. 68", false, "1 รายการ", 1],
