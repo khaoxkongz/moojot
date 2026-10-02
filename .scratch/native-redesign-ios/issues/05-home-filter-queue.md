@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 — [จดเองและแก้รายการ](04-manual-entry.md)
 
-**Status:** ready-for-human
+**Status:** done
 
 **Done in:** c07d7cf feat(native): home periods, day list, wallet filter and category queue logic; 170e511 feat(native): redesign Home, wallet filter sheet and category queue sheet; c5fce8e fix(api): order entries by id last so offset paging is stable; dd9121f fix(native): rename includeOther to includeUnspecified and name queue wallets by the filter rule; f066b35 fix(native): address ticket 05 review findings (notes, ภาพ, flow Maestro และไฟล์นี้อยู่ใน commit docs ที่ตามมาแต่ละรอบ)
 
@@ -20,7 +20,7 @@
 - [x] Select all/clear/notice count และ filter state ใช้ร่วม Summary ได้ โดยไม่มี seed bank/card กลายเป็นข้อมูลผู้ใช้
 - [x] คิวหมวด count/next/skip/edit/completion ตรง scope ที่เปิด เลือกหมวดบันทึกจริงและ refresh; ย้ายเงินไม่เป็น pending
 - [x] ข้อมูลเกิน 1,000 แถวไม่ทำให้ counts/day totals แสดงเฉพาะหน้าแรกเป็นทั้งหมด
-- [ ] เดิน Home→create/edit→filter→queue บน iOS พร้อม read/update failure และ recovery _(เดินบน simulator ครบแล้ว ทั้งสว่างและมืด รวมโหลดไม่สำเร็จ/เลือกหมวดไม่สำเร็จแล้วกลับมาได้ เหลือตรวจบน iPhone; พบว่าต้องกด "ลองอีกครั้ง" สองครั้งหลังเซิร์ฟเวอร์กลับมา แยกไป [24](24-ios-first-retry-after-outage.md))_
+- [x] เดิน Home→create/edit→filter→queue บน iOS พร้อม read/update failure และ recovery _(เดินบน simulator ครบแล้ว ทั้งสว่างและมืด รวมโหลดไม่สำเร็จ/เลือกหมวดไม่สำเร็จแล้วกลับมาได้ ผู้ใช้ตรวจบน iPhone ผ่านแล้ว; พบว่าต้องกด "ลองอีกครั้ง" สองครั้งหลังเซิร์ฟเวอร์กลับมา แยกไป [24](24-ios-first-retry-after-outage.md))_
 
 ## Comments
 
@@ -50,3 +50,5 @@
 19. การ์ดในคิวของรายการสลิปที่มีธนาคารและเลขท้ายบัตรแต่ไม่มีชื่อบัตร → ขึ้น "ไม่ระบุบัญชี" และรายการนั้นอยู่ในตัวกรอง "รายการที่ไม่ระบุบัญชี" (ไม่อยู่ในธนาคารนั้น)
 20. แผงตัวกรองและแผงเลือกหมวดใช้ส่วนหัวเดียวกันแล้ว: ขีดจับ ชื่อ 17 และปุ่ม × อยู่ตำแหน่งเดียวกันทั้งสองแผง; ในแผงตัวกรองที่มีบัญชีหลายแถว ส่วนหัวอยู่กับที่ตอนเลื่อนรายการ (เดิมเลื่อนตามไปด้วย)
 21. ตัวกรองยังทำงานเหมือนเดิมหลังเปลี่ยนชื่อในโค้ด: เลือกเฉพาะ "รายการที่ไม่ระบุบัญชี" แล้วหน้าแรกและหน้าสรุปแสดงตรงกัน; ถ้ามีเครื่องที่ยังเปิดแอปรุ่นก่อนแก้อยู่ กรองได้ปกติกับเซิร์ฟเวอร์ใหม่
+
+2026-10-02: ผู้ใช้ตรวจบน iPhone ครบทุกข้อในรายการด้านบน (1–21) แล้ว ผ่านทั้งหมด จึงปิดตั๋วเป็น `done` ส่วนอาการกด "ลองอีกครั้ง" สองครั้งยังติดตามใน [24](24-ios-first-retry-after-outage.md)
