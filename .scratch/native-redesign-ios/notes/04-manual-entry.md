@@ -32,6 +32,8 @@ Deliberate differences from the HTML:
 
 ### Rendering the signed-in app on web (for later tickets)
 
+Superseded: use the `ios-preview` skill (Maestro on the iOS simulator, signed in against the dev database). The web recipe below is kept only for a machine without the simulator.
+
 The iOS simulator still has no tap automation, so the captures were taken from Expo web in headless Chrome at 402×874 (scratch driver, not committed). It needed, temporarily and reverted before committing: `web.output` "single" in `app.json` (the "static" SSR render throws "Class extends value undefined"), and a web-only Metro `resolveRequest` stub for `expo-media-library` and `expo-file-system` (both throw at import on web). Backend: an in-memory `MongoMemoryReplSet` (as `apps/server/test/mongo.ts`), `prisma db push`, then `bun run src/index.ts` with `GEMINI_API_KEY` set to any 20+ character string; sign up through `/api/auth/sign-up/email`, then `rpc/financePreferences/setSetting` `{ key: "onboarding_complete_v1", value: "true" }` and `rpc/ledger/initializeDatabase` (header `x-csrf-token: orpc`) to skip onboarding. Click with real mouse events at element centres (`page.mouse.click`); synthetic DOM events do not reach RN-web Pressables.
 
 ## iOS run

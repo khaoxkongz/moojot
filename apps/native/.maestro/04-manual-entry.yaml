@@ -1,0 +1,32 @@
+# Ticket 04 entry editor states, named <NN>-app-<state> to pair with the design shots in .scratch/native-redesign-ios/notes/design-shots/.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "1"
+- tapOn: "2"
+- tapOn: "0"
+- tapOn: "บวก"
+- tapOn: "3"
+- tapOn: "5"
+- waitForAnimationToEnd
+- takeScreenshot: 04-app-keypad-calculating
+- tapOn: "คำนวณ"
+- tapOn: "เสร็จ"
+- waitForAnimationToEnd
+- takeScreenshot: 04-app-category-sheet
+- tapOn: "หมวด อาหาร"
+- waitForAnimationToEnd
+- takeScreenshot: 04-app-form-new
+- tapOn: ".*วันนี้ ·.*"
+- waitForAnimationToEnd
+- takeScreenshot: 04-app-calendar
+- tapOn: "ยกเลิก"
+- tapOn: "ปิดหน้าจดรายการ"
+- waitForAnimationToEnd
+- takeScreenshot: 04-app-exit-dialog
+- tapOn: "ไม่บันทึก"

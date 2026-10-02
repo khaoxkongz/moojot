@@ -1,0 +1,17 @@
+# Signs in with MAESTRO_PREVIEW_EMAIL / MAESTRO_PREVIEW_PASSWORD when the app shows the sign-in screen; does nothing when already signed in.
+# Keys on the sign-in screen's accessibility labels; update them here if the auth screens change.
+appId: com.anonymous.moojot
+---
+- runFlow:
+    when:
+      visible: "อีเมล"
+    commands:
+      - tapOn: "อีเมล"
+      - inputText: ${MAESTRO_PREVIEW_EMAIL}
+      - tapOn: "รหัสผ่าน"
+      - inputText: ${MAESTRO_PREVIEW_PASSWORD}
+      - hideKeyboard
+      - tapOn: "เข้าสู่ระบบ"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 30000

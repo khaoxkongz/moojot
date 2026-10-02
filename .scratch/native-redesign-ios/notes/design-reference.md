@@ -14,7 +14,7 @@ Read this before building or restyling any screen, sheet, dialog or toast in thi
    State and behaviour (what opens what, validation, timings) live in the script at the bottom of the file. Search for the handler named in `onClick="{{ … }}"`.
 2. **Read the inline styles** of that block and its children, and carry the numbers into React Native: 1 CSS px = 1 pt. Map each value to a theme token (`radius.*`, `space`, `touch.*`, palette names in `constants/theme.ts`, see [notes 01](01-theme-foundation.md)). When no token holds the value, add one rather than guessing a nearby number.
 3. **Look at it rendered.** Open the matching image in [design-shots/](design-shots/) (light and `-dark`). If the state you are building has no image, capture it first (below) and commit the images with your ticket.
-4. **Compare** your screen against the image, light and dark, before calling the ticket done, and list any deliberate differences in the ticket's notes.
+4. **Compare** your screen against the image, light and dark (capture the app with the `ios-preview` skill as `notes/<NN>-app-<state>[-dark].png`), before calling the ticket done, and list any deliberate differences in the ticket's notes.
 
 ## Reviewing a UI diff
 
