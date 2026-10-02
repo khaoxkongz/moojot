@@ -65,7 +65,7 @@ describe("wallet filter sheet", () => {
     // Partly chosen: select all chooses everything.
     const [, , other] = walletFilterSections(options, all);
     const some = toggleWalletRow(all, other!.rows[0]!);
-    expect(some.includeOther).toBe(false);
+    expect(some.includeUnspecified).toBe(false);
     expect(isAllWalletSources(toggleAllWalletSources(some, options), options)).toBe(true);
   });
 });

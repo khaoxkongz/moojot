@@ -9,16 +9,19 @@ import { createAppRuntime } from "@moojot/api/runtime";
 import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
-import { homeDays, loadAllEntries, needsCategory } from "../../native/features/home/home-days";
+import { homeDays } from "../../native/features/home/home-days";
+import { loadAllEntries } from "../../native/features/entries/all-entries";
 import {
   canSkipInQueue,
   currentInQueue,
+  needsCategory,
   nextInQueue,
   openCategoryQueue,
   queueDoneMessage,
   queueProgress,
 } from "../../native/features/entries/category-queue";
 import { createEntryActions } from "../../native/features/entries/entry-actions";
+import { entryWallet } from "../../native/features/wallets/entry-wallet";
 
 // Home's filter, day list and pending-category queue against the real authenticated routes and MongoDB. Native modules
 // are imported by path, as in manual-entry.test.ts.
@@ -80,11 +83,51 @@ describe("wallet filter", () => {
     await expense(client, { title: "จดเองกสิกร", bank: "KBank", source: "manual" });
     await expense(client, { title: "จดเองบัตร", cardName: "KTC", cardLast4: "4821", source: "manual" });
     await expense(client, { title: "สลิปกสิกร", bank: "KBank", source: "slip" });
-    const onlyOther = { banks: [], cards: [], includeOther: true, includeDeletedCards: false };
+    const unspecified = { banks: [], cards: [], includeUnspecified: true };
 
-    const rows = await client.ledger.listTransactions({ walletFilter: onlyOther });
+    const rows = await client.ledger.listTransactions({ walletFilter: unspecified });
     expect(rows.map((row) => row.id)).toEqual([none.id]);
-    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: onlyOther });
+    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: unspecified });
+    expect(summary).toMatchObject({ expenseSatang: 100, transactionCount: 1 });
+  });
+
+  it("puts each entry under the wallet the app names it by", async () => {
+    const client = await signUp("entry-wallet@example.test");
+    const shapes = [
+      { bank: "KBank" },
+      { bank: "KBank", cardLast4: "4821" },
+      { cardName: "KTC", cardLast4: "4821" },
+      { bank: "KBank", cardName: "KTC" },
+      { cardLast4: "4821" },
+      {},
+    ];
+    for (const shape of shapes) {
+      const row = await expense(client, shape);
+      const wallet = entryWallet(row);
+      const filter = {
+        banks: wallet.type === "bank" ? [wallet.bank] : [],
+        cards: wallet.type === "card" ? [wallet.card] : [],
+        includeUnspecified: wallet.type === "unspecified",
+      };
+      const matched = await client.ledger.listTransactions({ walletFilter: filter });
+      expect(
+        matched.map((entry) => entry.id),
+        JSON.stringify(shape)
+      ).toContain(row.id);
+      const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: filter });
+      expect(summary.transactionCount, JSON.stringify(shape)).toBe(matched.length);
+    }
+  });
+
+  it("still reads a filter from an older app that names ไม่ระบุ includeOther", async () => {
+    const client = await signUp("legacy-filter@example.test");
+    const none = await expense(client, { title: "เงินสด" });
+    await expense(client, { title: "กสิกร", bank: "KBank" });
+    const legacy = { banks: [], cards: [], includeOther: true, includeDeletedCards: true };
+
+    const rows = await client.ledger.listTransactions({ walletFilter: legacy });
+    expect(rows.map((row) => row.id)).toEqual([none.id]);
+    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: legacy });
     expect(summary).toMatchObject({ expenseSatang: 100, transactionCount: 1 });
   });
 });
@@ -122,6 +165,35 @@ describe("home day list", () => {
       ["2026-09-29", 1, 5000],
     ]);
   }, 60_000);
+
+  it("pages entries recorded at the same moment in one fixed order, so no page repeats or drops one", async () => {
+    const client = await signUp("same-moment@example.test");
+    const user = await database.db.user.findFirstOrThrow({ where: { email: "same-moment@example.test" } });
+    const createdAt = new Date("2026-09-30T05:00:00.000Z");
+    // Stored in ascending id order: without a final tiebreaker the database is free to return them in any order.
+    const ids = Array.from({ length: 6 }, (_, index) => `00000000-0000-4000-8000-00000000000${index}`);
+    await database.db.financeTransaction.createMany({
+      data: ids.map((id) => ({
+        id,
+        userId: user.id,
+        kind: "expense",
+        amountSatang: 100n,
+        occurredOn: today,
+        title: id,
+        source: "manual",
+        createdAt,
+        updatedAt: createdAt,
+        dedupeIdentity: `id:${id}`,
+        recurringIdentity: `id:${id}`,
+      })),
+    });
+
+    const pages = [];
+    for (let offset = 0; offset < ids.length; offset += 2) {
+      pages.push(...(await client.ledger.listTransactions({ from: today, to: today, limit: 2, offset })));
+    }
+    expect(pages.map((row) => row.id)).toEqual([...ids].reverse());
+  });
 });
 
 describe("pending-category queue", () => {
@@ -158,6 +230,22 @@ describe("pending-category queue", () => {
     expect(stillPending.map((row) => row.id).sort()).toEqual([second.id, yesterday.id].sort());
     expect(queueDoneMessage(stillPending.length)).toBe("บันทึกหมวดแล้ว");
     expect(queueDoneMessage(0)).toBe("เลือกหมวดครบแล้ว");
+  });
+
+  it("queues from Home every pending entry of the period and filter on screen, not only today's", async () => {
+    const client = await signUp("queue-period@example.test");
+    const earlier = await expense(client, { title: "ต้นเดือน", occurredOn: "2026-09-02", bank: "KBank" });
+    await expense(client, { title: "บัตร", occurredOn: "2026-09-03", cardName: "KTC", cardLast4: "4821" });
+    await expense(client, { title: "เดือนก่อน", occurredOn: "2026-08-31", bank: "KBank" });
+    const todays = await expense(client, { title: "วันนี้", bank: "KBank" });
+    await expense(client, { title: "มีหมวดแล้ว", bank: "KBank", categoryId: "expense-food" });
+
+    const onScreen = await loadAllEntries((f) => client.ledger.listTransactions(f), {
+      from: "2026-09-01",
+      to: today,
+      walletFilter: { banks: ["KBank"], cards: [], includeUnspecified: false },
+    });
+    expect(openCategoryQueue(onScreen)?.ids).toEqual([todays.id, earlier.id]);
   });
 
   it("refuses a category of the other kind and keeps the entry pending", async () => {

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { router, useIsFocused } from "expo-router";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
@@ -19,6 +19,7 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text } from "@/components/ui/typography";
 import { useAppData } from "@/context/app-data";
+import { summaryMonthOffset } from "@/features/home/period";
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { WalletFilterSheet } from "@/features/wallets/components/wallet-filter-sheet";
@@ -26,7 +27,7 @@ import { emptyWalletOptions, isAllWalletSources, selectAllWalletSources } from "
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 import type { CategoryBreakdownItem, PeriodSummary, TransactionKind, WalletFilterSelection } from "@/types/finance";
 import { getPeriodBounds, getPeriodForDate, shiftPeriodKey } from "@/utils/dates";
-import { formatBaht, formatMoney, todayISO } from "@/utils/format";
+import { formatBaht, formatMoney, isValidISODate, todayISO } from "@/utils/format";
 
 type BreakdownMode = "category" | "tag";
 const emptyRows: never[] = [];
@@ -138,7 +139,9 @@ export default function SummaryScreen() {
 
   const { appliedWalletFilter, setAppliedWalletFilter } = useAppData();
 
-  const [offset, setOffset] = useState(0);
+  // Home's “ดูสรุป” passes a day of the period it shows, so Summary opens on that month; the arrows take over after.
+  const params = useLocalSearchParams<{ date?: string }>();
+  const [chosenOffset, setOffset] = useState<number | null>(null);
   const [kind, setKind] = useState<TransactionKind>("expense");
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftWalletFilter, setDraftWalletFilter] = useState<WalletFilterSelection>(() =>
@@ -155,6 +158,8 @@ export default function SummaryScreen() {
 
   const startDayQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
 
+  const openedAt = params.date && isValidISODate(params.date) ? params.date : null;
+  const offset = chosenOffset ?? (openedAt ? summaryMonthOffset(todayISO(), openedAt, startDayQuery.data ?? 1) : 0);
   const period = selectedPeriod(offset, startDayQuery.data ?? 1);
   const prior = selectedPeriod(offset - 1, startDayQuery.data ?? 1);
   const periodReady = startDayQuery.data !== undefined;
@@ -292,7 +297,7 @@ export default function SummaryScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="ช่วงก่อนหน้า"
-              onPress={() => setOffset((value) => value - 1)}
+              onPress={() => setOffset(offset - 1)}
               style={styles.navArrow}
             >
               <HomeIcon name="chevronLeft" color={theme.onAccent} size={23} />
@@ -305,7 +310,7 @@ export default function SummaryScreen() {
               accessibilityRole="button"
               accessibilityLabel="ช่วงถัดไป"
               disabled={offset >= 0}
-              onPress={() => setOffset((value) => value + 1)}
+              onPress={() => setOffset(offset + 1)}
               style={[styles.navArrow, offset >= 0 && { opacity: 0.35 }]}
             >
               <HomeIcon name="chevronRight" color={theme.onAccent} size={23} />

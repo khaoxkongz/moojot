@@ -1,4 +1,5 @@
 import { getPeriodBounds, getPeriodForDate, shiftPeriodKey } from "../../utils/dates";
+import { shortThaiDate, shortThaiMonth } from "../../utils/format";
 
 export type CalendarPeriod = "month" | "fortnight" | "week";
 
@@ -16,18 +17,13 @@ export type HomePeriod = {
   nextLabel: string;
   /** The period holding today: there is nothing later to step to. */
   isCurrent: boolean;
+  /** The day “ดูสรุป” opens Summary's month at: the period's last day, or today while the period is still running. */
+  summaryDate: string;
 };
-
-/** Thai short month names as the prototype writes them; fixed so labels do not depend on the device's Intl data. */
-const MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
 const parts = (iso: string) => iso.split("-").map(Number) as [number, number, number];
 /** Two-digit Buddhist year: 2026 → "69". */
 const thaiYear = (year: number) => String(year + 543).slice(-2);
-export const shortThaiDate = (iso: string) => {
-  const [, month, day] = parts(iso);
-  return `${day} ${MONTHS[month - 1]}`;
-};
 
 function utcDate(value: string) {
   const [year, month, day] = parts(value);
@@ -69,11 +65,12 @@ export function selectedHomePeriod(
     return {
       from,
       to,
-      label: `${MONTHS[month - 1]} ${thaiYear(year)}`,
+      label: `${shortThaiMonth(month)} ${thaiYear(year)}`,
       caption: calendar.monthStartDay === 1 ? "ยอดใช้จ่าย" : `ยอดใช้จ่าย · ${shortThaiDate(from)} – ${shortThaiDate(to)}`,
       previousLabel: "เดือนก่อน",
       nextLabel: "เดือนถัดไป",
       isCurrent,
+      summaryDate: to < date ? to : date,
     };
   }
   const length = mode === "week" ? 7 : 14;
@@ -91,5 +88,15 @@ export function selectedHomePeriod(
     previousLabel: "รอบก่อน",
     nextLabel: "รอบถัดไป",
     isCurrent,
+    summaryDate: to < date ? to : date,
   };
+}
+
+/** How many months before the one holding `today` Summary opens at to show `date`'s month (0 or fewer). */
+export function summaryMonthOffset(today: string, date: string, monthStartDay: number) {
+  const months = (iso: string) => {
+    const [year, month] = parts(getPeriodForDate(iso, monthStartDay).periodKey);
+    return year * 12 + month;
+  };
+  return Math.min(0, months(date) - months(today));
 }

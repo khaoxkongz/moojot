@@ -1,32 +1,8 @@
-import type { Category, FinanceTransaction, TransactionFilters } from "../../types/finance";
-import { shortThaiDate } from "./period";
-
-const PAGE = 1000;
-
-/** Every entry matching the filters, read page by page, so a long period is never cut at the server's page size. */
-export async function loadAllEntries<T>(
-  list: (filters: TransactionFilters) => Promise<T[]>,
-  filters: Omit<TransactionFilters, "limit" | "offset">
-): Promise<T[]> {
-  const rows: T[] = [];
-  while (true) {
-    const page = await list({ ...filters, limit: PAGE, offset: rows.length });
-    rows.push(...page);
-    if (page.length < PAGE) return rows;
-  }
-}
+import type { Category, FinanceTransaction } from "../../types/finance";
+import { kindLabel, shortThaiDate, sourceLabel } from "../../utils/format";
+import { needsCategory } from "../entries/category-queue";
 
 const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
-const SOURCE_LABEL: Record<FinanceTransaction["source"], string> = {
-  manual: "จดเอง",
-  slip: "สลิป",
-  statement: "ใบแจ้งยอด",
-  recurring: "จดซ้ำ",
-};
-
-/** An expense or income without a category waits in the pending-category queue; a transfer never does. */
-export const needsCategory = (entry: Pick<FinanceTransaction, "kind" | "categoryId">) =>
-  entry.kind !== "transfer" && !entry.categoryId;
 
 const pad = (value: number) => String(value).padStart(2, "0");
 /** The device's calendar day of an instant (an entry's recorded time). */
@@ -40,8 +16,6 @@ export function dayLabel(iso: string) {
   const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
   return `${WEEKDAYS[new Date(year, month - 1, day).getDay()]} ${shortThaiDate(iso)}`;
 }
-
-export const sourceLabel = (source: FinanceTransaction["source"]) => SOURCE_LABEL[source];
 
 export type HomeRow = {
   entry: FinanceTransaction;
@@ -66,13 +40,14 @@ export type HomeDay = {
   totalSatang: number;
 };
 
-const sumOf = (rows: FinanceTransaction[], kind?: FinanceTransaction["kind"]) =>
+/** The total of the entries of one kind, or of all of them. */
+export const sumOf = (rows: FinanceTransaction[], kind?: FinanceTransaction["kind"]) =>
   rows.filter((row) => !kind || row.kind === kind).reduce((total, row) => total + row.amountSatang, 0);
 
 function homeRow(entry: FinanceTransaction, today: string, categories: Map<string, Category>): HomeRow {
   const pending = needsCategory(entry);
   const category = entry.categoryId ? categories.get(entry.categoryId) : undefined;
-  const source = SOURCE_LABEL[entry.source];
+  const source = sourceLabel(entry.source);
   return {
     entry,
     id: entry.id,
@@ -81,7 +56,7 @@ function homeRow(entry: FinanceTransaction, today: string, categories: Map<strin
     icon: pending ? "" : entry.kind === "transfer" ? "⇄" : (category?.icon ?? ""),
     meta: pending
       ? `รอเลือกหมวด · ${source}`
-      : `${entry.kind === "transfer" ? "ย้ายเงิน" : (category?.name ?? "ไม่มีหมวดหมู่")} · ${source}`,
+      : `${entry.kind === "transfer" ? kindLabel("transfer") : (category?.name ?? "ไม่มีหมวดหมู่")} · ${source}`,
     isNew: localDay(entry.createdAt) === today,
   };
 }
@@ -123,6 +98,9 @@ export type HomeSpeechInput = {
   photoMessage: string | null;
   /** Today's entries the app recorded from slips or statements. */
   autoToday: number;
+  /** Entries waiting for a category in the period and filter Home shows: the count its link names. */
+  pendingInView: number;
+  /** Today's entries waiting for a category, whatever Home shows. */
   pendingToday: number;
   todayCount: number;
   /** False where slips cannot be read at all (web). */
@@ -134,7 +112,7 @@ export function homeSpeech(input: HomeSpeechInput): { title: string; body: strin
   if (input.reading) return { title: "หมูกำลังอ่านสลิป", body: "เปิดแอปไว้ก่อนน้า" };
   const title = input.autoToday > 0 ? `วันนี้หมูจดให้ ${input.autoToday} รายการ` : "วันนี้หมูพร้อมช่วยจด";
   if (input.photoMessage) return { title, body: input.photoMessage };
-  if (input.pendingToday > 0) return { title, body: null };
-  if (input.todayCount > 0) return { title, body: "วันนี้เลือกหมวดครบแล้ว" };
+  if (input.pendingInView > 0) return { title, body: null };
+  if (input.todayCount > 0 && input.pendingToday === 0) return { title, body: "วันนี้เลือกหมวดครบแล้ว" };
   return { title, body: input.canRead ? "หมูอ่านสลิปใหม่ให้อัตโนมัติ" : "แตะ “จดเพิ่ม” เพื่อจดรายการเอง" };
 }

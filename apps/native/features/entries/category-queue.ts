@@ -1,12 +1,14 @@
 import type { FinanceTransaction } from "../../types/finance";
-import { needsCategory, sourceLabel } from "../home/home-days";
-import { shortThaiDate } from "../home/period";
-import { bankDisplayName } from "../wallets/banks";
-import { walletCardLabel } from "../wallets/cards";
+import { shortThaiDate, sourceLabel } from "../../utils/format";
+import { entryWalletLabel } from "../wallets/entry-wallet";
+
+/** An expense or income without a category waits in the pending-category queue; a transfer never does. */
+export const needsCategory = (entry: Pick<FinanceTransaction, "kind" | "categoryId">) =>
+  entry.kind !== "transfer" && !entry.categoryId;
 
 /**
- * The pending-category queue: the entries of one scope (today's pending link, one row, a Summary group) that wait for
- * a category, shown one at a time. Picking saves and moves on; skipping moves on and leaves the entry pending.
+ * The pending-category queue: the entries of one scope (Home's pending link, one row, a Summary group) that wait for a
+ * category, shown one at a time. Picking saves and moves on; skipping moves on and leaves the entry pending.
  */
 export type CategoryQueue = { ids: string[]; index: number };
 
@@ -44,16 +46,18 @@ export function currentInQueue(queue: CategoryQueue, isPending: (id: string) => 
 /** The toast after the last pick: whether anything anywhere still waits for a category. */
 export const queueDoneMessage = (stillPending: number) => (stillPending > 0 ? "บันทึกหมวดแล้ว" : "เลือกหมวดครบแล้ว");
 
+/**
+ * The toast when nothing in the queue waits any more without a pick here (the rest got a category in the editor, or
+ * nothing waited when it opened). A queue that ran out ends like a last pick.
+ */
+export const queueEmptiedMessage = (queue: CategoryQueue | null, stillPending: number) =>
+  queue === null ? "ไม่มีรายการรอเลือกหมวด" : queueDoneMessage(stillPending);
+
 /** The queue card's second line: "กสิกรไทย · สลิป · วันนี้". The entry's time of day is not recorded, so none is shown. */
 export function queueEntryMeta(
   entry: Pick<FinanceTransaction, "bank" | "cardName" | "cardLast4" | "source" | "occurredOn">,
   today: string
 ) {
-  const wallet = entry.cardName?.trim()
-    ? walletCardLabel({ cardName: entry.cardName, cardLast4: entry.cardLast4 })
-    : entry.bank?.trim()
-      ? bankDisplayName(entry.bank)
-      : "ไม่ระบุบัญชี";
   const day = entry.occurredOn === today ? "วันนี้" : shortThaiDate(entry.occurredOn);
-  return `${wallet} · ${sourceLabel(entry.source)} · ${day}`;
+  return `${entryWalletLabel(entry)} · ${sourceLabel(entry.source)} · ${day}`;
 }

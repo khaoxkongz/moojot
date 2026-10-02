@@ -12,9 +12,9 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Amount, IconButton } from "@/components/ui/controls";
+import { SheetBackdrop, SheetPanel } from "@/components/ui/bottom-sheet";
+import { Amount } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
 import { radius, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
@@ -24,6 +24,7 @@ import {
   nextInQueue,
   openCategoryQueue,
   queueDoneMessage,
+  queueEmptiedMessage,
   queueEntryMeta,
   queueProgress,
   type CategoryQueue,
@@ -40,12 +41,12 @@ const amountLabel = (satang: number) => formatBaht(satang, satang % 100 === 0 ? 
 
 /**
  * “เลือกหมวด” queue sheet. It opens over the screen that asked for it, for one scope: `ids` (comma separated, in
- * order: one Home row, a Summary group) or, by default, today's entries that wait for a category (Home's link, streak).
+ * order: Home's pending link for the period and filter it shows, one Home row, a Summary group) or, by default,
+ * today's entries that wait for a category (streak).
  */
 export default function PendingCategoriesSheet() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const params = useLocalSearchParams<{ ids?: string }>();
   const actions = useEntryActions();
@@ -99,7 +100,7 @@ export default function PendingCategoriesSheet() {
   const nothingLeft = queue === null || (queue !== undefined && pending !== undefined && !current);
   const closeWhenEmpty = useEffectEvent(() => {
     // A pick in flight closes the sheet itself, with its toast, once the refreshed list is in.
-    if (!savingRef.current) close(queue === null ? "ไม่มีรายการรอเลือกหมวด" : undefined);
+    if (!savingRef.current) close(queueEmptiedMessage(queue ?? null, pending?.length ?? 0));
   });
   useEffect(() => {
     if (nothingLeft) closeWhenEmpty();
@@ -112,12 +113,12 @@ export default function PendingCategoriesSheet() {
     setSaveError(null);
     try {
       await actions.setCategory(current.id, categoryId);
+      // The pick refreshed the pending list: move on only if a later entry still waits, else end with the done toast.
+      const left = queryClient.getQueryData(entriesQueryOptions.pendingCategories().queryKey) ?? [];
+      const stillPending = new Set(left.map((row) => row.id));
       const next = nextInQueue(current.queue);
-      if (next) setQueue(next);
-      else {
-        const left = queryClient.getQueryData(entriesQueryOptions.pendingCategories().queryKey)?.length ?? 0;
-        close(queueDoneMessage(left));
-      }
+      if (next && currentInQueue(next, (id) => stillPending.has(id))) setQueue(next);
+      else close(queueDoneMessage(left.length));
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -146,30 +147,16 @@ export default function PendingCategoriesSheet() {
   return (
     <View style={styles.root}>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: shown }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="ปิดแผงเลือกหมวด"
-          onPress={() => close()}
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.shade }]}
-        />
+        <SheetBackdrop label="ปิดแผงเลือกหมวด" onPress={() => close()} />
       </Animated.View>
-      <Animated.View
-        accessibilityViewIsModal
-        style={[
-          styles.sheet,
-          { maxHeight: height * 0.9, paddingBottom: insets.bottom + 12, transform: [{ translateY }] },
-        ]}
+      <SheetPanel
+        title="เลือกหมวด"
+        accessory={progress ? <Text style={styles.progress}>{progress}</Text> : null}
+        onClose={() => close()}
+        maxHeightRatio={0.9}
+        bottomGap={12}
+        style={{ transform: [{ translateY }] }}
       >
-        <View style={styles.handle} />
-        <View style={styles.header}>
-          <Text accessibilityRole="header" style={styles.title}>
-            เลือกหมวด
-          </Text>
-          {progress ? <Text style={styles.progress}>{progress}</Text> : null}
-          <View style={{ flex: 1 }} />
-          <IconButton icon="close" size={24} label="ปิด" onPress={() => close()} style={{ marginRight: -10 }} />
-        </View>
-
         {loadError ? (
           <View style={styles.message}>
             <Text style={styles.messageTitle}>โหลดรายการไม่สำเร็จ</Text>
@@ -247,7 +234,7 @@ export default function PendingCategoriesSheet() {
             </Pressable>
           </ScrollView>
         )}
-      </Animated.View>
+      </SheetPanel>
     </View>
   );
 }
@@ -255,26 +242,6 @@ export default function PendingCategoriesSheet() {
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     root: { flex: 1, justifyContent: "flex-end" },
-    sheet: {
-      width: "100%",
-      maxWidth: 680,
-      alignSelf: "center",
-      backgroundColor: theme.surface,
-      borderTopLeftRadius: radius.sheet,
-      borderTopRightRadius: radius.sheet,
-      paddingTop: 10,
-      paddingHorizontal: 16,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 36,
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: theme.border,
-      marginBottom: 6,
-    },
-    header: { flexDirection: "row", alignItems: "center", gap: 8 },
-    title: { color: theme.text, fontSize: 17, lineHeight: 24 },
     progress: { color: theme.muted, fontSize: 13, lineHeight: 18 },
     card: { marginTop: 4, padding: 14, borderRadius: radius.card, backgroundColor: theme.raised },
     cardTop: { flexDirection: "row", alignItems: "baseline", gap: 12 },

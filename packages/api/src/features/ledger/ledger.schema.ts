@@ -1,6 +1,7 @@
 import * as S from "effect/Schema";
 
 import { amountSatangSchema, isoDateSchema } from "../../shared/finance/common";
+import { walletFilterSchema } from "../../shared/finance/wallet-filter";
 
 const transactionKindSchema = S.Literals(["income", "expense", "transfer"]);
 const transactionSourceSchema = S.Literals(["manual", "slip", "statement", "recurring"]);
@@ -38,18 +39,6 @@ const transactionPatchSchema = S.Struct({
   categoryId: S.optional(S.NullOr(S.String)),
   tagIds: S.optional(idsSchema),
   dedupeKey: S.optional(S.NullOr(S.String)),
-});
-
-const walletCardSchema = S.Struct({
-  cardName: S.String,
-  cardLast4: S.optional(S.NullOr(S.String)),
-});
-
-const walletFilterSchema = S.Struct({
-  banks: S.mutable(S.Array(S.String)),
-  cards: S.mutable(S.Array(walletCardSchema)),
-  includeOther: S.Boolean,
-  includeDeletedCards: S.Boolean,
 });
 
 export const transactionFiltersSchema = S.Struct({
