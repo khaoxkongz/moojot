@@ -119,7 +119,7 @@ export function walletWhere(
   }
   // “ไม่ระบุ” is an entry with no bank or card chosen, however it was recorded: a manual entry with a bank belongs to
   // that bank. A last four without a card name never matches a bank or card row, so it stays here too.
-  if (filter.includeOther) {
+  if (filter.includeUnspecified) {
     options.push({
       cardName: null,
       OR: [{ bank: null }, { cardLast4: { not: null } }],

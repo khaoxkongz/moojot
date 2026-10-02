@@ -19,6 +19,7 @@ import {
   queueProgress,
 } from "../../native/features/entries/category-queue";
 import { createEntryActions } from "../../native/features/entries/entry-actions";
+import { entryWallet } from "../../native/features/wallets/entry-wallet";
 
 // Home's filter, day list and pending-category queue against the real authenticated routes and MongoDB. Native modules
 // are imported by path, as in manual-entry.test.ts.
@@ -80,11 +81,51 @@ describe("wallet filter", () => {
     await expense(client, { title: "จดเองกสิกร", bank: "KBank", source: "manual" });
     await expense(client, { title: "จดเองบัตร", cardName: "KTC", cardLast4: "4821", source: "manual" });
     await expense(client, { title: "สลิปกสิกร", bank: "KBank", source: "slip" });
-    const onlyOther = { banks: [], cards: [], includeOther: true, includeDeletedCards: false };
+    const unspecified = { banks: [], cards: [], includeUnspecified: true };
 
-    const rows = await client.ledger.listTransactions({ walletFilter: onlyOther });
+    const rows = await client.ledger.listTransactions({ walletFilter: unspecified });
     expect(rows.map((row) => row.id)).toEqual([none.id]);
-    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: onlyOther });
+    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: unspecified });
+    expect(summary).toMatchObject({ expenseSatang: 100, transactionCount: 1 });
+  });
+
+  it("puts each entry under the wallet the app names it by", async () => {
+    const client = await signUp("entry-wallet@example.test");
+    const shapes = [
+      { bank: "KBank" },
+      { bank: "KBank", cardLast4: "4821" },
+      { cardName: "KTC", cardLast4: "4821" },
+      { bank: "KBank", cardName: "KTC" },
+      { cardLast4: "4821" },
+      {},
+    ];
+    for (const shape of shapes) {
+      const row = await expense(client, shape);
+      const wallet = entryWallet(row);
+      const filter = {
+        banks: wallet.type === "bank" ? [wallet.bank] : [],
+        cards: wallet.type === "card" ? [wallet.card] : [],
+        includeUnspecified: wallet.type === "unspecified",
+      };
+      const matched = await client.ledger.listTransactions({ walletFilter: filter });
+      expect(
+        matched.map((entry) => entry.id),
+        JSON.stringify(shape)
+      ).toContain(row.id);
+      const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: filter });
+      expect(summary.transactionCount, JSON.stringify(shape)).toBe(matched.length);
+    }
+  });
+
+  it("still reads a filter from an older app that names ไม่ระบุ includeOther", async () => {
+    const client = await signUp("legacy-filter@example.test");
+    const none = await expense(client, { title: "เงินสด" });
+    await expense(client, { title: "กสิกร", bank: "KBank" });
+    const legacy = { banks: [], cards: [], includeOther: true, includeDeletedCards: true };
+
+    const rows = await client.ledger.listTransactions({ walletFilter: legacy });
+    expect(rows.map((row) => row.id)).toEqual([none.id]);
+    const summary = await client.analytics.getPeriodSummary({ from: today, to: today, walletFilter: legacy });
     expect(summary).toMatchObject({ expenseSatang: 100, transactionCount: 1 });
   });
 });

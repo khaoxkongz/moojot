@@ -1,13 +1,7 @@
 import * as S from "effect/Schema";
 
 import { isoDateSchema } from "../../shared/finance/dates";
-
-export const walletFilterSchema = S.Struct({
-  banks: S.mutable(S.Array(S.String)),
-  cards: S.mutable(S.Array(S.Struct({ cardName: S.String, cardLast4: S.NullOr(S.String) }))),
-  includeOther: S.Boolean,
-  includeDeletedCards: S.Boolean,
-});
+import { walletFilterSchema } from "../../shared/finance/wallet-filter";
 
 const periodInput = S.Struct({
   from: isoDateSchema,

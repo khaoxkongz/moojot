@@ -19,4 +19,10 @@ describe("queue card", () => {
       queueEntryMeta({ bank: null, cardName: null, cardLast4: null, source: "recurring", occurredOn: today }, today)
     ).toBe("ไม่ระบุบัญชี · จดซ้ำ · วันนี้");
   });
+
+  it("names the same wallet the filter puts the entry in: a last four without a card name is ไม่ระบุ", () => {
+    expect(
+      queueEntryMeta({ bank: "KBank", cardName: null, cardLast4: "4821", source: "slip", occurredOn: today }, today)
+    ).toBe("ไม่ระบุบัญชี · สลิป · วันนี้");
+  });
 });

@@ -8,21 +8,18 @@ export const emptyWalletOptions: WalletFilterOptions = {
   canIdentifyDeletedCards: false,
 };
 
-// `includeDeletedCards` is reserved for a card registry and filters nothing yet, so every selection keeps it on.
-
 export function selectAllWalletSources(options: WalletFilterOptions): WalletFilterSelection {
   return {
     banks: [...options.banks],
     cards: options.cards.map((card) => ({ ...card })),
-    includeOther: true,
-    includeDeletedCards: true,
+    includeUnspecified: true,
   };
 }
 
 export function isAllWalletSources(value: WalletFilterSelection, options: WalletFilterOptions) {
   const selectedCards = new Set(value.cards.map(walletCardKey));
   return (
-    value.includeOther &&
+    value.includeUnspecified &&
     options.banks.every((bank) => value.banks.includes(bank)) &&
     options.cards.every((card) => selectedCards.has(walletCardKey(card)))
   );
@@ -30,12 +27,12 @@ export function isAllWalletSources(value: WalletFilterSelection, options: Wallet
 
 /** Nothing chosen: the sheet says “เลือกอย่างน้อย 1 รายการ” and cannot be applied. */
 export const hasNoWalletSource = (value: WalletFilterSelection) =>
-  !value.includeOther && value.banks.length === 0 && value.cards.length === 0;
+  !value.includeUnspecified && value.banks.length === 0 && value.cards.length === 0;
 
 /** “เลือกทั้งหมด”: clears everything when all is chosen, otherwise chooses all. */
 export function toggleAllWalletSources(value: WalletFilterSelection, options: WalletFilterOptions) {
   return isAllWalletSources(value, options)
-    ? { banks: [], cards: [], includeOther: false, includeDeletedCards: true }
+    ? { banks: [], cards: [], includeUnspecified: false }
     : selectAllWalletSources(options);
 }
 
@@ -76,7 +73,7 @@ export function walletFilterSections(
     {
       title: "อื่น ๆ",
       icon: "other",
-      rows: [{ key: "other", type: "other", label: "รายการที่ไม่ระบุบัญชี", selected: value.includeOther }],
+      rows: [{ key: "other", type: "other", label: "รายการที่ไม่ระบุบัญชี", selected: value.includeUnspecified }],
     },
   ];
   return sections.filter((section) => section.rows.length > 0);
@@ -97,5 +94,5 @@ export function toggleWalletRow(value: WalletFilterSelection, row: WalletFilterR
         ? value.cards.filter((card) => walletCardKey(card) !== walletCardKey(row.card))
         : [...value.cards, { ...row.card }],
     };
-  return { ...value, includeOther: !value.includeOther };
+  return { ...value, includeUnspecified: !value.includeUnspecified };
 }

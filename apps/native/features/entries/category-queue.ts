@@ -1,8 +1,7 @@
 import type { FinanceTransaction } from "../../types/finance";
 import { needsCategory, sourceLabel } from "../home/home-days";
 import { shortThaiDate } from "../home/period";
-import { bankDisplayName } from "../wallets/banks";
-import { walletCardLabel } from "../wallets/cards";
+import { entryWalletLabel } from "../wallets/entry-wallet";
 
 /**
  * The pending-category queue: the entries of one scope (today's pending link, one row, a Summary group) that wait for
@@ -49,11 +48,6 @@ export function queueEntryMeta(
   entry: Pick<FinanceTransaction, "bank" | "cardName" | "cardLast4" | "source" | "occurredOn">,
   today: string
 ) {
-  const wallet = entry.cardName?.trim()
-    ? walletCardLabel({ cardName: entry.cardName, cardLast4: entry.cardLast4 })
-    : entry.bank?.trim()
-      ? bankDisplayName(entry.bank)
-      : "ไม่ระบุบัญชี";
   const day = entry.occurredOn === today ? "วันนี้" : shortThaiDate(entry.occurredOn);
-  return `${wallet} · ${sourceLabel(entry.source)} · ${day}`;
+  return `${entryWalletLabel(entry)} · ${sourceLabel(entry.source)} · ${day}`;
 }
