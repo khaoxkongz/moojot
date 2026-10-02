@@ -5,21 +5,22 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GroupedList, IconButton } from "@/components/ui/controls";
+import { GroupedList, IconButton, MessageCard } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
-import { radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
+import { radius, touch, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planBudgets, type BudgetRow, type BudgetTarget } from "@/features/planning/plan";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { summaryMonth } from "@/features/summary/summary";
 import { useAppTheme } from "@/lib/use-app-theme";
-import type { RecurringRule } from "@/types/finance";
+import type { PeriodKey, RecurringRule } from "@/types/finance";
 import { getPeriodForDate, nextMonthOffset, periodKeyOffset } from "@/utils/dates";
 import { amountLabel, todayISO } from "@/utils/format";
+import { queryState } from "@/utils/query-state";
 
 const emptyList: never[] = [];
 
-const openBudgetForm = (params: { periodKey: string; target?: BudgetTarget; id?: string }) =>
+const openBudgetForm = (params: { periodKey: PeriodKey; target?: BudgetTarget; id?: string }) =>
   router.push({ pathname: "/budget-form", params });
 
 function AddButton({ label, onPress }: { label: string; onPress: () => void }) {
@@ -38,7 +39,7 @@ function AddButton({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-function BudgetLine({ row, periodKey }: { row: BudgetRow; periodKey: string }) {
+function BudgetLine({ row, periodKey }: { row: BudgetRow; periodKey: PeriodKey }) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const tone = { over: theme.danger, near: theme.accentText, ok: theme.success }[row.tone];
@@ -77,7 +78,7 @@ function BudgetLine({ row, periodKey }: { row: BudgetRow; periodKey: string }) {
   );
 }
 
-function OverallCard({ row, periodKey }: { row: BudgetRow | null; periodKey: string }) {
+function OverallCard({ row, periodKey }: { row: BudgetRow | null; periodKey: PeriodKey }) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   if (!row) {
@@ -196,13 +197,7 @@ export default function PlanScreen() {
   );
   const rules = rulesQuery.data ?? emptyList;
   const queries = [startDayQuery, budgetsQuery, rulesQuery, categoriesQuery, tagsQuery];
-  const ready = queries.every((query) => query.data !== undefined);
-  const pageError = !ready && queries.some((query) => query.data === undefined && query.error);
-  // Older data is on screen and a refresh failed; hidden while a retry is on its way.
-  const refreshError = ready && queries.some((query) => query.error && !query.isFetching);
-  const retryAll = () => {
-    for (const query of queries) if (query.isEnabled) void query.refetch();
-  };
+  const { ready, pageError, refreshError, retry: retryAll } = queryState(queries);
   const goBack = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
   return (
@@ -248,19 +243,13 @@ export default function PlanScreen() {
         {refreshError ? (
           <Pressable accessibilityRole="button" onPress={retryAll} style={styles.refreshErrorRow}>
             <Text style={styles.refreshError}>
-              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.retryText}>ลองอีกครั้ง</Text>
+              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.refreshRetry}>ลองอีกครั้ง</Text>
             </Text>
           </Pressable>
         ) : null}
 
         {pageError ? (
-          <View style={styles.messageCard}>
-            <Text style={styles.messageTitle}>โหลดแผนไม่สำเร็จ</Text>
-            <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-            <Pressable accessibilityRole="button" onPress={retryAll} style={styles.retry}>
-              <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-            </Pressable>
-          </View>
+          <MessageCard title="โหลดแผนไม่สำเร็จ" body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง" onRetry={retryAll} />
         ) : !ready ? (
           <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 40 }} />
         ) : (
@@ -439,18 +428,6 @@ function createStyles(theme: AppTheme) {
     ruleAmount: { color: theme.text, fontSize: 15, fontWeight: "500", fontVariant: ["tabular-nums"] },
     refreshErrorRow: { paddingHorizontal: 4, paddingBottom: 10 },
     refreshError: { color: theme.muted, fontSize: 13, lineHeight: 19 },
-    messageCard: {
-      marginTop: 12,
-      padding: 18,
-      borderRadius: radius.card,
-      backgroundColor: theme.surface,
-      alignItems: "center",
-      gap: 4,
-      ...raisedRing(theme),
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" },
-    retry: { minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 },
-    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    refreshRetry: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
   });
 }

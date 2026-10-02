@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Chip, IconButton, PillButton, SegmentedControl } from "@/components/ui/controls";
+import { Chip, IconButton, MessageCard, PillButton, SegmentedControl } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
 import { accentRing, radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
@@ -31,7 +31,8 @@ import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { Budget } from "@/types/finance";
 import { getPeriodForDate } from "@/utils/dates";
-import { amountLabel, toSatang, todayISO, typedAmount } from "@/utils/format";
+import { amountLabel, errorMessage, toSatang, todayISO, typedAmount } from "@/utils/format";
+import { queryState } from "@/utils/query-state";
 
 const targets: Array<{ value: BudgetTarget; label: string }> = [
   { value: "all", label: "รวมทุกหมวด" },
@@ -78,9 +79,11 @@ export default function BudgetFormScreen() {
   const budgetsQuery = useQuery({ ...planningQueryOptions.budgets(periodKey), enabled: isFocused });
   const categoriesQuery = useQuery({ ...categoriesQueryOptions.list("expense"), enabled: isFocused });
   const tagsQuery = useQuery({ ...categoriesQueryOptions.tags(), enabled: isFocused });
-  const queries = [startDayQuery, budgetsQuery, categoriesQuery, tagsQuery];
-  const loaded = queries.every((query) => query.data !== undefined);
-  const loadError = !loaded && queries.some((query) => query.data === undefined && query.error);
+  const {
+    ready: loaded,
+    pageError: loadError,
+    retry,
+  } = queryState([startDayQuery, budgetsQuery, categoriesQuery, tagsQuery]);
 
   const budgets = budgetsQuery.data ?? [];
   const editing = params.id ? (budgets.find((budget) => budget.id === params.id) ?? null) : null;
@@ -112,14 +115,27 @@ export default function BudgetFormScreen() {
 
   const close = () => (router.canGoBack() ? router.back() : router.replace("/plan"));
 
-  const save = async () => {
+  /** One save or delete at a time: shows it busy, and on failure keeps the form open with the reason above the button. */
+  const run = async (kind: "save" | "delete", work: () => Promise<void>) => {
     if (busyRef.current) return;
-    const invalid = draftError(draft);
-    if (invalid) return setError(invalid);
     busyRef.current = true;
-    setBusy("save");
+    setBusy(kind);
     setError(null);
     try {
+      await work();
+      close();
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      busyRef.current = false;
+      setBusy(null);
+    }
+  };
+
+  const save = () => {
+    const invalid = draftError(draft);
+    if (invalid) return setError(invalid);
+    return run("save", async () => {
       await actions.save({
         id: editing?.id,
         periodKey,
@@ -129,33 +145,18 @@ export default function BudgetFormScreen() {
         warningThresholdPercent: draft.warn,
       });
       toast.show({ message: editing ? "บันทึกงบแล้ว" : "ตั้งงบแล้ว หมูจะช่วยดูให้" });
-      close();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      busyRef.current = false;
-      setBusy(null);
-    }
+    });
   };
 
-  const remove = async () => {
-    if (!editing || busyRef.current) return;
-    busyRef.current = true;
-    setBusy("delete");
-    setError(null);
-    try {
+  const remove = () => {
+    if (!editing) return;
+    return run("delete", async () => {
       const deletionId = await actions.remove(editing.id);
       toast.show({
         message: "ลบงบแล้ว",
         action: { label: "เอากลับคืน", busyLabel: "กำลังเอากลับคืน…", run: () => actions.restore(deletionId) },
       });
-      close();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      busyRef.current = false;
-      setBusy(null);
-    }
+    });
   };
 
   const note = replaceNote(budgets, { id: editing?.id, ...draft });
@@ -182,26 +183,11 @@ export default function BudgetFormScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: 24 }]}
       >
         {loadError ? (
-          <View style={styles.messageCard}>
-            <Text style={styles.messageTitle}>โหลดงบไม่สำเร็จ</Text>
-            <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                for (const query of queries) if (query.data === undefined) void query.refetch();
-              }}
-              style={styles.retry}
-            >
-              <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-            </Pressable>
-          </View>
+          <MessageCard title="โหลดงบไม่สำเร็จ" body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง" onRetry={retry} />
         ) : !loaded ? (
           <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 40 }} />
         ) : missing ? (
-          <View style={styles.messageCard}>
-            <Text style={styles.messageTitle}>ไม่พบงบนี้แล้ว</Text>
-            <Text style={styles.messageBody}>งบนี้อาจถูกลบไปแล้ว กลับไปเลือกจากหน้าวางแผนอีกครั้ง</Text>
-          </View>
+          <MessageCard title="ไม่พบงบนี้แล้ว" body="งบนี้อาจถูกลบไปแล้ว กลับไปเลือกจากหน้าวางแผนอีกครั้ง" />
         ) : (
           <>
             <Text style={styles.periodLine}>{budgetPeriodLine(periodKey, startDay)}</Text>
@@ -398,18 +384,5 @@ function createStyles(theme: AppTheme) {
       backgroundColor: theme.background,
     },
     error: { marginBottom: 8, color: theme.danger, fontSize: 13, lineHeight: 19, textAlign: "center" },
-    messageCard: {
-      marginTop: 12,
-      padding: 18,
-      borderRadius: radius.card,
-      backgroundColor: theme.surface,
-      alignItems: "center",
-      gap: 4,
-      ...raisedRing(theme),
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" },
-    retry: { minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 },
-    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
   });
 }

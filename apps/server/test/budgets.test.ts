@@ -7,6 +7,7 @@ import type { AppRouterClient } from "@moojot/api/features/index";
 import { createAuth } from "@moojot/auth";
 import { createAppRuntime } from "@moojot/api/runtime";
 import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
+import { PlanningService } from "@moojot/api/features/planning/planning.service";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
 import { createBudgetActions } from "../../native/features/planning/budget-actions";
@@ -118,6 +119,38 @@ describe("Saving a budget", () => {
     ]);
   });
 
+  it("keeps an edited budget in its own month, refusing a different month", async () => {
+    const client = await signUp("edit-month@example.test");
+    const food = await client.planning.upsertBudget({
+      periodKey: month,
+      categoryId: "expense-food",
+      limitSatang: 300_000,
+    });
+
+    await expect(
+      client.planning.upsertBudget({ id: food.id, periodKey: "2026-11", categoryId: "expense-food", limitSatang: 1 })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await client.planning.listBudgets({ periodKey: "2026-11" })).toEqual([]);
+    expect(await client.planning.listBudgets({ periodKey: month })).toEqual([food]);
+  });
+
+  it("keeps the budget an edit replaced, so it can be brought back", async () => {
+    const client = await signUp("edit-replaced@example.test");
+    const food = await client.planning.upsertBudget({
+      periodKey: month,
+      categoryId: "expense-food",
+      limitSatang: 300_000,
+    });
+    const overall = await client.planning.upsertBudget({ periodKey: month, limitSatang: 1_000_000 });
+    await client.planning.upsertBudget({ id: food.id, periodKey: month, limitSatang: 800_000 });
+
+    // The replaced budget left an undo like a delete does: asking to delete it again finds that undo.
+    const { deletionId } = await client.planning.deleteBudget({ id: overall.id });
+    await client.planning.deleteBudget({ id: food.id });
+    expect(await client.planning.restoreBudget({ deletionId })).toEqual(overall);
+    expect(await client.planning.listBudgets({ periodKey: month })).toEqual([overall]);
+  });
+
   it("changes nothing when the edited budget is gone or belongs to someone else", async () => {
     const owner = await signUp("edit-owner@example.test");
     const other = await signUp("edit-other@example.test");
@@ -181,6 +214,53 @@ describe("Deleting and restoring a budget", () => {
     expect(await client.planning.listBudgets({ periodKey: month })).toEqual([]);
   });
 
+  it("answers two deletes sent at once with the same undo", async () => {
+    const client = await signUp("together@example.test");
+    // A few rounds, so the two requests really do meet inside their transactions at least once.
+    for (let round = 0; round < 5; round += 1) {
+      const budget = await client.planning.upsertBudget({ periodKey: month, limitSatang: 100_000 });
+      const [first, second] = await Promise.all([
+        client.planning.deleteBudget({ id: budget.id }),
+        client.planning.deleteBudget({ id: budget.id }),
+      ]);
+      expect(second).toEqual(first);
+      expect(await client.planning.restoreBudget(first)).toEqual(budget);
+      await client.planning.deleteBudget({ id: budget.id });
+    }
+  });
+
+  it("reports a delete as done even when clearing out old undos fails afterwards", async () => {
+    const client = await signUp("prune@example.test");
+    const budget = await client.planning.upsertBudget({ periodKey: month, limitSatang: 100_000 });
+    const { id: userId } = await database.db.user.findFirstOrThrow({ where: { email: "prune@example.test" } });
+    // The same database, except that removing old deletions (the clean-up after a delete commits) always fails.
+    const failingCleanUp = new Proxy(database.db, {
+      get(target, property) {
+        if (property === "financeDeletion") {
+          return { deleteMany: () => Promise.reject(new Error("clean-up failed")) };
+        }
+        const value: unknown = Reflect.get(target, property);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    const flakyRuntime = createAppRuntime(
+      failingCleanUp,
+      Layer.succeed(GeminiProvider, { extract: () => Effect.die("Unused test provider") })
+    );
+    try {
+      const deletion = await flakyRuntime.runPromise(
+        Effect.gen(function* () {
+          const planning = yield* PlanningService;
+          return yield* planning.deleteBudget(userId, { id: budget.id });
+        })
+      );
+      expect(await client.planning.listBudgets({ periodKey: month })).toEqual([]);
+      expect(await client.planning.restoreBudget(deletion)).toEqual(budget);
+    } finally {
+      await flakyRuntime.dispose();
+    }
+  });
+
   it("refuses a restore when a new budget took the target, keeping the new one", async () => {
     const client = await signUp("conflict@example.test");
     const old = await client.planning.upsertBudget({
@@ -209,6 +289,17 @@ describe("Deleting and restoring a budget", () => {
     const budget = await client.planning.upsertBudget({ periodKey: month, tagId: tag.id, limitSatang: 50_000 });
     const { deletionId } = await client.planning.deleteBudget({ id: budget.id });
     await client.ledger.deleteTag({ id: tag.id });
+
+    await expect(client.planning.restoreBudget({ deletionId })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(await client.planning.listBudgets({ periodKey: month })).toEqual([]);
+  });
+
+  it("refuses a restore when the budget's category is gone, instead of bringing back a budget for nothing", async () => {
+    const client = await signUp("category-gone@example.test");
+    const pets = await client.ledger.createCategory({ name: "สัตว์เลี้ยง", kind: "expense" });
+    const budget = await client.planning.upsertBudget({ periodKey: month, categoryId: pets.id, limitSatang: 50_000 });
+    const { deletionId } = await client.planning.deleteBudget({ id: budget.id });
+    await client.ledger.deleteCategory({ id: pets.id });
 
     await expect(client.planning.restoreBudget({ deletionId })).rejects.toMatchObject({ code: "CONFLICT" });
     expect(await client.planning.listBudgets({ periodKey: month })).toEqual([]);

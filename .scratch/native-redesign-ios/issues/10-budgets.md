@@ -6,7 +6,7 @@
 
 **Status:** ready-for-human
 
-**Done in:** 7dd6d6e feat(budgets): plan and budget form from the design, with delete and server-side undo
+**Done in:** 7dd6d6e feat(budgets): plan and budget form from the design, with delete and server-side undo; c0dc775 fix(budgets): undoable replace on edit, safe concurrent delete, review clean-ups
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 

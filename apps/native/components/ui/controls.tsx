@@ -467,3 +467,36 @@ export function InfoBox({
     </View>
   );
 }
+
+/**
+ * A screen that could not load, or a record that is gone: a centered card with a title, a line of body and, when the
+ * load can be tried again, a "ลองอีกครั้ง" link.
+ */
+export function MessageCard({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
+  const theme = useAppTheme();
+  return (
+    <View
+      style={{
+        marginTop: 12,
+        padding: 18,
+        borderRadius: radius.card,
+        backgroundColor: theme.surface,
+        alignItems: "center",
+        gap: 4,
+        ...raisedRing(theme),
+      }}
+    >
+      <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
+      <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" }}>{body}</Text>
+      {onRetry ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={{ minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 }}
+        >
+          <Text style={{ color: theme.accentText, fontSize: 14, lineHeight: 20 }}>ลองอีกครั้ง</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}

@@ -16,8 +16,10 @@ const NOT_FOUND = "ไม่พบงบนี้แล้ว อาจถูก
 function failure(action: string, cause: unknown, conflict?: string): BudgetActionError {
   if (cause instanceof ORPCError) {
     if (cause.code === "NOT_FOUND") return new BudgetActionError(NOT_FOUND, { cause });
-    if (cause.code === "CONFLICT" && conflict) return new BudgetActionError(conflict, { cause });
-    if (cause.code === "BAD_REQUEST" || cause.code === "CONFLICT")
+    // Without a reason of its own, CONFLICT means another request changed the same budget at that moment.
+    if (cause.code === "CONFLICT")
+      return new BudgetActionError(conflict ?? `${action}ไม่สำเร็จ งบนี้เพิ่งถูกเปลี่ยนจากอีกที่ ลองอีกครั้ง`, { cause });
+    if (cause.code === "BAD_REQUEST")
       return new BudgetActionError(`${action}ไม่สำเร็จ ข้อมูลบางอย่างไม่ถูกต้อง ลองแก้แล้วบันทึกอีกครั้ง`, { cause });
     if (cause.code === "UNAUTHORIZED") return new BudgetActionError(`${action}ไม่สำเร็จ ลองเข้าสู่ระบบอีกครั้ง`, { cause });
     return new BudgetActionError(`${action}ไม่สำเร็จ ระบบมีปัญหา ลองอีกครั้ง`, { cause });
