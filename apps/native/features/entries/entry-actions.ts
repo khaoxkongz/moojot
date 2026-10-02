@@ -44,6 +44,15 @@ export function createEntryActions(ledger: LedgerClient) {
       }
     },
 
+    /** The pending-category queue's pick: only the category changes. */
+    async setCategory(id: string, categoryId: string): Promise<FinanceTransaction> {
+      try {
+        return await ledger.updateTransaction({ id, patch: { categoryId } });
+      } catch (cause) {
+        throw failure("เลือกหมวด", cause);
+      }
+    },
+
     async remove(id: string): Promise<void> {
       let deleted: boolean;
       try {

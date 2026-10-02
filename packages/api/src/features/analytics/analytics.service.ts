@@ -38,7 +38,8 @@ function matchesWallet(transaction: WalletFields, filter?: WalletFilter): boolea
   ) {
     return true;
   }
-  return filter.includeOther && (transaction.source === "manual" || (!cardName && (!bank || Boolean(cardLast4))));
+  // Same meaning as the Ledger filter (`walletWhere`): no bank or card chosen, manual or not.
+  return filter.includeOther && !cardName && (!bank || Boolean(cardLast4));
 }
 
 function summarize(from: string, to: string, transactions: Array<{ kind: string; amountSatang: bigint }>) {

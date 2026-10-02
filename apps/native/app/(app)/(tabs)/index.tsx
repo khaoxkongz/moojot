@@ -217,7 +217,11 @@ export default function HomeScreen() {
     setPeriodSelection({ signature, offset: 0 });
   }
   const offset = periodSelection.signature === signature ? periodSelection.offset : 0;
-  const period = selectedHomePeriod(dayKey, offset, periodMode, monthStartQuery.data ?? 1, weekStart, fortnightAnchor);
+  const period = selectedHomePeriod(dayKey, offset, periodMode, {
+    monthStartDay: monthStartQuery.data ?? 1,
+    weekStart,
+    fortnightAnchor,
+  });
   const periodLabel = period.label;
 
   const transactionsQuery = useQuery({

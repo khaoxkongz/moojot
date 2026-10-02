@@ -65,6 +65,8 @@ export interface TransactionFilters {
   source?: TransactionSource;
   search?: string;
   walletFilter?: WalletFilterSelection;
+  /** "occurred" (default): newest day first. "recorded": the entry recorded last first. */
+  sort?: "occurred" | "recorded";
   limit?: number;
   offset?: number;
 }
