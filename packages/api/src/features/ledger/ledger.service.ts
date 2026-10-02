@@ -181,10 +181,11 @@ async function listTransactionsFrom(db: Database, userId: string, filters: Trans
   const where = await transactionWhere(db, userId, filters);
   const rows = await db.financeTransaction.findMany({
     where,
+    // `id` last makes the order total, so paging by offset never repeats or drops entries recorded at the same moment.
     orderBy:
       filters.sort === "recorded"
         ? [{ createdAt: "desc" }, { id: "desc" }]
-        : [{ occurredOn: "desc" }, { createdAt: "desc" }],
+        : [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     ...(!unlimited ? { take: filters.limit ?? 200, skip: filters.offset ?? 0 } : {}),
   });
   return rows.map(mapTransaction);

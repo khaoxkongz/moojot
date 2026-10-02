@@ -122,6 +122,35 @@ describe("home day list", () => {
       ["2026-09-29", 1, 5000],
     ]);
   }, 60_000);
+
+  it("pages entries recorded at the same moment in one fixed order, so no page repeats or drops one", async () => {
+    const client = await signUp("same-moment@example.test");
+    const user = await database.db.user.findFirstOrThrow({ where: { email: "same-moment@example.test" } });
+    const createdAt = new Date("2026-09-30T05:00:00.000Z");
+    // Stored in ascending id order: without a final tiebreaker the database is free to return them in any order.
+    const ids = Array.from({ length: 6 }, (_, index) => `00000000-0000-4000-8000-00000000000${index}`);
+    await database.db.financeTransaction.createMany({
+      data: ids.map((id) => ({
+        id,
+        userId: user.id,
+        kind: "expense",
+        amountSatang: 100n,
+        occurredOn: today,
+        title: id,
+        source: "manual",
+        createdAt,
+        updatedAt: createdAt,
+        dedupeIdentity: `id:${id}`,
+        recurringIdentity: `id:${id}`,
+      })),
+    });
+
+    const pages = [];
+    for (let offset = 0; offset < ids.length; offset += 2) {
+      pages.push(...(await client.ledger.listTransactions({ from: today, to: today, limit: 2, offset })));
+    }
+    expect(pages.map((row) => row.id)).toEqual([...ids].reverse());
+  });
 });
 
 describe("pending-category queue", () => {
