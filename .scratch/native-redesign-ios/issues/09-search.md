@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
@@ -12,13 +12,24 @@
 
 **Why blocked:** ใช้ editor และ pending queue/filter identity ที่พร้อมผ่านงานหน้าแรก
 
-- [ ] เอาขอบเขตสองเดือนออก มี pagination หรือ aggregate ที่ให้ counts/expense total ของผลทั้งหมดถูกต้องเมื่อเกิน 1,000 แถว (stories 64, 69)
-- [ ] จับ title/note/category/Thai bank/card/amount ตามพฤติกรรมข้อความ baht ในต้นแบบ รวม comma/decimal ไม่เปลี่ยนเป็น exact-only เอง (story 65)
-- [ ] Grouped day/newest order, matched highlights, initial focus/clear, examples/no-results และ recent add/remove ทำงานจริง (stories 66, 67)
-- [ ] ผล pending ไปคิวและผลอื่นไป editor; prefilled query รองรับ exact card name+last4 scope เพื่อใช้จากหน้าบัตรภายหลัง (story 68)
-- [ ] คำขอเก่าหรือ error ไม่ทับผลของคำล่าสุด และ recovery ไม่ทำคำค้นหาย
+- [x] เอาขอบเขตสองเดือนออก มี pagination หรือ aggregate ที่ให้ counts/expense total ของผลทั้งหมดถูกต้องเมื่อเกิน 1,000 แถว (stories 64, 69)
+- [x] จับ title/note/category/Thai bank/card/amount ตามพฤติกรรมข้อความ baht ในต้นแบบ รวม comma/decimal ไม่เปลี่ยนเป็น exact-only เอง (story 65)
+- [x] Grouped day/newest order, matched highlights, initial focus/clear, examples/no-results และ recent add/remove ทำงานจริง (stories 66, 67)
+- [x] ผล pending ไปคิวและผลอื่นไป editor; prefilled query รองรับ exact card name+last4 scope เพื่อใช้จากหน้าบัตรภายหลัง (story 68)
+- [x] คำขอเก่าหรือ error ไม่ทับผลของคำล่าสุด และ recovery ไม่ทำคำค้นหาย
 - [ ] ตรวจ authenticated query contract กับ >1,000 rows และหลายใบชื่อเดียวกัน พร้อมเดิน search→edit/queue บน iOS
 
 ## Comments
 
 **จากงาน 04 (review):** รายการเก็บธนาคารเป็น identity แบบที่สลิปใช้ ("KBank", "SCB", "KTB", "BBL", "Krungsri", "ttb", "TrueMoney") และแสดงชื่อไทยด้วย `bankDisplayName` (`apps/native/features/wallets/banks.ts`) แถวเก่าอาจเป็นชื่อไทย ("กสิกรไทย") ตอนนี้ server ค้น `bank contains search` ตรงตัว ค้น "กสิกร" จึงไม่เจอแถว "KBank" งานนี้ต้องค้นด้วยทุกชื่อของธนาคารเดียวกัน (เช่นแปลงคำค้นเป็นกลุ่ม identity ก่อนส่ง หรือย้ายตาราง alias ไปไว้ที่ใช้ร่วมกับ server)
+
+**จากงาน 09 (agent, 2026-10-03):** โค้ด tests และการเดินบน simulator เสร็จแล้ว (ดู [notes/09-search.md](../notes/09-search.md)) ในข้อสุดท้าย ส่วน API (มากกว่า 1,000 แถว และบัตร KTC สองใบชื่อเดียวกัน) ผ่านใน `apps/server/test/search.test.ts` และเดิน search→edit/queue บน simulator แล้วทั้งสองธีม ข้อนี้ยังเปิดอยู่จนกว่าจะตรวจบน iPhone 13 Pro (Expo Go หรือ dev build) สิ่งที่ต้องตรวจ:
+
+1. หน้าแรก → แตะแว่นขยาย: ช่องค้นหาได้ focus และคีย์บอร์ดขึ้นเอง เห็นหมู ข้อความ "หมูค้นให้ทุกเดือน" และชิป Grab / อาหาร / เงินเดือน
+2. พิมพ์จำนวนเงินของรายการที่มีอยู่แบบมี comma (เช่น "1,250") และไม่มี comma: เจอรายการจากหลายเดือน ยอดเงินมีพื้นสีส้ม บรรทัดบน "พบ N รายการ · รายจ่ายรวม … ฿" ตรงกับที่คาด
+3. พิมพ์ "กสิกร" แล้วพิมพ์ "kbank": เจอรายการของกสิกรไทยทั้งที่มาจากสลิปและจดเอง
+4. แตะผลที่ "รอเลือกหมวด": เปิดชีตเลือกหมวดของรายการนั้น เลือกหมวดแล้วกลับมาที่ผลค้นหาเดิม แถวเปลี่ยนเป็นหมวดที่เลือก
+5. แตะผลอื่น: เปิดหน้าแก้ไข ปิดแล้วกลับมาที่ผลค้นหาเดิม คำค้นยังอยู่
+6. กด × ในช่อง: คำที่ค้นไปขึ้นใน "ค้นหาล่าสุด" แตะคำนั้นค้นได้อีก กด × ท้ายแถวลบได้ ปิดแอปเปิดใหม่แล้วรายการล่าสุดยังตรง
+7. ปิด Wi-Fi/เน็ต แล้วพิมพ์คำใหม่: ขึ้น "ค้นหาไม่สำเร็จ" คำค้นยังอยู่ เปิดเน็ตแล้วกด "ลองอีกครั้ง" ครั้งเดียว: ผลโหลดขึ้น
+8. ดูทั้งธีมสว่างและมืด ว่าตัวอักษร ระยะ และพื้นสีของคำที่ตรงอ่านง่าย

@@ -13,6 +13,8 @@ import {
 } from "../../shared/finance/common";
 import { getPeriodBounds, getPeriodForDate, shiftPeriodKey, todayISO } from "../../shared/finance/dates";
 import { ledgerInputs, transactionFiltersSchema } from "./ledger.schema";
+import { bankMatchesSearch } from "../../shared/finance/banks";
+import { amountSearchDigits, matchesAmountSearch } from "../../shared/finance/search-terms";
 import {
   FinanceBadRequestError,
   FinanceConflictError,
@@ -153,7 +155,7 @@ export async function transactionWhere(
   if (filters.walletFilter) where.AND = [walletWhere(filters.walletFilter)];
   const search = filters.search?.trim();
   if (search) {
-    const [categories, tags] = await Promise.all([
+    const [categories, tags, banks] = await Promise.all([
       db.financeCategory.findMany({
         where: { userId, name: { contains: search, mode: "insensitive" } },
         select: { id: true },
@@ -162,14 +164,33 @@ export async function transactionWhere(
         where: { userId, name: { contains: search, mode: "insensitive" } },
         select: { id: true },
       }),
+      db.financeTransaction.findMany({
+        where: { userId, bank: { not: null } },
+        distinct: ["bank"],
+        select: { bank: true },
+      }),
     ]);
+    // Entries store a bank's identity ("KBank") and older rows its Thai name, so the term matches every spelling of
+    // the bank it names, not only the text typed.
+    const bankNames = banks.flatMap((row) => (row.bank && bankMatchesSearch(row.bank, search) ? [row.bank] : []));
     const or: Prisma.FinanceTransactionWhereInput[] = [
       { title: { contains: search, mode: "insensitive" } },
       { note: { contains: search, mode: "insensitive" } },
       { bank: { contains: search, mode: "insensitive" } },
+      ...(bankNames.length ? [{ bank: { in: bankNames } }] : []),
       { cardName: { contains: search, mode: "insensitive" } },
       { cardLast4: { contains: search, mode: "insensitive" } },
     ];
+    if (amountSearchDigits(search) !== null) {
+      // Substring matching on the written amount is not a query MongoDB can run on the stored integer, so the amounts
+      // are read and matched here, the same way the app highlights them.
+      const amounts = await db.financeTransaction.findMany({
+        where: { userId, ...activeTransactionWhere },
+        select: { id: true, amountSatang: true },
+      });
+      const ids = amounts.filter((row) => matchesAmountSearch(search, Number(row.amountSatang))).map((row) => row.id);
+      if (ids.length) or.push({ id: { in: ids } });
+    }
     if (categories.length) or.push({ categoryId: { in: categories.map((row) => row.id) } });
     if (tags.length) or.push({ tagIds: { hasSome: tags.map((row) => row.id) } });
     where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), { OR: or }];

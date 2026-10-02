@@ -1,0 +1,176 @@
+# Ticket 09 search states, named <NN>-app-<state>. It saves two entries the search finds by amount: 7,319 baht in
+# อาหาร with no bank, and 73,190 baht at KBank with no category. It opens the pending one in the queue from search, the
+# other in the editor, walks recent searches, a Thai bank name, no results and a card-scoped link, then deletes both.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- waitForAnimationToEnd
+# 7,319 ฿ อาหาร, no bank.
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- tapOn: "7"
+- tapOn: "3"
+- tapOn: "1"
+- tapOn: "9"
+- tapOn: "เสร็จ"
+- extendedWaitUntil:
+    visible: "หมวด อาหาร"
+    timeout: 10000
+- tapOn: "หมวด อาหาร"
+- waitForAnimationToEnd
+- tapOn: "บันทึก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 15000
+- waitForAnimationToEnd
+# 73,190 ฿ at KBank, no category.
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- tapOn: "7"
+- tapOn: "3"
+- tapOn: "1"
+- tapOn: "9"
+- tapOn: "0"
+- tapOn: "เสร็จ"
+- extendedWaitUntil:
+    visible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "ปิด"
+- extendedWaitUntil:
+    notVisible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "กสิกรไทย"
+- tapOn: "กสิกรไทย"
+- tapOn: "บันทึก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 15000
+- waitForAnimationToEnd
+# Search opens with the field focused, recent searches and examples.
+- tapOn: "ค้นหารายการ"
+- extendedWaitUntil:
+    visible: "หมูค้นให้ทุกเดือน"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-start
+# By amount, with a comma: both entries, the amount highlighted, count and expense total above.
+- inputText: "7,319"
+- extendedWaitUntil:
+    visible: "พบ .* รายการ.*"
+    timeout: 15000
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-amount
+# The pending one opens the queue for itself.
+- tapOn: ".*73,190 บาท รอเลือกหมวด.*"
+- extendedWaitUntil:
+    visible: "แก้ไขรายการนี้"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-queue
+- tapOn: "หมวด อาหาร"
+- extendedWaitUntil:
+    notVisible: "แก้ไขรายการนี้"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ".*73,190 บาท อาหาร · กสิกรไทย.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-after-queue
+# Another result opens the editor.
+- tapOn: ".*7,319 บาท อาหาร · ไม่ระบุบัญชี.*"
+- extendedWaitUntil:
+    visible: "ตัวเลือกเพิ่มเติม"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-edit
+- tapOn: "ปิดหน้าจดรายการ"
+- extendedWaitUntil:
+    visible: "ล้างคำค้น"
+    timeout: 10000
+- waitForAnimationToEnd
+# Clearing shows the term among recent searches.
+- tapOn: "ล้างคำค้น"
+- extendedWaitUntil:
+    visible: "ลบคำค้น 7,319"
+    timeout: 10000
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-recent
+# A Thai bank name finds the entry stored as KBank.
+- tapOn: "ค้นหารายการ"
+- inputText: "กสิกร"
+- extendedWaitUntil:
+    visible: ".*73,190 บาท อาหาร · กสิกรไทย.*"
+    timeout: 15000
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-bank
+- tapOn: "ล้างคำค้น"
+# No results.
+- inputText: "หมูไม่เคยจดคำนี้"
+- extendedWaitUntil:
+    visible: "ไม่พบ .*"
+    timeout: 15000
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-none
+- tapOn: "ล้างคำค้น"
+# Remove the recent term again.
+- hideKeyboard
+- tapOn: "ลบคำค้น 7,319"
+- extendedWaitUntil:
+    notVisible: "ลบคำค้น 7,319"
+    timeout: 10000
+# Clean up: delete both entries from their search results.
+- tapOn: "ค้นหารายการ"
+- inputText: "7319"
+- extendedWaitUntil:
+    visible: "พบ .* รายการ.*"
+    timeout: 15000
+- hideKeyboard
+- repeat:
+    while:
+      visible: ".*(7,319 บาท อาหาร · ไม่ระบุบัญชี|73,190 บาท (อาหาร|รอเลือกหมวด) · กสิกรไทย).*"
+    commands:
+      - tapOn:
+          text: ".*(7,319 บาท อาหาร · ไม่ระบุบัญชี|73,190 บาท (อาหาร|รอเลือกหมวด) · กสิกรไทย).*"
+          retryTapIfNoChange: true
+      - runFlow:
+          when:
+            visible: "แก้ไขรายการนี้"
+          commands:
+            - tapOn: "แก้ไขรายการนี้"
+      - extendedWaitUntil:
+          visible: "ตัวเลือกเพิ่มเติม"
+          timeout: 10000
+      - tapOn: "ตัวเลือกเพิ่มเติม"
+      - tapOn: ".*ลบรายการ"
+      - extendedWaitUntil:
+          visible: "(พบ|ไม่พบ) .*"
+          timeout: 10000
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd
+# A card's “ดูทั้งหมด” (ticket 19) will open search on one card: name and last four.
+- tapOn: "กลับหน้าแรก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- openLink: "moojot://search?q=KTC&cardName=KTC&cardLast4=4821"
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible: "ค้นทุกบัญชี"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-card
