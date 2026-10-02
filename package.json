@@ -43,6 +43,7 @@
     "format": "vp fmt",
     "staged": "vp staged",
     "hooks:setup": "vp config --no-agent",
+    "setup:worktree": "node scripts/setup-worktree.mjs",
     "prepare": "vp config --no-agent",
     "dev:native": "vp run --filter native dev",
     "dev:web": "vp run --filter web dev",

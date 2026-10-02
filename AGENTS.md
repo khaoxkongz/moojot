@@ -19,7 +19,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 ## Review Checklist
 
-- [ ] Run `vp install` after pulling remote changes and before getting started.
+- [ ] Run `vp install` after pulling remote changes and before getting started. In a fresh git worktree, run `vp run setup:worktree` instead: it also copies the gitignored `.env` files from the main checkout.
 - [ ] Run `vp check` and `vp test` to format, lint, type check and test changes.
 - [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.

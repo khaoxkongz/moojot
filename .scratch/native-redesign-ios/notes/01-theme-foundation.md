@@ -16,7 +16,7 @@
 
 ## Running on the iOS simulator (worked from a fresh worktree)
 
-- Fresh worktree needs `vp install`, then Prisma client for check-types: `DATABASE_URL="mongodb://127.0.0.1:27017/placeholder" vp run db:generate` inside `packages/db`.
+- Fresh worktree: `vp run setup:worktree` (copies the `.env` files, installs, and the install generates the Prisma client).
 - `expo-dev-client` is installed, so `expo start --ios` looks for a dev build. Use Expo Go explicitly: `EXPO_PUBLIC_SERVER_URL=http://localhost:3000 CI=1 npx expo start --go --port 8099` in `apps/native`, then `xcrun simctl openurl booted exp://127.0.0.1:8099` (first openurl may time out while Expo Go launches; it still opens).
 - Skip Expo Go's dev-menu onboarding sheet: `xcrun simctl spawn booted defaults write host.exp.Exponent EXDevMenuIsOnboardingFinished -bool YES`.
 - No tap automation (no idb/axe), so only signed-out screens were captured. Device theme: `xcrun simctl ui booted appearance dark|light`.
