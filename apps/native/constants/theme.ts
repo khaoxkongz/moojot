@@ -61,12 +61,18 @@ export const radius = {
   sheet: 24,
   tabBar: 17,
   input: 14,
+  dialog: 20,
+  /** Top corners of the amount keypad panel. */
+  keypad: 20,
+  toast: 12,
+  key: 12,
   pill: 999,
 } as const;
 
 /** Side padding, card padding and the minimum touch sizes from the handoff. */
 export const space = { side: 16, card: 16, section: 22, chipGap: 8 } as const;
-export const touch = { min: 44, button: 52, row: 60 } as const;
+/** `formRow` is the 64-tall labelled row of a form (entry editor); `dialogButton` the 46-tall pair in dialogs. */
+export const touch = { min: 44, button: 52, row: 60, formRow: 64, dialogButton: 46 } as const;
 
 /** Cards have no drop shadow: they use `raisedRing`. Shadows are only for floating things. */
 export const shadow = {
@@ -74,11 +80,17 @@ export const shadow = {
   card: { boxShadow: "0 8px 28px rgba(0, 0, 0, 0.08)" } as const,
   float: { boxShadow: "0 6px 16px rgba(45, 45, 43, 0.22)" } as const,
   toast: { boxShadow: "0 8px 24px rgba(0, 0, 0, 0.18)" } as const,
-  dialog: { boxShadow: "0 10px 30px rgba(0, 0, 0, 0.22)" } as const,
+  /** Centered dialogs (calendar, exit confirmation). */
+  dialog: { boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25)" } as const,
+  /** Panel that slides up from the bottom edge (amount keypad). */
+  keypad: { boxShadow: "0 -8px 28px rgba(0, 0, 0, 0.14)" } as const,
   segment: { boxShadow: "0 1px 3px rgba(0, 0, 0, 0.14)" } as const,
 };
 
 export const raisedRing = (theme: AppTheme) => ({ boxShadow: `inset 0 0 0 1px ${theme.raised}` }) as const;
+/** Small pop-up menu (the editor's ⋮ menu): soft drop shadow plus a 1px `raised` outline. */
+export const menuShadow = (theme: AppTheme) =>
+  ({ boxShadow: `0 10px 30px rgba(0, 0, 0, 0.18), 0 0 0 1px ${theme.raised}` }) as const;
 export const accentRing = (theme: AppTheme) => ({ boxShadow: `inset 0 0 0 2px ${theme.accent}` }) as const;
 
 export function navigationTheme(mode: AppThemeMode) {

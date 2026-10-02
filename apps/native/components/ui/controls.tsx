@@ -102,7 +102,7 @@ export function IconButton({
 
 /**
  * The 52-tall pill button. It is never greyed out: with missing input the screen explains what to fix.
- * While `busy` it shows `busyLabel` and ignores taps, so one tap saves once.
+ * While `busy` it shows `busyLabel`, dims to 60% and ignores taps, so one tap saves once.
  */
 export function PillButton({
   label,
@@ -140,7 +140,7 @@ export function PillButton({
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: variant === "primary" ? theme.accent : theme.raised,
-          opacity: pressed && !busy ? 0.82 : 1,
+          opacity: busy ? 0.6 : pressed ? 0.84 : 1,
         },
         style,
       ]}
@@ -214,12 +214,14 @@ export function SegmentedControl<T extends string>({
                 borderRadius: 9,
                 alignItems: "center",
                 justifyContent: "center",
-                paddingHorizontal: 8,
+                paddingHorizontal: 4,
               },
               selected && { backgroundColor: theme.surface, ...shadow.segment },
             ]}
           >
-            <Text style={{ color: selected ? theme.text : theme.muted, fontSize: 15, textAlign: "center" }}>
+            <Text
+              style={{ color: selected ? theme.text : theme.muted, fontSize: 14, lineHeight: 20, textAlign: "center" }}
+            >
               {option.label}
             </Text>
           </Pressable>
@@ -349,6 +351,26 @@ export function GroupedList({ children, style }: { children: ReactNode; style?: 
   );
 }
 
+/** The 36px `raised` circle at the start of a grouped row, with an icon or an emoji. */
+export function RowIcon({ icon, emoji }: { icon?: IconName; emoji?: string }) {
+  const theme = useAppTheme();
+  return (
+    <View
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: theme.raised,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {emoji ? <Text style={{ fontSize: 18 }}>{emoji}</Text> : null}
+      {!emoji && icon ? <MaterialCommunityIcons name={icon} size={19} color={theme.text} /> : null}
+    </View>
+  );
+}
+
 export function GroupedRow({
   title,
   sub,
@@ -358,6 +380,7 @@ export function GroupedRow({
   onPress,
   chevron = Boolean(onPress),
   trailing,
+  minHeight = touch.row,
 }: {
   title: string;
   sub?: string;
@@ -367,25 +390,13 @@ export function GroupedRow({
   onPress?: () => void;
   chevron?: boolean;
   trailing?: ReactNode;
+  /** `touch.row` (60) by default; forms use `touch.formRow` (64). */
+  minHeight?: number;
 }) {
   const theme = useAppTheme();
   const content = (
     <>
-      {icon || emoji ? (
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: theme.raised,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {emoji ? <Text style={{ fontSize: 18 }}>{emoji}</Text> : null}
-          {!emoji && icon ? <MaterialCommunityIcons name={icon} size={19} color={theme.text} /> : null}
-        </View>
-      ) : null}
+      {icon || emoji ? <RowIcon icon={icon} emoji={emoji} /> : null}
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
         {sub ? <Text style={[subLine, { color: theme.muted }]}>{sub}</Text> : null}
@@ -396,7 +407,7 @@ export function GroupedRow({
     </>
   );
   const rowStyle: ViewStyle = {
-    minHeight: touch.row,
+    minHeight,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",

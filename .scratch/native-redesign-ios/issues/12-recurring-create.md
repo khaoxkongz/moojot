@@ -20,3 +20,7 @@
 - [ ] ขยาย schedule representation ให้รองรับผลมีผลครั้งถัดไปและช่วงหยุดในงานถัดไป โดยรักษา callers/กฎเดิมให้ทำงานได้
 - [ ] กฎที่ active สร้างวันที่ถึงกำหนดเมื่อกลับเข้าแอปพร้อมทำงาน ภายใน start/end ไม่ถือ app inactivity เป็น pause
 - [ ] ตรวจ API generation/dedupe/fixtures leap month และ editor→rule→generated entry บน iOS
+
+## Comments
+
+**จากงาน 04 (review):** "จดซ้ำล่วงหน้า" ใน editor ส่ง params `cardName` และ `cardLast4` ไป `/recurring-form` แล้ว (พร้อม kind/amount/title/note/occurredOn/categoryId/tagIds/bank) แต่ฟอร์มและ schema ของกฎยังไม่มีบัตร งานนี้ต้องอ่านสอง params นี้และเก็บในกฎ ธนาคารส่งเป็น identity (เช่น "KBank") ใช้ `bankDisplayName` แสดง

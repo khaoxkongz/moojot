@@ -18,3 +18,7 @@
 - [ ] บัตรชื่อเดียวกันแต่ last4 ต่างกันไม่รวมเป็นใบเดียว; ไม่ระบุและไม่มีบัตรไม่ขวางการจดธนาคารหรือรายการทั่วไป
 - [ ] จดรายการที่ใช้บัตรแล้ว detail/query คืน card identity เดิมครบ
 - [ ] ตรวจ persistence/ownership/validation และเพิ่มบัตร→จดรายการ→เปิดใหม่บน iOS โดยไม่มีงานยอดหนี้หรือชำระบัตร
+
+## Comments
+
+**จากงาน 04 (review):** ชิป "เพิ่มบัตร" ใน editor ตอนนี้ `router.push({ pathname: "/settings/cards", params: { from: "entry" } })` และหน้าบัตรที่เปิดด้วย `from=entry` จะ `router.back()` กลับ editor เดิมแทนการเปิด `/entry` ซ้อน งานนี้ควรแทนที่ด้วย flow เพิ่มบัตรจริง (ชื่อ + เลขท้าย) ที่จบแล้วกลับ editor พร้อมเลือกบัตรใหม่ให้ draft (`selectEntrySource`) ใช้ `walletCardKey` จาก `features/wallets/cards.ts` เป็น identity ของบัตร

@@ -1,4 +1,4 @@
-import type { FinanceTransaction, TransactionKind } from "@/types/finance";
+import type { FinanceTransaction, TransactionKind } from "../types/finance";
 
 export function formatBaht(amountSatang: number, digits = 2) {
   return (amountSatang / 100).toLocaleString("th-TH", {
@@ -29,13 +29,13 @@ export function todayISO() {
 
 export function isValidISODate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [y, m, d] = value.split("-").map(Number);
+  const [y = 0, m = 0, d = 0] = value.split("-").map(Number);
   const date = new Date(y, m - 1, d);
   return date.getFullYear() === y && date.getMonth() + 1 === m && date.getDate() === d;
 }
 
 export function thaiDate(iso: string, options?: Intl.DateTimeFormatOptions) {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(
     "th-TH",
     options ?? { day: "numeric", month: "short", year: "numeric" }

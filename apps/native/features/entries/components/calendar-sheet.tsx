@@ -1,11 +1,22 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Modal, Pressable, View, type TextStyle } from "react-native";
 
+import { IconButton } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
+import { radius, shadow, touch } from "@/constants/theme";
 import { fromISO, longMonths, toISO } from "@/features/entries/date";
-import { useEntryStyles } from "@/features/entries/entry-styles";
+import { useAppTheme } from "@/lib/use-app-theme";
 import { todayISO } from "@/utils/format";
 
+const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+/** Each day is a 40-tall stadium as wide as its column. */
+const DAY_HEIGHT = 40;
+
+/**
+ * “เลือกวันที่จด”: the centered date dialog from the prototype (`aria-label="เลือกวันที่จด"`). Days after today are
+ * greyed and cannot be chosen, the next-month arrow dims at the current month, and “วันนี้” picks today.
+ */
 export function CalendarSheet({
   visible,
   value,
@@ -17,7 +28,11 @@ export function CalendarSheet({
   onSelect: (value: string) => void;
   onClose: () => void;
 }) {
-  return visible ? <CalendarContents value={value} onSelect={onSelect} onClose={onClose} /> : null;
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {visible ? <CalendarContents value={value} onSelect={onSelect} onClose={onClose} /> : null}
+    </Modal>
+  );
 }
 
 function CalendarContents({
@@ -29,93 +44,164 @@ function CalendarContents({
   onSelect: (value: string) => void;
   onClose: () => void;
 }) {
-  const styles = useEntryStyles();
+  const theme = useAppTheme();
+  const today = todayISO();
   const [month, setMonth] = useState(() => {
-    const date = fromISO(value);
+    const date = fromISO(value <= today ? value : today);
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
+  const todayDate = fromISO(today);
+  const atCurrentMonth = month.getFullYear() === todayDate.getFullYear() && month.getMonth() === todayDate.getMonth();
   const offset = month.getDay();
   const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = Array.from({ length: offset + dayCount }, (_, index) => (index < offset ? 0 : index - offset + 1));
   const monthTitle = longMonths[month.getMonth()] + " " + (month.getFullYear() + 543);
+  const pick = (iso: string) => {
+    onSelect(iso);
+    onClose();
+  };
+
+  const dayText: TextStyle = { fontSize: 15, lineHeight: 20, fontVariant: ["tabular-nums"], fontWeight: "400" };
+  const dialogButton = {
+    flex: 1,
+    minHeight: touch.dialogButton,
+    borderRadius: touch.dialogButton / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  } as const;
+
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalCenter}>
-        <Pressable accessibilityLabel="ปิดปฏิทิน" onPress={onClose} style={styles.modalShade} />
-        <View style={styles.calendarCard}>
-          <Text style={styles.calendarTitle}>เลือกวันที่จด</Text>
-          <View style={styles.calendarMonthRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="เดือนก่อน"
-              onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-              style={styles.calendarArrow}
-            >
-              <Text style={styles.calendarArrowText}>‹</Text>
-            </Pressable>
-            <Text style={styles.calendarMonth}>{monthTitle}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="เดือนถัดไป"
-              onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-              style={styles.calendarArrow}
-            >
-              <Text style={styles.calendarArrowText}>›</Text>
-            </Pressable>
-          </View>
-          <View style={styles.calendarGrid}>
-            {["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].map((day) => (
-              <Text key={day} style={styles.calendarWeekday}>
-                {day}
-              </Text>
-            ))}
-            {cells.map((day, index) =>
-              day === 0 ? (
-                <View key={"blank-" + index} style={styles.calendarDay} />
-              ) : (
-                <Pressable
-                  key={day}
-                  accessibilityRole="button"
-                  accessibilityLabel={"วันที่ " + day}
-                  onPress={() => {
-                    onSelect(toISO(new Date(month.getFullYear(), month.getMonth(), day)));
-                    onClose();
-                  }}
-                  style={[
-                    styles.calendarDay,
-                    value === toISO(new Date(month.getFullYear(), month.getMonth(), day)) && styles.calendarSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.calendarDayText,
-                      value === toISO(new Date(month.getFullYear(), month.getMonth(), day)) &&
-                        styles.calendarSelectedText,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-                </Pressable>
-              )
-            )}
-          </View>
-          <View style={styles.calendarActions}>
-            <Pressable accessibilityRole="button" onPress={onClose} style={styles.secondaryAction}>
-              <Text style={styles.secondaryActionText}>ยกเลิก</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                onSelect(todayISO());
-                onClose();
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="ปิดปฏิทิน"
+        onPress={onClose}
+        style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.shade }}
+      />
+      <View
+        accessibilityViewIsModal
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          borderRadius: radius.dialog,
+          backgroundColor: theme.surface,
+          paddingTop: 16,
+          paddingHorizontal: 16,
+          paddingBottom: 14,
+          ...shadow.dialog,
+        }}
+      >
+        <Text
+          accessibilityRole="header"
+          style={{ color: theme.text, fontSize: 17, lineHeight: 24, textAlign: "center" }}
+        >
+          เลือกวันที่จด
+        </Text>
+        <View style={{ marginTop: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <IconButton
+            icon="chevron-left"
+            size={26}
+            color={theme.accentText}
+            label="เดือนก่อน"
+            onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+          />
+          <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{monthTitle}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="เดือนถัดไป"
+            accessibilityState={{ disabled: atCurrentMonth }}
+            disabled={atCurrentMonth}
+            onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+            style={({ pressed }) => ({
+              width: touch.min,
+              height: touch.min,
+              borderRadius: touch.min / 2,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: pressed ? theme.raised : "transparent",
+              opacity: atCurrentMonth ? 0.35 : 1,
+            })}
+          >
+            <MaterialCommunityIcons name="chevron-right" size={26} color={theme.accentText} />
+          </Pressable>
+        </View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 2 }}>
+          {weekdays.map((day) => (
+            <Text
+              key={day}
+              style={{
+                width: `${100 / 7}%`,
+                paddingVertical: 6,
+                textAlign: "center",
+                color: theme.muted,
+                fontSize: 12,
+                lineHeight: 17,
               }}
-              style={styles.primaryAction}
             >
-              <Text style={styles.primaryActionText}>วันนี้</Text>
-            </Pressable>
-          </View>
+              {day}
+            </Text>
+          ))}
+          {cells.map((day, index) => {
+            if (day === 0) return <View key={"blank-" + index} style={{ width: `${100 / 7}%`, height: DAY_HEIGHT }} />;
+            const iso = toISO(new Date(month.getFullYear(), month.getMonth(), day));
+            const future = iso > today;
+            if (future) {
+              return (
+                <View
+                  key={iso}
+                  accessibilityLabel={`วันที่ ${day} ยังมาไม่ถึง`}
+                  style={{ width: `${100 / 7}%`, height: DAY_HEIGHT, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={[dayText, { color: theme.muted, opacity: 0.4 }]}>{day}</Text>
+                </View>
+              );
+            }
+            const selected = iso === value;
+            const isToday = iso === today && !selected;
+            return (
+              <Pressable
+                key={iso}
+                accessibilityRole="button"
+                accessibilityLabel={`วันที่ ${day}${iso === today ? " วันนี้" : ""}`}
+                accessibilityState={{ selected }}
+                onPress={() => pick(iso)}
+                style={({ pressed }) => ({
+                  width: `${100 / 7}%`,
+                  height: DAY_HEIGHT,
+                  borderRadius: DAY_HEIGHT / 2,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: selected ? theme.accent : pressed ? theme.raised : "transparent",
+                  ...(isToday ? { boxShadow: `inset 0 0 0 1.5px ${theme.accent}` } : null),
+                })}
+              >
+                <Text style={[dayText, { color: selected ? theme.onAccent : isToday ? theme.accentText : theme.text }]}>
+                  {day}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onClose}
+            style={({ pressed }) => [
+              dialogButton,
+              { borderWidth: 1, borderColor: theme.accent, backgroundColor: pressed ? theme.raised : "transparent" },
+            ]}
+          >
+            <Text style={{ color: theme.accentText, fontSize: 15, lineHeight: 21 }}>ยกเลิก</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => pick(today)}
+            style={({ pressed }) => [dialogButton, { backgroundColor: theme.accent, opacity: pressed ? 0.84 : 1 }]}
+          >
+            <Text style={{ color: theme.onAccent, fontSize: 15, lineHeight: 21 }}>วันนี้</Text>
+          </Pressable>
         </View>
       </View>
-    </Modal>
+    </View>
   );
 }

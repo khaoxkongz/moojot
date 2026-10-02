@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useIsFocused, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { router, useIsFocused } from "expo-router";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -19,12 +19,11 @@ import { HomeIcon } from "@/components/ui/home-icon";
 import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
-import type { AppTheme } from "@/constants/theme";
+import { radius, shadow, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
 import { authClient } from "@/lib/auth-client";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
-import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
 import { PigMascot } from "@/features/home/components/pig-mascot";
 import { SlipFlowCards } from "@/features/home/components/slip-flow-cards";
@@ -161,7 +160,6 @@ export default function HomeScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
-  const { deletedId } = useLocalSearchParams<{ deletedId?: string }>();
 
   const { appliedWalletFilter, setAppliedWalletFilter } = useAppData();
   const { data: session } = authClient.useSession();
@@ -170,11 +168,6 @@ export default function HomeScreen() {
   const slipScan = useHomeScanDisplay();
   const appActive = useSyncExternalStore(subscribeAppState, isAppActive);
 
-  const handledUndoId = useRef<string | null>(null);
-
-  const [undoId, setUndoId] = useState<string | null>(null);
-  const [undoBusy, setUndoBusy] = useState(false);
-  const [undoError, setUndoError] = useState<string | null>(null);
   const [dayKey, setDayKey] = useState(todayISO());
   const [periodSelection, setPeriodSelection] = useState<{
     signature: string | null;
@@ -187,9 +180,6 @@ export default function HomeScreen() {
   const [draftWalletFilter, setDraftWalletFilter] = useState<WalletFilterSelection>(() =>
     selectAllWalletSources(emptyWalletOptions)
   );
-  const [addOpen, setAddOpen] = useState(false);
-
-  const restoreTransactionMutation = useMutation(entriesMutationOptions.restore());
 
   const monthStartQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
   const modeQuery = useQuery({
@@ -290,34 +280,6 @@ export default function HomeScreen() {
   const walletOptions = walletOptionsQuery.data ?? emptyWalletOptions;
 
   useEffect(() => {
-    if (!deletedId) {
-      handledUndoId.current = null;
-      return;
-    }
-    if (deletedId !== handledUndoId.current) {
-      setUndoId(deletedId);
-      setUndoError(null);
-    }
-  }, [deletedId]);
-
-  const undoDelete = async () => {
-    if (!undoId || undoBusy) return;
-    setUndoBusy(true);
-    setUndoError(null);
-    try {
-      const restored = await restoreTransactionMutation.mutateAsync({ id: undoId });
-      if (!restored) throw new Error("ไม่พบรายการที่ลบ");
-      handledUndoId.current = undoId;
-      setUndoId(null);
-      router.setParams({ deletedId: undefined });
-    } catch (cause) {
-      setUndoError(cause instanceof Error ? cause.message : "นำรายการกลับมาไม่ได้");
-    } finally {
-      setUndoBusy(false);
-    }
-  };
-
-  useEffect(() => {
     const timer = setInterval(() => setDayKey(todayISO()), 60_000);
     return () => clearInterval(timer);
   }, []);
@@ -360,7 +322,6 @@ export default function HomeScreen() {
   );
 
   const openWalletFilter = async () => {
-    setAddOpen(false);
     let options = walletOptions;
     try {
       options = (await walletOptionsQuery.refetch()).data ?? options;
@@ -642,49 +603,15 @@ export default function HomeScreen() {
         onApply={applyWalletFilter}
         onClose={() => setFilterOpen(false)}
       />
-      {undoId ? (
-        <View accessibilityLiveRegion="polite" style={[styles.undoToast, addOpen && styles.undoToastRaised]}>
-          <Text style={styles.undoToastText}>{undoError ?? "ลบรายการแล้ว"}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="เอารายการที่ลบกลับมา"
-            disabled={undoBusy}
-            onPress={() => {
-              void undoDelete();
-            }}
-            hitSlop={12}
-            style={styles.undoAction}
-          >
-            <Text style={styles.undoActionText}>{undoBusy ? "กำลังกู้คืน…" : "เอากลับมา"}</Text>
-          </Pressable>
-        </View>
-      ) : null}
       <View style={styles.floatingWrap}>
-        {addOpen ? (
-          <View style={styles.addMenu}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAddOpen(false);
-                router.push("/entry");
-              }}
-              style={styles.addOption}
-            >
-              <HomeIcon name="edit" color={theme.accentText} size={20} />
-              <Text style={styles.addOptionText}>จดรายการเอง</Text>
-            </Pressable>
-          </View>
-        ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={addOpen ? "ปิดเมนูจดเพิ่ม" : "จดเพิ่ม"}
-          onPress={() => setAddOpen((value) => !value)}
+          accessibilityLabel="จดเพิ่ม"
+          onPress={() => router.push("/entry")}
           style={({ pressed }) => [styles.addButton, { opacity: pressed ? 0.84 : 1 }]}
         >
-          <HomeIcon name={addOpen ? "chevronUp" : "plus"} color={theme.onAccent} size={26} strokeWidth={2.8} />
-          <Text style={styles.addButtonText}>{addOpen ? "ปิดเมนู" : "จดเพิ่ม"}</Text>
-          <View style={styles.addDivider} />
-          <HomeIcon name="chevronUp" color={theme.onAccent} size={23} strokeWidth={2.8} />
+          <HomeIcon name="plus" color={theme.onAccent} size={24} strokeWidth={2.6} />
+          <Text style={styles.addButtonText}>จดเพิ่ม</Text>
         </Pressable>
       </View>
     </View>
@@ -885,73 +812,18 @@ function createStyles(theme: AppTheme) {
     emptyTitle: { color: theme.text, fontSize: 16, fontWeight: "800" },
     emptyBody: { color: theme.muted, fontSize: 12, lineHeight: 18 },
     floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },
-    addMenu: {
-      backgroundColor: theme.text,
-      borderRadius: 17,
-      paddingVertical: 5,
-      minWidth: 190,
-      shadowColor: theme.text,
-      shadowOpacity: 0.18,
-      shadowRadius: 18,
-      elevation: 8,
-    },
-    addOption: {
-      minHeight: 46,
-      paddingHorizontal: 14,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
-    addOptionText: { color: theme.background, fontSize: 14, fontWeight: "800" },
     addButton: {
       backgroundColor: theme.accent,
-      borderRadius: 32,
-      minWidth: 158,
-      height: 55,
-      paddingHorizontal: 17,
+      borderRadius: radius.pill,
+      minWidth: 140,
+      height: touch.button,
+      paddingHorizontal: 20,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 9,
-      shadowColor: theme.text,
-      shadowOpacity: 0.22,
-      shadowRadius: 12,
-      elevation: 8,
+      gap: 6,
+      ...shadow.float,
     },
-    addButtonText: { color: theme.onAccent, fontSize: 19, fontWeight: "900" },
-    addDivider: {
-      width: 1,
-      height: 25,
-      backgroundColor: theme.onAccent,
-      opacity: 0.4,
-      marginHorizontal: 1,
-    },
-    undoToast: {
-      position: "absolute",
-      bottom: 84,
-      left: 16,
-      right: 16,
-      minHeight: 54,
-      maxWidth: 648,
-      alignSelf: "center",
-      borderRadius: 11,
-      borderWidth: 1,
-      borderColor: theme.muted,
-      backgroundColor: theme.raised,
-      paddingHorizontal: 17,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
-      zIndex: 5,
-      shadowColor: theme.text,
-      shadowOpacity: 0.17,
-      shadowRadius: 8,
-      elevation: 7,
-    },
-    undoToastRaised: { bottom: 236 },
-    undoToastText: { color: theme.text, fontSize: 15, flex: 1 },
-    undoAction: { paddingVertical: 10, paddingLeft: 8 },
-    undoActionText: { color: theme.accentText, fontSize: 15, fontWeight: "800" },
+    addButtonText: { color: theme.onAccent, fontSize: 16, lineHeight: 22 },
   });
 }

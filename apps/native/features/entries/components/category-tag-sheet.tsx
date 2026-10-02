@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CategoryGlyph } from "@/components/ui/category-glyph";
-import type { AppTheme } from "@/constants/theme";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+
+import { IconButton } from "@/components/ui/controls";
+import { accentRing, radius, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { Text, TextInput } from "@/components/ui/typography";
 import type { Category, Tag } from "@/types/finance";
@@ -68,6 +70,10 @@ export function CategoryTagSheet({
   const [savingTag, setSavingTag] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
   const visibleCategories = useMemo(() => categories.filter((item) => item.kind === kind), [categories, kind]);
+  const freeSuggestions = suggestions.filter((name) => !tags.some((tag) => tag.name === name));
+  const [gridWidth, setGridWidth] = useState(0);
+  /** Three equal columns with 8 between them, as the prototype's grid. */
+  const tileWidth = gridWidth > 0 ? (gridWidth - 2 * 8) / 3 : undefined;
 
   const close = () => {
     setScreen("category");
@@ -80,9 +86,10 @@ export function CategoryTagSheet({
     onTagIdsChange(tagIds.includes(tagId) ? tagIds.filter((id) => id !== tagId) : [...tagIds, tagId]);
   };
 
-  const saveTag = async () => {
+  /** Adds the typed name or a tapped suggestion: an existing tag (any case) is selected instead of made twice. */
+  const saveTag = async (raw: string) => {
     if (savingTag) return;
-    const name = tagName.trim();
+    const name = raw.trim();
     if (!name) {
       setTagError("กรุณาใส่ชื่อแท็ก");
       return;
@@ -113,7 +120,7 @@ export function CategoryTagSheet({
     }
   };
 
-  const sheetHeight = screen === "category" ? Math.min(height * 0.54, 620) : Math.min(height * 0.435, 460);
+  const title = screen === "category" ? "เลือกหมวด" : "เพิ่มแท็ก";
 
   return (
     <Modal
@@ -131,122 +138,127 @@ export function CategoryTagSheet({
       <KeyboardAvoidingView style={styles.modalRoot} behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="ปิดแผงเลือกหมวดหมู่และแท็ก"
+          accessibilityLabel="ปิดแผงเลือกหมวด"
           style={styles.backdrop}
           onPress={close}
         />
-        <View style={[styles.sheet, { height: sheetHeight, paddingBottom: Math.max(insets.bottom, 10) }]}>
+        <View
+          accessibilityViewIsModal
+          style={[styles.sheet, { maxHeight: height * 0.86, paddingBottom: insets.bottom + 12 }]}
+        >
+          <View style={styles.handle} />
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>{screen === "category" ? "เลือกหมวดหมู่ / แท็ก" : "เพิ่มแท็ก"}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="ปิด" onPress={close} style={styles.closeButton}>
-              <Text style={styles.closeText}>×</Text>
-            </Pressable>
+            <Text accessibilityRole="header" style={styles.headerTitle}>
+              {title}
+            </Text>
+            <IconButton icon="close" size={24} label="ปิด" onPress={close} style={{ marginRight: -10 }} />
           </View>
 
           {screen === "category" ? (
-            <>
-              <View style={styles.tagActions}>
-                <View style={styles.hashBadge}>
-                  <Text style={styles.hashText}>#</Text>
-                </View>
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+            >
+              <Text style={styles.sectionLabel}>แท็ก · ไม่ใส่ก็ได้</Text>
+              <View style={styles.chipWrap}>
+                {tags.map((tag) => {
+                  const selected = tagIds.includes(tag.id);
+                  return (
+                    <Pressable
+                      key={tag.id}
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={`แท็ก ${tag.name}`}
+                      accessibilityState={{ checked: selected }}
+                      onPress={() => toggleTag(tag.id)}
+                      hitSlop={4}
+                      style={[styles.tagChip, selected && styles.tagChipSelected]}
+                    >
+                      <Text numberOfLines={1} style={[styles.tagChipText, selected && styles.tagChipTextSelected]}>
+                        # {tag.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="เพิ่มแท็ก"
+                  hitSlop={4}
                   onPress={() => {
                     setTagName("");
                     setTagError(null);
                     setScreen("tag");
                   }}
-                  style={styles.addTagButton}
+                  style={styles.addTagChip}
                 >
-                  <Text style={styles.addTagText}>＋ เพิ่มแท็ก</Text>
+                  <MaterialCommunityIcons name="plus" size={17} color={theme.accentText} />
+                  <Text style={styles.addTagText}>เพิ่มแท็ก</Text>
                 </Pressable>
               </View>
-              {tags.length > 0 ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.savedTags}
-                  contentContainerStyle={styles.savedTagsInner}
-                >
-                  {tags.map((tag) => (
-                    <Pressable
-                      key={tag.id}
-                      accessibilityRole="checkbox"
-                      accessibilityLabel={`แท็ก ${tag.name}`}
-                      accessibilityState={{ checked: tagIds.includes(tag.id) }}
-                      onPress={() => toggleTag(tag.id)}
-                      style={[styles.tagChip, tagIds.includes(tag.id) && styles.tagChipSelected]}
-                    >
-                      <Text style={[styles.tagChipText, tagIds.includes(tag.id) && styles.tagChipTextSelected]}>
-                        # {tag.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              ) : null}
-              <ScrollView
-                bounces={false}
-                alwaysBounceVertical={false}
-                overScrollMode="never"
-                style={styles.categoryScroll}
-                contentContainerStyle={styles.categoryScrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                <View style={styles.grid}>
-                  {visibleCategories.map((category) => (
+
+              <Text style={[styles.sectionLabel, { marginTop: 16 }]}>หมวด</Text>
+              <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>
+                {visibleCategories.map((category) => {
+                  const selected = categoryId === category.id;
+                  return (
                     <Pressable
                       key={category.id}
                       accessibilityRole="button"
-                      accessibilityLabel={`เลือกหมวดหมู่ ${category.name}`}
-                      accessibilityState={{ selected: categoryId === category.id }}
+                      accessibilityLabel={`หมวด ${category.name}`}
+                      accessibilityState={{ selected }}
                       onPress={() => {
                         onCategoryChange(category.id);
                         close();
                       }}
-                      style={styles.categoryCell}
+                      style={({ pressed }) => [
+                        styles.tile,
+                        tileWidth !== undefined && { width: tileWidth },
+                        pressed && { backgroundColor: theme.border },
+                        selected && accentRing(theme),
+                      ]}
                     >
-                      <View style={[styles.iconBadge, categoryId === category.id && styles.selectedBadge]}>
-                        <CategoryGlyph id={category.isSystem ? category.id : "custom"} icon={category.icon} />
-                      </View>
-                      <Text style={styles.categoryName}>{category.name}</Text>
+                      <Text style={styles.tileIcon}>{category.icon}</Text>
+                      <Text numberOfLines={2} style={styles.tileName}>
+                        {category.name}
+                      </Text>
                     </Pressable>
-                  ))}
-                </View>
-                {onManageCategories ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="จัดการหมวดหมู่"
-                    onPress={() => {
-                      close();
-                      onManageCategories();
-                    }}
-                    style={styles.manageButton}
-                  >
-                    <Text style={styles.manageIcon}>▦</Text>
-                    <Text style={styles.manageText}>จัดการหมวดหมู่</Text>
-                  </Pressable>
-                ) : null}
-              </ScrollView>
-            </>
+                  );
+                })}
+              </View>
+              {onManageCategories ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    close();
+                    onManageCategories();
+                  }}
+                  style={styles.manageButton}
+                >
+                  <MaterialCommunityIcons name="view-grid-outline" size={18} color={theme.accentText} />
+                  <Text style={styles.manageText}>จัดการหมวดหมู่</Text>
+                </Pressable>
+              ) : null}
+            </ScrollView>
           ) : (
             <View style={styles.addTagBody}>
               <View style={styles.inputRow}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="กลับไปเลือกหมวดหมู่"
+                <IconButton
+                  icon="chevron-left"
+                  size={28}
+                  color={theme.accentText}
+                  label="กลับไปเลือกหมวด"
                   onPress={() => {
                     setScreen("category");
                     setTagError(null);
                   }}
-                  style={styles.backButton}
-                >
-                  <Text style={styles.backText}>‹</Text>
-                </Pressable>
-                <View style={styles.tagInputWrap}>
+                  style={{ marginLeft: -10 }}
+                />
+                <View style={styles.inputPill}>
                   <Text style={styles.inputHash}>#</Text>
                   <TextInput
                     accessibilityLabel="ชื่อแท็ก"
+                    autoFocus
                     value={tagName}
                     onChangeText={(value) => {
                       setTagName(value);
@@ -255,44 +267,41 @@ export function CategoryTagSheet({
                     maxLength={20}
                     placeholder="ใส่ชื่อแท็กไม่เกิน 20 ตัวอักษร"
                     placeholderTextColor={theme.muted}
+                    selectionColor={theme.accent}
                     returnKeyType="done"
-                    onSubmitEditing={() => {
-                      void saveTag();
-                    }}
+                    onSubmitEditing={() => void saveTag(tagName)}
                     style={styles.tagInput}
                   />
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="บันทึกแท็ก"
-                  disabled={savingTag}
-                  onPress={() => {
-                    void saveTag();
-                  }}
-                  style={[styles.confirmTag, savingTag && styles.disabled]}
+                  accessibilityLabel={savingTag ? "กำลังเพิ่มแท็ก" : "บันทึกแท็ก"}
+                  accessibilityState={{ busy: savingTag }}
+                  onPress={savingTag ? undefined : () => void saveTag(tagName)}
+                  style={({ pressed }) => [styles.saveTag, { opacity: savingTag ? 0.6 : pressed ? 0.84 : 1 }]}
                 >
-                  <Text style={styles.confirmTagText}>＋</Text>
+                  <MaterialCommunityIcons name="plus" size={24} color={theme.onAccent} />
                 </Pressable>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-                style={styles.suggestionScroll}
-                contentContainerStyle={styles.suggestionContent}
-              >
-                {suggestions.map((suggestion) => (
-                  <Pressable
-                    key={suggestion}
-                    accessibilityRole="button"
-                    accessibilityLabel={`ใช้ชื่อแท็ก ${suggestion}`}
-                    onPress={() => setTagName(suggestion)}
-                    style={styles.suggestionChip}
-                  >
-                    <Text style={styles.suggestionText}>{suggestion}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              {freeSuggestions.length > 0 ? (
+                <>
+                  <Text style={[styles.sectionLabel, { marginTop: 14 }]}>แตะเพื่อเพิ่มได้เลย</Text>
+                  <View style={styles.chipWrap}>
+                    {freeSuggestions.map((suggestion) => (
+                      <Pressable
+                        key={suggestion}
+                        accessibilityRole="button"
+                        accessibilityLabel={`เพิ่มแท็ก ${suggestion}`}
+                        hitSlop={4}
+                        onPress={savingTag ? undefined : () => void saveTag(suggestion)}
+                        style={({ pressed }) => [styles.tagChip, pressed && { backgroundColor: theme.raised }]}
+                      >
+                        <Text style={styles.tagChipText}>{suggestion}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : null}
               {tagError ? (
                 <Text accessibilityRole="alert" style={styles.errorText}>
                   {tagError}
@@ -309,153 +318,102 @@ export function CategoryTagSheet({
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     modalRoot: { flex: 1, justifyContent: "flex-end" },
-    backdrop: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      backgroundColor: "rgba(0, 0, 0, .08)",
-    },
+    backdrop: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: theme.shade },
     sheet: {
       width: "100%",
-      backgroundColor: theme.surface,
-      borderTopLeftRadius: 10,
-      borderTopRightRadius: 10,
-      overflow: "hidden",
-    },
-    header: {
-      height: 56,
-      backgroundColor: theme.raised,
-      paddingLeft: 16,
-      paddingRight: 7,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    headerTitle: { color: theme.text, fontSize: 19, fontWeight: "900" },
-    closeButton: { width: 43, height: 48, alignItems: "center", justifyContent: "center" },
-    closeText: { color: theme.muted, fontSize: 41, lineHeight: 45, fontWeight: "300" },
-    tagActions: {
-      height: 68,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 16,
-      paddingHorizontal: 16,
-    },
-    hashBadge: {
-      width: 31,
-      height: 31,
-      backgroundColor: theme.raised,
-      borderRadius: 11,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    hashText: { color: theme.accentText, fontSize: 27, lineHeight: 31, fontWeight: "800" },
-    addTagButton: {
-      borderWidth: 1.2,
-      borderColor: theme.accent,
-      borderRadius: 25,
-      minHeight: 34,
-      paddingHorizontal: 12,
-      justifyContent: "center",
-    },
-    addTagText: { color: theme.accentText, fontSize: 16, fontWeight: "700" },
-    savedTags: { flexGrow: 0, maxHeight: 48 },
-    savedTagsInner: { gap: 7, paddingHorizontal: 16, paddingBottom: 8 },
-    tagChip: {
-      minHeight: 34,
-      paddingHorizontal: 12,
-      borderWidth: 1.2,
-      borderColor: theme.accent,
-      borderRadius: 18,
-      justifyContent: "center",
-    },
-    tagChipSelected: { backgroundColor: theme.accent },
-    tagChipText: { color: theme.accentText, fontSize: 13, fontWeight: "700" },
-    tagChipTextSelected: { color: theme.onAccent },
-    categoryScroll: { flex: 1 },
-    categoryScrollContent: { paddingTop: 10, paddingBottom: 18 },
-    grid: { flexDirection: "row", flexWrap: "wrap" },
-    categoryCell: {
-      width: "25%",
-      minHeight: 114,
-      alignItems: "center",
-      paddingHorizontal: 3,
-      paddingTop: 1,
-    },
-    iconBadge: {
-      width: 54,
-      height: 54,
-      borderRadius: 27,
-      backgroundColor: theme.surface,
-      alignItems: "center",
-      justifyContent: "center",
-      boxShadow: "0 2px 11px rgba(45, 45, 43, .15)",
-    },
-    selectedBadge: { borderWidth: 2, borderColor: theme.accent },
-    categoryName: {
-      color: theme.text,
-      fontSize: 14,
-      lineHeight: 19,
-      textAlign: "center",
-      paddingTop: 8,
-    },
-    manageButton: {
+      maxWidth: 680,
       alignSelf: "center",
-      minHeight: 55,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      paddingHorizontal: 16,
-      marginTop: 14,
-    },
-    manageIcon: { color: theme.accentText, fontSize: 28, lineHeight: 32 },
-    manageText: { color: theme.accentText, fontSize: 17, fontWeight: "800" },
-    addTagBody: { flex: 1, paddingTop: 14 },
-    inputRow: {
-      height: 48,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: radius.sheet,
+      borderTopRightRadius: radius.sheet,
+      paddingTop: 10,
       paddingHorizontal: 16,
     },
-    backButton: { width: 28, height: 46, justifyContent: "center" },
-    backText: { color: theme.accentText, fontSize: 36, lineHeight: 42, fontWeight: "300" },
-    tagInputWrap: {
+    handle: {
+      alignSelf: "center",
+      width: 36,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: theme.border,
+      marginBottom: 6,
+    },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    headerTitle: { flex: 1, color: theme.text, fontSize: 17, lineHeight: 24 },
+    scrollContent: { paddingBottom: 6 },
+    sectionLabel: { color: theme.muted, fontSize: 12, lineHeight: 17 },
+    chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+    tagChip: {
+      minHeight: 36,
+      maxWidth: "100%",
+      paddingHorizontal: 12,
+      borderWidth: 1.2,
+      borderColor: theme.border,
+      borderRadius: radius.chip,
+      justifyContent: "center",
+    },
+    tagChipSelected: { backgroundColor: theme.accent, borderColor: theme.accent },
+    tagChipText: { color: theme.text, fontSize: 13, lineHeight: 18 },
+    tagChipTextSelected: { color: theme.onAccent },
+    addTagChip: {
+      minHeight: 36,
+      paddingLeft: 8,
+      paddingRight: 12,
+      borderWidth: 1.2,
+      borderStyle: "dashed",
+      borderColor: theme.accent,
+      borderRadius: radius.chip,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    addTagText: { color: theme.accentText, fontSize: 13, lineHeight: 18 },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+    tile: {
+      width: "31.5%",
+      minHeight: 78,
+      paddingVertical: 10,
+      paddingHorizontal: 6,
+      borderRadius: radius.tile,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+    },
+    tileIcon: { fontSize: 22, lineHeight: 27 },
+    tileName: { color: theme.text, fontSize: 12, lineHeight: 16, textAlign: "center" },
+    manageButton: {
+      marginTop: 6,
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+    },
+    manageText: { color: theme.accentText, fontSize: 14 },
+    addTagBody: { paddingTop: 6, paddingBottom: 14 },
+    inputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    inputPill: {
       flex: 1,
       minWidth: 0,
-      height: 42,
-      borderRadius: 22,
-      backgroundColor: theme.surface,
+      height: touch.min,
+      borderRadius: touch.min / 2,
+      backgroundColor: theme.raised,
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 11,
+      paddingHorizontal: 14,
+      gap: 6,
     },
-    inputHash: { color: theme.muted, fontSize: 21, paddingRight: 8 },
-    tagInput: { flex: 1, minWidth: 0, color: theme.text, fontSize: 16, paddingVertical: 0 },
-    confirmTag: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+    inputHash: { color: theme.muted, fontSize: 17, lineHeight: 22 },
+    tagInput: { flex: 1, minWidth: 0, color: theme.text, fontSize: 15, lineHeight: 20, paddingVertical: 0 },
+    errorText: { color: theme.danger, marginTop: 12, fontSize: 13, lineHeight: 19 },
+    saveTag: {
+      width: touch.min,
+      height: touch.min,
+      borderRadius: touch.min / 2,
       backgroundColor: theme.accent,
       alignItems: "center",
       justifyContent: "center",
     },
-    confirmTagText: { color: theme.onAccent, fontSize: 27, lineHeight: 28, fontWeight: "300" },
-    suggestionScroll: { flexGrow: 0, marginTop: 14, maxHeight: 38 },
-    suggestionContent: { alignItems: "center", gap: 8, paddingHorizontal: 20 },
-    suggestionChip: {
-      borderWidth: 1.2,
-      borderColor: theme.accent,
-      borderRadius: 19,
-      minHeight: 32,
-      paddingHorizontal: 10,
-      justifyContent: "center",
-    },
-    suggestionText: { color: theme.accentText, fontSize: 14, fontWeight: "700" },
-    errorText: { color: theme.danger, paddingTop: 12, paddingHorizontal: 18, fontSize: 13 },
-    disabled: { opacity: 0.5 },
   });
 }
 
