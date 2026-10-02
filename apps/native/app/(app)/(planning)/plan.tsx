@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useIsFocused } from "expo-router";
+import { router, useIsFocused, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
@@ -9,7 +9,7 @@ import { Text } from "@/components/ui/typography";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
-import { getPeriodForDate, shiftPeriodKey } from "@/utils/dates";
+import { getPeriodForDate, nextMonthOffset, periodKeyOffset, shiftPeriodKey } from "@/utils/dates";
 import { formatMoney, kindLabel, todayISO } from "@/utils/format";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -17,10 +17,14 @@ export default function PlanScreen() {
   const theme = useAppTheme();
   const isFocused = useIsFocused();
 
-  const [offset, setOffset] = useState(0);
+  // Summary's วางแผนงบ passes the month it shows, so the plan opens on that month; the arrows take over after.
+  const params = useLocalSearchParams<{ periodKey?: string }>();
+  const [chosenOffset, setOffset] = useState<number | null>(null);
 
   const startDayQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
-  const periodKey = shiftPeriodKey(getPeriodForDate(todayISO(), startDayQuery.data ?? 1).periodKey, offset);
+  const currentKey = getPeriodForDate(todayISO(), startDayQuery.data ?? 1).periodKey;
+  const offset = chosenOffset ?? (params.periodKey ? periodKeyOffset(currentKey, params.periodKey) : 0);
+  const periodKey = shiftPeriodKey(currentKey, offset);
   const [year, month] = periodKey.split("-").map(Number);
   const periodLabel = new Date(year, month - 1, 1).toLocaleDateString("th-TH", {
     month: "long",
@@ -138,7 +142,7 @@ export default function PlanScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="เดือนก่อนหน้า"
-              onPress={() => setOffset((value) => value - 1)}
+              onPress={() => setOffset(offset - 1)}
               style={{
                 width: 42,
                 height: 42,
@@ -159,7 +163,7 @@ export default function PlanScreen() {
               accessibilityRole="button"
               accessibilityLabel="เดือนถัดไป"
               disabled={offset >= 0}
-              onPress={() => setOffset((value) => value + 1)}
+              onPress={() => setOffset(nextMonthOffset(offset))}
               style={{
                 width: 42,
                 height: 42,
