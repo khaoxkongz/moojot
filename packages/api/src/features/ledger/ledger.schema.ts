@@ -64,6 +64,8 @@ export const transactionFiltersSchema = S.Struct({
   source: S.optional(transactionSourceSchema),
   search: S.optional(S.String),
   walletFilter: S.optional(walletFilterSchema),
+  /** "occurred" (default): newest day first. "recorded": the entry recorded last first, whatever its day. */
+  sort: S.optional(S.Literals(["occurred", "recorded"])),
   limit: S.optional(S.Int.check(S.isBetween({ minimum: 1, maximum: 1000 }))),
   offset: S.optional(S.Int.check(S.isGreaterThanOrEqualTo(0))),
 });

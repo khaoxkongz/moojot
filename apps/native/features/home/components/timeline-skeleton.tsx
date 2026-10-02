@@ -1,38 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AppTheme } from "@/constants/theme";
-import { useAppTheme } from "@/lib/use-app-theme";
 import { Animated, StyleSheet, View } from "react-native";
 
+import type { AppTheme } from "@/constants/theme";
+import { useAppTheme } from "@/lib/use-app-theme";
+
+/** A day-card row while a slip is being read: 34 circle, two text bars and an amount bar, pulsing. */
 export function TimelineSkeletonRow() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [pulseAnim] = useState(() => new Animated.Value(1));
+  const [pulse] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.5,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulse, { toValue: 0.5, duration: 500, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 500, useNativeDriver: true }),
       ])
     );
     loop.start();
     return () => loop.stop();
-  }, [pulseAnim]);
+  }, [pulse]);
 
   return (
-    <Animated.View style={[styles.transaction, { opacity: pulseAnim }]}>
-      <View style={styles.categoryCircle} />
-      <View style={styles.transactionCopy}>
-        <View style={styles.kindBar} />
+    <Animated.View accessibilityLabel="กำลังอ่านสลิป" style={[styles.row, { opacity: pulse }]}>
+      <View style={styles.circle} />
+      <View style={styles.copy}>
         <View style={styles.titleBar} />
+        <View style={styles.metaBar} />
       </View>
       <View style={styles.amountBar} />
     </Animated.View>
@@ -41,44 +35,18 @@ export function TimelineSkeletonRow() {
 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({
-    transaction: {
-      minHeight: 86,
-      backgroundColor: theme.surface,
-      paddingLeft: 18,
-      paddingRight: 16,
+    row: {
+      minHeight: 62,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
     },
-    categoryCircle: {
-      width: 37,
-      height: 37,
-      borderRadius: 21,
-      backgroundColor: theme.raised,
-    },
-    transactionCopy: {
-      flex: 1,
-      minWidth: 0,
-      gap: 2,
-    },
-    kindBar: {
-      height: 12,
-      width: 72,
-      borderRadius: 3,
-      backgroundColor: theme.raised,
-    },
-    titleBar: {
-      height: 11,
-      width: 145,
-      borderRadius: 3,
-      backgroundColor: theme.raised,
-      marginTop: 5,
-    },
-    amountBar: {
-      height: 16,
-      width: 65,
-      borderRadius: 4,
-      backgroundColor: theme.raised,
-    },
+    circle: { width: 34, height: 34, borderRadius: 17, backgroundColor: theme.raised },
+    copy: { flex: 1, gap: 7 },
+    titleBar: { height: 10, width: "58%", borderRadius: 5, backgroundColor: theme.raised },
+    metaBar: { height: 8, width: "36%", borderRadius: 4, backgroundColor: theme.raised },
+    amountBar: { width: 44, height: 10, borderRadius: 5, backgroundColor: theme.raised },
   });
 }

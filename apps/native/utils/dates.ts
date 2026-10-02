@@ -4,7 +4,7 @@ export function assertISODate(value: string): asserts value is ISODate {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new Error(`Invalid date: ${value}`);
   }
-  const [year, month, day] = value.split("-").map(Number);
+  const [year = 0, month = 0, day = 0] = value.split("-").map(Number);
   const parsed = new Date(Date.UTC(year, month - 1, day));
   if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) {
     throw new Error(`Invalid date: ${value}`);
@@ -34,7 +34,7 @@ export function daysInMonth(year: number, month: number): number {
 export function shiftPeriodKey(key: PeriodKey, months: number): PeriodKey {
   assertPeriodKey(key);
   if (!Number.isInteger(months)) throw new Error("Month offset must be an integer");
-  const [year, month] = key.split("-").map(Number);
+  const [year = 0, month = 1] = key.split("-").map(Number);
   const shifted = new Date(Date.UTC(year, month - 1 + months, 1));
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}`;
 }
@@ -44,13 +44,13 @@ export function dateInMonth(key: PeriodKey, dayOfMonth: number): ISODate {
   if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
     throw new Error("Day of month must be between 1 and 31");
   }
-  const [year, month] = key.split("-").map(Number);
+  const [year = 0, month = 1] = key.split("-").map(Number);
   return isoFromParts(year, month, Math.min(dayOfMonth, daysInMonth(year, month)));
 }
 
 export function previousDate(isoDate: ISODate): ISODate {
   assertISODate(isoDate);
-  const [year, month, day] = isoDate.split("-").map(Number);
+  const [year = 0, month = 1, day = 1] = isoDate.split("-").map(Number);
   return isoFromParts(year, month, day - 1);
 }
 

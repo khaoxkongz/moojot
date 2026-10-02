@@ -49,7 +49,16 @@ export default function AppLayout() {
         <Stack.Screen name="(planning)/recurring-form" options={{ title: "รายการจดซ้ำ", presentation: "modal" }} />
         <Stack.Screen name="(categories)/category-form" options={{ headerShown: false }} />
         <Stack.Screen name="(categories)/categories" options={{ headerShown: false }} />
-        <Stack.Screen name="(categories)/pending-categories" />
+        <Stack.Screen
+          name="(categories)/pending-categories"
+          options={{
+            headerShown: false,
+            // The queue is a bottom sheet over the screen that opened it; it draws its own shade and slide.
+            presentation: "transparentModal",
+            animation: "none",
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
         <Stack.Screen name="(categories)/tags" options={{ headerShown: false }} />
         <Stack.Screen name="(settings)/settings/account" options={{ headerShown: false, presentation: "card" }} />
         <Stack.Screen name="(settings)/settings/cards" options={{ headerShown: false, presentation: "modal" }} />

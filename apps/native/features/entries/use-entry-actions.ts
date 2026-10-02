@@ -29,6 +29,7 @@ export function useEntryActions(): EntryActions {
     const actions = createEntryActions(client.ledger);
     return {
       save: thenRefresh(actions.save),
+      setCategory: thenRefresh(actions.setCategory),
       remove: thenRefresh(actions.remove),
       restore: thenRefresh(actions.restore),
     };

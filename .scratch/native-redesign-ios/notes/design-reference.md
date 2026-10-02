@@ -39,6 +39,7 @@ DESIGN_SHOTS_DEPS="$TMPDIR/design-shots" node 04-manual-entry.mjs dark
 
 ## Captured so far
 
-| Ticket          | Images                                                                                                                                                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 04 entry editor | `04-keypad-calculating`, `04-category-sheet`, `04-tag-add`, `04-form-new`, `04-form-empty`, `04-save-missing-amount`, `04-type-transfer`, `04-calendar`, `04-exit-dialog`, `04-edit-manual`, `04-edit-menu`, `04-delete-toast` |
+| Ticket                 | Images                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 04 entry editor        | `04-keypad-calculating`, `04-category-sheet`, `04-tag-add`, `04-form-new`, `04-form-empty`, `04-save-missing-amount`, `04-type-transfer`, `04-calendar`, `04-exit-dialog`, `04-edit-manual`, `04-edit-menu`, `04-delete-toast` |
+| 05 Home, filter, queue | `05-home`, `05-filter-sheet`, `05-filter-none`, `05-home-filtered`, `05-queue`                                                                                                                                                 |
