@@ -13,6 +13,7 @@ import { summaryMonthOffset } from "@/features/home/period";
 import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import {
+  amountLabel,
   kindTotal,
   planRowSubtitle,
   summaryEmpty,
@@ -29,7 +30,8 @@ import { emptyWalletOptions, isAllWalletSources, selectAllWalletSources } from "
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { TransactionKind, WalletFilterSelection } from "@/types/finance";
-import { formatBaht, isValidISODate, todayISO } from "@/utils/format";
+import { nextMonthOffset } from "@/utils/dates";
+import { isValidISODate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
 const kinds: Array<[TransactionKind, string]> = [
@@ -137,12 +139,14 @@ export default function SummaryScreen() {
     ...homeQueryOptions.periodSummary(month.from, month.to, walletFilter),
     enabled: ready,
   });
+  // The breakdowns are for income or expense; transfers show one total and do not fetch them.
+  const breakdownKind = kind === "income" ? "income" : "expense";
   const categoriesQuery = useQuery({
-    ...homeQueryOptions.categoryBreakdown(month.from, month.to, kind === "income" ? "income" : "expense", walletFilter),
+    ...homeQueryOptions.categoryBreakdown(month.from, month.to, breakdownKind, walletFilter),
     enabled: ready && kind !== "transfer" && mode === "category",
   });
   const tagsQuery = useQuery({
-    ...homeQueryOptions.tagBreakdown(month.from, month.to, kind === "income" ? "income" : "expense", walletFilter),
+    ...homeQueryOptions.tagBreakdown(month.from, month.to, breakdownKind, walletFilter),
     enabled: ready && kind !== "transfer" && mode === "tag",
   });
   // Six months ending at this one, by the user's month start (the server reads it too).
@@ -169,7 +173,9 @@ export default function SummaryScreen() {
   const empty = summaryEmpty(kind, total);
   const trend = trendQuery.data ? summaryTrend(trendQuery.data, kind) : null;
   // While budgets load or cannot load, the row still opens the plan.
-  const planSub = budgetsQuery.data ? planRowSubtitle(budgetsQuery.data) : "ดูงบของเดือนนี้";
+  const planSub = budgetsQuery.data
+    ? planRowSubtitle(budgetsQuery.data, { walletFiltered: Boolean(appliedWalletFilter) })
+    : "ดูงบของเดือนนี้";
 
   const pageError = !summary && (startDayQuery.error ?? summaryQuery.error);
   const refreshError = summary && summaryQuery.error;
@@ -240,7 +246,7 @@ export default function SummaryScreen() {
             accessibilityLabel="เดือนถัดไป"
             accessibilityState={{ disabled: month.isCurrent }}
             disabled={month.isCurrent}
-            onPress={() => setOffset(Math.min(0, offset + 1))}
+            onPress={() => setOffset(nextMonthOffset(offset))}
             style={({ pressed }) => [
               styles.iconButton,
               { opacity: month.isCurrent ? 0.35 : 1 },
@@ -339,7 +345,7 @@ export default function SummaryScreen() {
               </View>
               <View style={styles.questionLine}>
                 <Text style={styles.question}>{summaryQuestion(kind)}</Text>
-                <Text style={styles.kindTotal}>{formatBaht(total, total % 100 === 0 ? 0 : 2)} ฿</Text>
+                <Text style={styles.kindTotal}>{amountLabel(total)} ฿</Text>
               </View>
               {kind !== "transfer" ? (
                 <View style={styles.modes}>

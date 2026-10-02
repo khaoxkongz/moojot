@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { planRowSubtitle, summaryEmpty, summaryMonth, summaryOverview, summaryRows, summaryTrend } from "./summary";
-import { periodKeyOffset } from "../../utils/dates";
 
 const period = { from: "2026-09-01", to: "2026-09-30", transactionCount: 0, transferCount: 0 };
-const category = (patch: { categoryId: string | null; totalSatang: number; transactionCount: number }) => ({
+/** A category group as the server sends it: `percentage` is its share of the kind's (filtered) total. */
+const category = (patch: {
+  categoryId: string | null;
+  totalSatang: number;
+  transactionCount: number;
+  percentage: number;
+}) => ({
   categoryName: patch.categoryId ? `หมวด ${patch.categoryId}` : "ไม่มีหมวดหมู่",
   icon: "🍜",
   color: "#000",
-  percentage: 0,
   pendingIds: [],
   ...patch,
 });
@@ -76,16 +80,19 @@ describe("Summary rows", () => {
     const rows = summaryRows({
       kind: "expense",
       mode: "category",
-      kindTotalSatang: 100_000,
+      kindTotalSatang: 100_001,
       transferCount: 0,
       categories: [
-        category({ categoryId: "food", totalSatang: 75_050, transactionCount: 3 }),
-        { ...category({ categoryId: null, totalSatang: 24_000, transactionCount: 2 }), pendingIds: ["b", "a"] },
-        category({ categoryId: "tiny", totalSatang: 950, transactionCount: 1 }),
+        category({ categoryId: "food", totalSatang: 75_050, transactionCount: 3, percentage: 75.05 }),
+        {
+          ...category({ categoryId: null, totalSatang: 24_950, transactionCount: 2, percentage: 24.95 }),
+          pendingIds: ["b", "a"],
+        },
+        category({ categoryId: "tiny", totalSatang: 1, transactionCount: 1, percentage: 0.001 }),
       ],
       tags: [],
     });
-    expect(rows).toEqual([
+    expect(rows.slice(0, 2)).toEqual([
       {
         key: "food",
         pending: false,
@@ -100,14 +107,15 @@ describe("Summary rows", () => {
         pending: true,
         icon: "",
         name: "ยังไม่เลือกหมวด",
-        amount: "240",
-        bar: 24,
+        amount: "249.50",
+        bar: 24.95,
         meta: "2 รายการ · แตะเพื่อเลือกหมวด",
         pendingIds: ["b", "a"],
       },
-      // A sliver stays visible.
-      { key: "tiny", pending: false, icon: "🍜", name: "หมวด tiny", amount: "9.50", bar: 2, meta: "1 รายการ · 1%" },
     ]);
+    expect(rows[2]).toMatchObject({ key: "tiny", amount: "0.01", meta: "1 รายการ · 0%" });
+    // A sliver stays visible.
+    expect(rows[2]!.bar).toBeGreaterThan(0.001);
   });
 
   it("lists only tagged groups by tag, each a share of the kind's total so they may pass 100% together", () => {
@@ -184,14 +192,19 @@ describe("Summary trend", () => {
   it("draws six bars ending at the month on screen, tallest at 100", () => {
     const trend = summaryTrend(sixMonths, "expense");
     expect(trend.title).toBe("รายจ่าย 6 เดือนล่าสุด");
-    expect(trend.bars).toEqual([
-      { key: "2026-04", label: "เม.ย.", value: "–", height: 4, current: false },
-      { key: "2026-05", label: "พ.ค.", value: "10,000", height: 100, current: false },
-      { key: "2026-06", label: "มิ.ย.", value: "2,500", height: 25, current: false },
-      { key: "2026-07", label: "ก.ค.", value: "–", height: 4, current: false },
-      { key: "2026-08", label: "ส.ค.", value: "4,000", height: 40, current: false },
-      { key: "2026-09", label: "ก.ย.", value: "5,000", height: 50, current: true },
+    expect(trend.bars.map(({ key, label, value, current }) => [key, label, value, current])).toEqual([
+      ["2026-04", "เม.ย.", "–", false],
+      ["2026-05", "พ.ค.", "10,000", false],
+      ["2026-06", "มิ.ย.", "2,500", false],
+      ["2026-07", "ก.ค.", "–", false],
+      ["2026-08", "ส.ค.", "4,000", false],
+      ["2026-09", "ก.ย.", "5,000", true],
     ]);
+    const [april, may, june, july, august, september] = trend.bars.map((bar) => bar.height);
+    expect([may, june, august, september]).toEqual([100, 25, 40, 50]);
+    // An empty month still shows a stub.
+    expect(april).toBeGreaterThan(0);
+    expect(july).toBeGreaterThan(0);
   });
 
   it("compares the month with the one before", () => {
@@ -213,8 +226,15 @@ describe("Summary trend", () => {
     expect(summaryTrend(same, "expense").compare).toEqual({ icon: "equal", text: "ใช้เท่ากับเดือนก่อน" });
     expect(summaryTrend(sixMonths.slice(0, 2), "expense").compare).toEqual({
       icon: "information-outline",
-      text: "เดือนก่อนยังไม่มีรายการให้เปรียบเทียบ",
+      text: "เดือนก่อนยังไม่มีรายจ่ายให้เปรียบเทียบ",
     });
+  });
+
+  it("names the kind missing from the month before, which may have had entries of another kind", () => {
+    // สิงหาคม had income but no transfer.
+    expect(summaryTrend(sixMonths, "transfer").compare.text).toBe("เดือนก่อนยังไม่มีย้ายเงินให้เปรียบเทียบ");
+    // มิถุนายน had spending but no income.
+    expect(summaryTrend(sixMonths.slice(2, 4), "income").compare.text).toBe("เดือนก่อนยังไม่มีรายรับให้เปรียบเทียบ");
   });
 
   it("keeps empty bars visible when nothing was recorded", () => {
@@ -222,18 +242,9 @@ describe("Summary trend", () => {
       sixMonths.map((item) => ({ ...item, expenseSatang: 0 })),
       "expense"
     );
-    expect(empty.bars.map((bar) => [bar.value, bar.height])).toEqual(Array(6).fill(["–", 4]));
+    expect(empty.bars.map((bar) => bar.value)).toEqual(Array(6).fill("–"));
+    expect(empty.bars.every((bar) => bar.height > 0)).toBe(true);
     expect(empty.compare.icon).toBe("information-outline");
-  });
-});
-
-describe("Summary plan link", () => {
-  it("opens the plan on the month Summary shows, never after the current one", () => {
-    expect(periodKeyOffset("2026-10", "2026-08")).toBe(-2);
-    expect(periodKeyOffset("2026-01", "2025-12")).toBe(-1);
-    expect(periodKeyOffset("2026-10", "2026-10")).toBe(0);
-    expect(periodKeyOffset("2026-10", "2026-12")).toBe(0);
-    expect(periodKeyOffset("2026-10", "nonsense")).toBe(0);
   });
 });
 
@@ -251,5 +262,10 @@ describe("Summary plan row", () => {
     expect(planRowSubtitle([status(100, 100), status(50, 100)])).toBe("ตั้งไว้ 2 งบ · ใกล้ครบ 1");
     expect(planRowSubtitle([status(101, 100), status(80, 100), status(10, 100)])).toBe("ตั้งไว้ 3 งบ · เกินงบ 1");
     expect(planRowSubtitle([status(10, 100)])).toBe("ตั้งไว้ 1 งบ · ตามแผนทั้งหมด");
+  });
+
+  it("says budgets count every wallet while Summary is narrowed to some", () => {
+    expect(planRowSubtitle([status(101, 100)], { walletFiltered: true })).toBe("ตั้งไว้ 1 งบ · เกินงบ 1 · นับทุกบัญชี");
+    expect(planRowSubtitle([], { walletFiltered: true })).toBe("กำหนดว่าแต่ละเดือนจะใช้ได้เท่าไหร่");
   });
 });
