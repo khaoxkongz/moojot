@@ -42,6 +42,31 @@ export function thaiDate(iso: string, options?: Intl.DateTimeFormatOptions) {
   );
 }
 
+/** Thai short month names as the prototype writes them; fixed so labels do not depend on the device's Intl data. */
+const SHORT_THAI_MONTHS = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+
+/** "ก.ย." for month 9. */
+export const shortThaiMonth = (month: number) => SHORT_THAI_MONTHS[month - 1]!;
+
+/** "30 ก.ย." from "2026-09-30". */
+export function shortThaiDate(iso: string) {
+  const [, month = 1, day = 1] = iso.split("-").map(Number);
+  return `${day} ${shortThaiMonth(month)}`;
+}
+
 export function monthLabel(date: Date) {
   return date.toLocaleDateString("th-TH", { month: "long", year: "numeric" });
 }

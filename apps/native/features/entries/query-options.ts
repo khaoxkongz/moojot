@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { loadAllEntries, needsCategory } from "@/features/home/home-days";
+import { loadAllEntries } from "@/features/entries/all-entries";
+import { needsCategory } from "@/features/entries/category-queue";
 import type { TransactionFilters, TransactionInput } from "@/types/finance";
 import { client, orpc } from "@/utils/orpc";
 

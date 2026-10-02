@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { selectedHomePeriod } from "./period";
+import { selectedHomePeriod, summaryMonthOffset, type CalendarPeriod } from "./period";
 
 const calendar = { monthStartDay: 1, weekStart: 0, fortnightAnchor: "2026-09-27" };
 
@@ -61,6 +61,24 @@ describe("Home period", () => {
       nextLabel: "รอบถัดไป",
     });
     expect(selectedHomePeriod("2026-12-30", 0, "week", calendar).label).toBe("27 ธ.ค. 69 – 2 ม.ค. 70");
+  });
+
+  it("opens Summary on the month of the period being viewed", () => {
+    const summaryOffset = (date: string, offset: number, mode: CalendarPeriod, monthStartDay = 1) =>
+      summaryMonthOffset(
+        date,
+        selectedHomePeriod(date, offset, mode, { ...calendar, monthStartDay }).summaryDate,
+        monthStartDay
+      );
+    expect(summaryOffset("2026-09-30", 0, "month")).toBe(0);
+    expect(summaryOffset("2026-09-30", -2, "month")).toBe(-2);
+    // A month that starts on the 25th: 10 Sep is in the period that opened on 25 Aug.
+    expect(summaryOffset("2026-09-10", -1, "month", 25)).toBe(-1);
+    // The current week runs into October, but its days so far are September's.
+    expect(summaryOffset("2026-09-30", 0, "week")).toBe(0);
+    expect(summaryOffset("2026-09-30", -1, "week")).toBe(0);
+    expect(summaryOffset("2026-09-30", -5, "week")).toBe(-1);
+    expect(summaryOffset("2026-09-30", -1, "fortnight")).toBe(0);
   });
 
   it("counts fortnights from the anchor, before it as well as after", () => {

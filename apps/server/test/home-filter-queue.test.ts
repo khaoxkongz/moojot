@@ -9,10 +9,12 @@ import { createAppRuntime } from "@moojot/api/runtime";
 import { GeminiProvider } from "@moojot/api/features/import/gemini.provider";
 import { createServerApp } from "../src/app";
 import { startTestDatabase } from "./mongo";
-import { homeDays, loadAllEntries, needsCategory } from "../../native/features/home/home-days";
+import { homeDays } from "../../native/features/home/home-days";
+import { loadAllEntries } from "../../native/features/entries/all-entries";
 import {
   canSkipInQueue,
   currentInQueue,
+  needsCategory,
   nextInQueue,
   openCategoryQueue,
   queueDoneMessage,
@@ -228,6 +230,22 @@ describe("pending-category queue", () => {
     expect(stillPending.map((row) => row.id).sort()).toEqual([second.id, yesterday.id].sort());
     expect(queueDoneMessage(stillPending.length)).toBe("บันทึกหมวดแล้ว");
     expect(queueDoneMessage(0)).toBe("เลือกหมวดครบแล้ว");
+  });
+
+  it("queues from Home every pending entry of the period and filter on screen, not only today's", async () => {
+    const client = await signUp("queue-period@example.test");
+    const earlier = await expense(client, { title: "ต้นเดือน", occurredOn: "2026-09-02", bank: "KBank" });
+    await expense(client, { title: "บัตร", occurredOn: "2026-09-03", cardName: "KTC", cardLast4: "4821" });
+    await expense(client, { title: "เดือนก่อน", occurredOn: "2026-08-31", bank: "KBank" });
+    const todays = await expense(client, { title: "วันนี้", bank: "KBank" });
+    await expense(client, { title: "มีหมวดแล้ว", bank: "KBank", categoryId: "expense-food" });
+
+    const onScreen = await loadAllEntries((f) => client.ledger.listTransactions(f), {
+      from: "2026-09-01",
+      to: today,
+      walletFilter: { banks: ["KBank"], cards: [], includeUnspecified: false },
+    });
+    expect(openCategoryQueue(onScreen)?.ids).toEqual([todays.id, earlier.id]);
   });
 
   it("refuses a category of the other kind and keeps the entry pending", async () => {

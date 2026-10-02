@@ -103,7 +103,15 @@ describe("latest jot", () => {
 });
 
 describe("Home speech", () => {
-  const base = { reading: false, photoMessage: null, autoToday: 0, pendingToday: 0, todayCount: 0, canRead: true };
+  const base = {
+    reading: false,
+    photoMessage: null,
+    autoToday: 0,
+    pendingInView: 0,
+    pendingToday: 0,
+    todayCount: 0,
+    canRead: true,
+  };
 
   it("says what the pig did today and what is left", () => {
     expect(homeSpeech(base)).toEqual({ title: "วันนี้หมูพร้อมช่วยจด", body: "หมูอ่านสลิปใหม่ให้อัตโนมัติ" });
@@ -112,18 +120,25 @@ describe("Home speech", () => {
       body: "วันนี้เลือกหมวดครบแล้ว",
     });
     // The pending link says it; no body.
-    expect(homeSpeech({ ...base, todayCount: 3, pendingToday: 2 })).toEqual({
+    expect(homeSpeech({ ...base, todayCount: 3, pendingInView: 2, pendingToday: 2 })).toEqual({
       title: "วันนี้หมูพร้อมช่วยจด",
       body: null,
     });
   });
 
+  it("leaves the pending count to the link for the period being viewed, even when today is done", () => {
+    // An earlier day of the month waits; today's entries all have categories.
+    expect(homeSpeech({ ...base, todayCount: 3, pendingInView: 1 }).body).toBeNull();
+    // Viewing last month, which is done, while today still waits: the pig does not say today is done.
+    expect(homeSpeech({ ...base, todayCount: 3, pendingToday: 1 }).body).toBe("หมูอ่านสลิปใหม่ให้อัตโนมัติ");
+  });
+
   it("puts reading and photo access first", () => {
-    expect(homeSpeech({ ...base, reading: true, pendingToday: 2 })).toEqual({
+    expect(homeSpeech({ ...base, reading: true, pendingInView: 2 })).toEqual({
       title: "หมูกำลังอ่านสลิป",
       body: "เปิดแอปไว้ก่อนน้า",
     });
-    expect(homeSpeech({ ...base, photoMessage: "ขอสิทธิ์รูป", pendingToday: 2 }).body).toBe("ขอสิทธิ์รูป");
+    expect(homeSpeech({ ...base, photoMessage: "ขอสิทธิ์รูป", pendingInView: 2 }).body).toBe("ขอสิทธิ์รูป");
     expect(homeSpeech({ ...base, canRead: false }).body).toBe("แตะ “จดเพิ่ม” เพื่อจดรายการเอง");
   });
 });

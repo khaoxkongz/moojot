@@ -1,11 +1,10 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useMemo } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
-import { IconButton } from "@/components/ui/controls";
+import { SheetBackdrop, SheetPanel } from "@/components/ui/bottom-sheet";
 import { Text } from "@/components/ui/typography";
-import { radius, type AppTheme } from "@/constants/theme";
+import type { AppTheme } from "@/constants/theme";
 import {
   hasNoWalletSource,
   isAllWalletSources,
@@ -51,8 +50,6 @@ function CheckBox({ checked }: { checked: boolean }) {
 export function WalletFilterSheet({ visible, options, value, onChange, onApply, onClose }: WalletFilterSheetProps) {
   const theme = useAppTheme();
   const styles = useStyles();
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
 
   const sections = useMemo(() => walletFilterSections(options, value), [options, value]);
   const all = isAllWalletSources(value, options);
@@ -61,24 +58,9 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="ปิดตัวกรองรายการ"
-          onPress={onClose}
-          style={styles.backdrop}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[styles.sheet, { maxHeight: height * 0.88, paddingBottom: insets.bottom + 16 }]}
-        >
+        <SheetBackdrop label="ปิดตัวกรองรายการ" onPress={onClose} />
+        <SheetPanel title="เลือกบัญชีและบัตร" onClose={onClose} maxHeightRatio={0.88}>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-            <View style={styles.handle} />
-            <View style={styles.header}>
-              <Text accessibilityRole="header" style={styles.title}>
-                เลือกบัญชีและบัตร
-              </Text>
-              <IconButton icon="close" size={24} label="ปิด" onPress={onClose} style={{ marginRight: -10 }} />
-            </View>
             <Text style={styles.subtitle}>หน้าแรกจะแสดงเฉพาะรายการจากบัญชีและบัตรที่เลือก</Text>
 
             <Pressable
@@ -132,7 +114,7 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
               <Text style={styles.applyText}>แสดงรายการ</Text>
             </Pressable>
           </ScrollView>
-        </View>
+        </SheetPanel>
       </View>
     </Modal>
   );
@@ -141,27 +123,6 @@ export function WalletFilterSheet({ visible, options, value, onChange, onApply, 
 function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     root: { flex: 1, justifyContent: "flex-end" },
-    backdrop: { ...StyleSheet.absoluteFill, backgroundColor: theme.shade },
-    sheet: {
-      width: "100%",
-      maxWidth: 680,
-      alignSelf: "center",
-      backgroundColor: theme.surface,
-      borderTopLeftRadius: radius.sheet,
-      borderTopRightRadius: radius.sheet,
-      paddingTop: 10,
-      paddingHorizontal: 16,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 36,
-      height: 5,
-      borderRadius: 3,
-      backgroundColor: theme.border,
-      marginBottom: 6,
-    },
-    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-    title: { color: theme.text, fontSize: 17, lineHeight: 24 },
     subtitle: { color: theme.muted, fontSize: 13, lineHeight: 20 },
     allRow: {
       marginTop: 8,

@@ -27,12 +27,13 @@ import { entriesQueryOptions } from "@/features/entries/query-options";
 import { PigMascot } from "@/features/home/components/pig-mascot";
 import { SlipFlowCards } from "@/features/home/components/slip-flow-cards";
 import { TimelineSkeletonRow } from "@/features/home/components/timeline-skeleton";
+import { needsCategory } from "@/features/entries/category-queue";
 import {
   dayLabel,
   homeDays,
   homeSpeech,
   latestJotLabel,
-  needsCategory,
+  sumOf,
   type HomeDay,
   type HomeRow,
 } from "@/features/home/home-days";
@@ -279,13 +280,15 @@ export default function HomeScreen() {
     };
     return [today, ...grouped];
   }, [entries, dayKey, categories, slipScan.reading, period.from, period.to]);
-  const expenseSatang = entries.filter((row) => row.kind === "expense").reduce((sum, row) => sum + row.amountSatang, 0);
-  const pendingToday = todayEntries.filter(needsCategory).length;
+  const expenseSatang = sumOf(entries, "expense");
+  // The link and its queue cover what Home shows: every pending entry of the viewed period under the applied filter.
+  const pendingIds = useMemo(() => entries.filter(needsCategory).map((row) => row.id), [entries]);
   const speech = homeSpeech({
     reading: slipScan.reading,
     photoMessage: photoPrompt?.message ?? null,
     autoToday: todayEntries.filter((row) => row.source === "slip" || row.source === "statement").length,
-    pendingToday,
+    pendingInView: pendingIds.length,
+    pendingToday: todayEntries.filter(needsCategory).length,
     todayCount: todayEntries.length,
     canRead: slipScan.access !== "unsupported",
   });
@@ -425,13 +428,15 @@ export default function HomeScreen() {
                   <HomeIcon name="chevronRight" size={15} strokeWidth={2.2} color={theme.accentText} />
                 </Pressable>
               ) : null}
-              {!slipScan.reading && pendingToday > 0 ? (
+              {!slipScan.reading && pendingIds.length > 0 ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => router.push("/pending-categories")}
+                  onPress={() =>
+                    router.push({ pathname: "/pending-categories", params: { ids: pendingIds.join(",") } })
+                  }
                   style={styles.speechLink}
                 >
-                  <Text style={styles.speechLinkText}>มี {pendingToday} รายการรอเลือกหมวด</Text>
+                  <Text style={styles.speechLinkText}>มี {pendingIds.length} รายการรอเลือกหมวด</Text>
                   <HomeIcon name="chevronRight" size={15} strokeWidth={2.2} color={theme.accentText} />
                 </Pressable>
               ) : null}
@@ -475,7 +480,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="ดูสรุป"
-                onPress={() => router.push("/summary")}
+                onPress={() => router.push({ pathname: "/summary", params: { date: period.summaryDate } })}
                 style={({ pressed }) => [styles.summaryButton, pressed && { opacity: 0.72 }]}
               >
                 <View style={styles.summaryPill}>

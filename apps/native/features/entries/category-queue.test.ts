@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { queueEntryMeta } from "./category-queue";
+import { queueEmptiedMessage, queueEntryMeta } from "./category-queue";
 
 const today = "2026-09-30";
 
@@ -24,5 +24,15 @@ describe("queue card", () => {
     expect(
       queueEntryMeta({ bank: "KBank", cardName: null, cardLast4: "4821", source: "slip", occurredOn: today }, today)
     ).toBe("ไม่ระบุบัญชี · สลิป · วันนี้");
+  });
+});
+
+describe("queue end", () => {
+  it("says it is done when the rest of the queue was categorized elsewhere, as after a last pick", () => {
+    const opened = { ids: ["a", "b"], index: 1 };
+    expect(queueEmptiedMessage(opened, 0)).toBe("เลือกหมวดครบแล้ว");
+    expect(queueEmptiedMessage(opened, 3)).toBe("บันทึกหมวดแล้ว");
+    // Opened with nothing waiting.
+    expect(queueEmptiedMessage(null, 0)).toBe("ไม่มีรายการรอเลือกหมวด");
   });
 });
