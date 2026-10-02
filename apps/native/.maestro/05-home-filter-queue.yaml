@@ -10,7 +10,23 @@ appId: com.anonymous.moojot
 - tapOn: "เดือนก่อน"
 - waitForAnimationToEnd
 - takeScreenshot: 05-app-home-previous
-- tapOn: "เดือนถัดไป"
+# ดูสรุป from there opens Summary on that month, not the current one.
+- tapOn: "ดูสรุป"
+- extendedWaitUntil:
+    visible: "กลับหน้าแรก"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-summary-previous
+- tapOn: "กลับหน้าแรก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "เดือนถัดไป"
+    commands:
+      - tapOn: "เดือนถัดไป"
 # A pending entry: amount and bank, no category.
 - tapOn: "จดเพิ่ม"
 - extendedWaitUntil:
@@ -53,7 +69,7 @@ appId: com.anonymous.moojot
 - takeScreenshot: 05-app-home-filtered
 - tapOn: "ล้างตัวกรอง"
 - waitForAnimationToEnd
-# The queue for today's pending entries.
+# The queue for every pending entry of the month on screen (the dev account may have others besides this one).
 - tapOn: "มี .* รายการรอเลือกหมวด"
 - extendedWaitUntil:
     visible: "แก้ไขรายการนี้"
@@ -71,17 +87,44 @@ appId: com.anonymous.moojot
 - waitForAnimationToEnd
 - takeScreenshot: 05-app-queue-back
 - tapOn: "หมวด อาหาร"
+# The pick saves, then the sheet moves on ("2 จาก N") or closes with its toast.
+- extendedWaitUntil:
+    notVisible: "1 จาก .*"
+    timeout: 10000
 - waitForAnimationToEnd
 - takeScreenshot: 05-app-queue-done
-# A run that stopped early can leave more of its entries in the queue: give them a category too.
-- repeat:
-    while:
+# Leave the account's other pending entries alone: close the sheet if it moved on to one.
+- runFlow:
+    when:
       visible: "แก้ไขรายการนี้"
     commands:
-      # The sheet may be closing as the check runs.
-      - tapOn:
-          text: "หมวด อาหาร"
-          optional: true
+      - tapOn: "ปิด"
+      - waitForAnimationToEnd
+# A run that stopped early can leave more of its entries pending: give each a category from its own row.
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+- repeat:
+    while:
+      visible: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+    commands:
+      - tapOn: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+      - waitForAnimationToEnd
+      # The row may have been read just before it got its category, and then opens the editor instead.
+      - runFlow:
+          when:
+            visible: "แก้ไขรายการนี้"
+          commands:
+            - tapOn: "หมวด อาหาร"
+      - runFlow:
+          when:
+            visible: "ปิดหน้าจดรายการ"
+          commands:
+            - tapOn: "ปิดหน้าจดรายการ"
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
       - waitForAnimationToEnd
 # Clean up: delete every entry this flow saved.
 - repeat:
