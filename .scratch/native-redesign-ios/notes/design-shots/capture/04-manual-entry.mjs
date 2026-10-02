@@ -1,4 +1,4 @@
-import { open, click, shot, signIn, sleep, visible } from "./lib.mjs";
+import { open, click, shot, signIn, sleep } from "./lib.mjs";
 const theme = process.argv[2];
 const t = theme === "dark" ? "-dark" : "";
 const fresh = async () => {

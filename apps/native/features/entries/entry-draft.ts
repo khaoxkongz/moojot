@@ -99,15 +99,6 @@ export function checkEntryDraft(
   return { ok: true, input: entryInput(draft, toSatang(draft.amount)!, categoryName) };
 }
 
-/** What the save button says: what to fix first, or that the entry will wait for a category. */
-export function entrySaveLabel(draft: EntryDraft, check: EntryDraftCheck): string {
-  if (!check.ok) {
-    if (check.field === "amount") return "ใส่จำนวนเงินก่อนบันทึก";
-    return check.message === DATE_IN_FUTURE ? "เลือกวันที่ที่ยังไม่เลยวันนี้" : "เลือกวันที่ก่อนบันทึก";
-  }
-  return draft.kind !== "transfer" && !draft.categoryId ? "บันทึก · ยังไม่เลือกหมวด" : "บันทึก";
-}
-
 function entryInput(draft: EntryDraft, amountSatang: number, categoryName?: string): TransactionInput {
   return {
     kind: draft.kind,
@@ -134,7 +125,7 @@ const cardChoice = (card: WalletCard): EntrySourceChoice => {
   const cardLast4 = card.cardLast4?.trim() || null;
   return {
     key: "card:" + walletCardKey(card),
-    label: cardLast4 ? `${cardName} •• ${cardLast4}` : cardName,
+    label: cardLast4 ? `บัตร ${cardName} •• ${cardLast4}` : `บัตร ${cardName}`,
     type: "card",
     cardName,
     cardLast4,

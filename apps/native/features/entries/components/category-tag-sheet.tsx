@@ -70,6 +70,10 @@ export function CategoryTagSheet({
   const [savingTag, setSavingTag] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
   const visibleCategories = useMemo(() => categories.filter((item) => item.kind === kind), [categories, kind]);
+  const freeSuggestions = suggestions.filter((name) => !tags.some((tag) => tag.name === name));
+  const [gridWidth, setGridWidth] = useState(0);
+  /** Three equal columns with 8 between them, as the prototype's grid. */
+  const tileWidth = gridWidth > 0 ? (gridWidth - 2 * 8) / 3 : undefined;
 
   const close = () => {
     setScreen("category");
@@ -82,9 +86,10 @@ export function CategoryTagSheet({
     onTagIdsChange(tagIds.includes(tagId) ? tagIds.filter((id) => id !== tagId) : [...tagIds, tagId]);
   };
 
-  const saveTag = async () => {
+  /** Adds the typed name or a tapped suggestion: an existing tag (any case) is selected instead of made twice. */
+  const saveTag = async (raw: string) => {
     if (savingTag) return;
-    const name = tagName.trim();
+    const name = raw.trim();
     if (!name) {
       setTagError("กรุณาใส่ชื่อแท็ก");
       return;
@@ -139,22 +144,10 @@ export function CategoryTagSheet({
         />
         <View
           accessibilityViewIsModal
-          style={[styles.sheet, { maxHeight: height * 0.86, paddingBottom: Math.max(insets.bottom, 10) + 6 }]}
+          style={[styles.sheet, { maxHeight: height * 0.86, paddingBottom: insets.bottom + 12 }]}
         >
           <View style={styles.handle} />
           <View style={styles.header}>
-            {screen === "tag" ? (
-              <IconButton
-                icon="chevron-left"
-                size={28}
-                label="กลับไปเลือกหมวด"
-                onPress={() => {
-                  setScreen("category");
-                  setTagError(null);
-                }}
-                style={{ marginLeft: -10 }}
-              />
-            ) : null}
             <Text accessibilityRole="header" style={styles.headerTitle}>
               {title}
             </Text>
@@ -205,7 +198,7 @@ export function CategoryTagSheet({
               </View>
 
               <Text style={[styles.sectionLabel, { marginTop: 16 }]}>หมวด</Text>
-              <View style={styles.grid}>
+              <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>
                 {visibleCategories.map((category) => {
                   const selected = categoryId === category.id;
                   return (
@@ -220,6 +213,7 @@ export function CategoryTagSheet({
                       }}
                       style={({ pressed }) => [
                         styles.tile,
+                        tileWidth !== undefined && { width: tileWidth },
                         pressed && { backgroundColor: theme.border },
                         selected && accentRing(theme),
                       ]}
@@ -249,55 +243,70 @@ export function CategoryTagSheet({
           ) : (
             <View style={styles.addTagBody}>
               <View style={styles.inputRow}>
-                <Text style={styles.inputHash}>#</Text>
-                <TextInput
-                  accessibilityLabel="ชื่อแท็ก"
-                  autoFocus
-                  value={tagName}
-                  onChangeText={(value) => {
-                    setTagName(value);
+                <IconButton
+                  icon="chevron-left"
+                  size={28}
+                  color={theme.accentText}
+                  label="กลับไปเลือกหมวด"
+                  onPress={() => {
+                    setScreen("category");
                     setTagError(null);
                   }}
-                  maxLength={20}
-                  placeholder="ชื่อแท็ก ไม่เกิน 20 ตัวอักษร"
-                  placeholderTextColor={theme.muted}
-                  selectionColor={theme.accent}
-                  returnKeyType="done"
-                  onSubmitEditing={() => void saveTag()}
-                  style={styles.tagInput}
+                  style={{ marginLeft: -10 }}
                 />
+                <View style={styles.inputPill}>
+                  <Text style={styles.inputHash}>#</Text>
+                  <TextInput
+                    accessibilityLabel="ชื่อแท็ก"
+                    autoFocus
+                    value={tagName}
+                    onChangeText={(value) => {
+                      setTagName(value);
+                      setTagError(null);
+                    }}
+                    maxLength={20}
+                    placeholder="ใส่ชื่อแท็กไม่เกิน 20 ตัวอักษร"
+                    placeholderTextColor={theme.muted}
+                    selectionColor={theme.accent}
+                    returnKeyType="done"
+                    onSubmitEditing={() => void saveTag(tagName)}
+                    style={styles.tagInput}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={savingTag ? "กำลังเพิ่มแท็ก" : "บันทึกแท็ก"}
+                  accessibilityState={{ busy: savingTag }}
+                  onPress={savingTag ? undefined : () => void saveTag(tagName)}
+                  style={({ pressed }) => [styles.saveTag, { opacity: savingTag ? 0.6 : pressed ? 0.84 : 1 }]}
+                >
+                  <MaterialCommunityIcons name="plus" size={24} color={theme.onAccent} />
+                </Pressable>
               </View>
+              {freeSuggestions.length > 0 ? (
+                <>
+                  <Text style={[styles.sectionLabel, { marginTop: 14 }]}>แตะเพื่อเพิ่มได้เลย</Text>
+                  <View style={styles.chipWrap}>
+                    {freeSuggestions.map((suggestion) => (
+                      <Pressable
+                        key={suggestion}
+                        accessibilityRole="button"
+                        accessibilityLabel={`เพิ่มแท็ก ${suggestion}`}
+                        hitSlop={4}
+                        onPress={savingTag ? undefined : () => void saveTag(suggestion)}
+                        style={({ pressed }) => [styles.tagChip, pressed && { backgroundColor: theme.raised }]}
+                      >
+                        <Text style={styles.tagChipText}>{suggestion}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              ) : null}
               {tagError ? (
                 <Text accessibilityRole="alert" style={styles.errorText}>
                   {tagError}
                 </Text>
               ) : null}
-              <Text style={[styles.sectionLabel, { marginTop: 14 }]}>แนะนำ</Text>
-              <View style={styles.chipWrap}>
-                {suggestions.map((suggestion) => (
-                  <Pressable
-                    key={suggestion}
-                    accessibilityRole="button"
-                    accessibilityLabel={`ใช้ชื่อแท็ก ${suggestion}`}
-                    hitSlop={4}
-                    onPress={() => {
-                      setTagName(suggestion);
-                      setTagError(null);
-                    }}
-                    style={styles.tagChip}
-                  >
-                    <Text style={styles.tagChipText}>{suggestion}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ busy: savingTag }}
-                onPress={savingTag ? undefined : () => void saveTag()}
-                style={({ pressed }) => [styles.saveTag, pressed && !savingTag && { opacity: 0.84 }]}
-              >
-                <Text style={styles.saveTagText}>{savingTag ? "กำลังเพิ่มแท็ก…" : "เพิ่มแท็ก"}</Text>
-              </Pressable>
             </View>
           )}
         </View>
@@ -328,7 +337,7 @@ function createStyles(theme: AppTheme) {
       backgroundColor: theme.border,
       marginBottom: 6,
     },
-    header: { flexDirection: "row", alignItems: "center", gap: 4 },
+    header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     headerTitle: { flex: 1, color: theme.text, fontSize: 17, lineHeight: 24 },
     scrollContent: { paddingBottom: 6 },
     sectionLabel: { color: theme.muted, fontSize: 12, lineHeight: 17 },
@@ -381,28 +390,30 @@ function createStyles(theme: AppTheme) {
       gap: 6,
     },
     manageText: { color: theme.accentText, fontSize: 14 },
-    addTagBody: { paddingTop: 6, paddingBottom: 4 },
-    inputRow: {
-      minHeight: 48,
-      borderRadius: radius.input,
+    addTagBody: { paddingTop: 6, paddingBottom: 14 },
+    inputRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    inputPill: {
+      flex: 1,
+      minWidth: 0,
+      height: touch.min,
+      borderRadius: touch.min / 2,
       backgroundColor: theme.raised,
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 14,
       gap: 6,
     },
-    inputHash: { color: theme.muted, fontSize: 16 },
-    tagInput: { flex: 1, minWidth: 0, color: theme.text, fontSize: 16, paddingVertical: 10 },
-    errorText: { color: theme.danger, paddingTop: 8, fontSize: 13, lineHeight: 19 },
+    inputHash: { color: theme.muted, fontSize: 17, lineHeight: 22 },
+    tagInput: { flex: 1, minWidth: 0, color: theme.text, fontSize: 15, lineHeight: 20, paddingVertical: 0 },
+    errorText: { color: theme.danger, marginTop: 12, fontSize: 13, lineHeight: 19 },
     saveTag: {
-      marginTop: 16,
-      minHeight: touch.button,
-      borderRadius: radius.pill,
+      width: touch.min,
+      height: touch.min,
+      borderRadius: touch.min / 2,
       backgroundColor: theme.accent,
       alignItems: "center",
       justifyContent: "center",
     },
-    saveTagText: { color: theme.onAccent, fontSize: 16, lineHeight: 22 },
   });
 }
 

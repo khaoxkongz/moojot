@@ -15,10 +15,9 @@ import {
   PillButton,
   RowIcon,
   SegmentedControl,
-  bahtFontSize,
 } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
-import { radius, raisedRing, shadow, touch, type AppTheme } from "@/constants/theme";
+import { menuShadow, radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
 import { categoriesMutationOptions } from "@/features/categories/mutation-options";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import {
@@ -39,7 +38,6 @@ import { dateLabel } from "@/features/entries/date";
 import {
   changeEntryKind,
   checkEntryDraft,
-  entrySaveLabel,
   entrySourceChoices,
   entryTitlePlaceholder,
   hasEntryChanges,
@@ -283,7 +281,6 @@ export function EntryEditor(props: EntryEditorProps) {
       : "0";
   const size = amountSize(amountText);
   const today = todayISO();
-  const saveLabel = entrySaveLabel(draft, checkEntryDraft(draft, { today, categoryName: category?.name }));
 
   return (
     <KeyboardAvoidingView
@@ -326,7 +323,7 @@ export function EntryEditor(props: EntryEditorProps) {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: (keypadOpen ? KEYPAD_SPACE : 120) + insets.bottom }]}
+        contentContainerStyle={[styles.content, { paddingBottom: (keypadOpen ? KEYPAD_SPACE : 98) + insets.bottom }]}
       >
         <Pressable
           accessibilityRole="button"
@@ -358,8 +355,8 @@ export function EntryEditor(props: EntryEditorProps) {
             >
               {amountText}
             </Text>
-            {keypadOpen ? <Caret height={Math.round(size * 0.9)} /> : null}
-            <Text style={[styles.baht, { fontSize: Math.max(bahtFontSize(size), 18) }]}>฿</Text>
+            {keypadOpen ? <Caret height={Math.round(size * 0.82)} /> : null}
+            <Text style={styles.baht}>฿</Text>
           </View>
           {amountError ? (
             <Text accessibilityRole="alert" style={styles.amountError}>
@@ -451,24 +448,25 @@ export function EntryEditor(props: EntryEditorProps) {
                 <Chip
                   key={choice.key}
                   label={choice.label}
-                  icon={
-                    choice.type === "card" ? "credit-card-outline" : choice.type === "bank" ? "bank-outline" : undefined
-                  }
                   selected={selectedSource?.key === choice.key}
                   onPress={() => update(selectEntrySource(draft, choice))}
                 />
               ))}
               {cardsQuery.data && cards.length === 0 ? (
-                <Chip
-                  label="เพิ่มบัตร"
-                  icon="plus"
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={2}
                   onPress={() => {
                     committedDraft();
                     // Adding a card is ticket 11. Until then the cards screen goes back to this editor and its draft
                     // instead of opening a second editor on top.
                     router.push({ pathname: "/settings/cards", params: { from: "entry" } });
                   }}
-                />
+                  style={({ pressed }) => [styles.addChip, pressed && { backgroundColor: theme.raised }]}
+                >
+                  <MaterialCommunityIcons name="plus" size={17} color={theme.accentText} />
+                  <Text style={styles.addChipText}>เพิ่มบัตร</Text>
+                </Pressable>
               ) : null}
             </View>
           </>
@@ -482,7 +480,13 @@ export function EntryEditor(props: EntryEditorProps) {
           <>
             <Text style={styles.sectionLabel}>เพิ่มเติม</Text>
             <GroupedList>
-              <GroupedRow title="จดซ้ำล่วงหน้า" sub="ตั้งครั้งเดียว จดให้ทุกเดือน" icon="repeat" onPress={beginRecurring} />
+              <GroupedRow
+                title="จดซ้ำล่วงหน้า"
+                sub="ตั้งครั้งเดียว จดให้ทุกเดือน"
+                icon="repeat"
+                minHeight={touch.formRow}
+                onPress={beginRecurring}
+              />
             </GroupedList>
           </>
         ) : null}
@@ -506,7 +510,7 @@ export function EntryEditor(props: EntryEditorProps) {
           </Text>
         ) : null}
         <PillButton
-          label={saveLabel}
+          label="บันทึก"
           busy={busy !== null}
           busyLabel={busy === "delete" ? "กำลังลบ…" : "กำลังบันทึก…"}
           onPress={() => void save()}
@@ -601,7 +605,7 @@ function DetailRow({
     </>
   );
   const style = {
-    minHeight: touch.row,
+    minHeight: touch.formRow,
     paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
@@ -638,7 +642,7 @@ function Caret({ height }: { height: number }) {
     <Animated.View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ width: 2, height, marginLeft: 2, borderRadius: 1, backgroundColor: theme.accent, opacity }}
+      style={{ width: 2, height, alignSelf: "center", borderRadius: 1, backgroundColor: theme.accent, opacity }}
     />
   );
 }
@@ -662,9 +666,9 @@ function createStyles(theme: AppTheme) {
     caption13: { color: theme.muted, fontSize: 13, lineHeight: 18 },
     caption12: { color: theme.muted, fontSize: 12, lineHeight: 17 },
     history: { color: theme.muted, fontSize: 15, lineHeight: 20, fontVariant: ["tabular-nums"], fontWeight: "400" },
-    amountRow: { flexDirection: "row", alignItems: "center", maxWidth: "100%" },
+    amountRow: { flexDirection: "row", alignItems: "baseline", gap: 4, maxWidth: "100%" },
     amount: { flexShrink: 1, fontWeight: "500", fontVariant: ["tabular-nums"], letterSpacing: -0.3 },
-    baht: { color: theme.muted, marginLeft: 6 },
+    baht: { color: theme.muted, marginLeft: 2, fontSize: 20, lineHeight: 24 },
     amountError: { color: theme.danger, fontSize: 13, lineHeight: 18 },
     group: { marginTop: 10 },
     iconPending: {
@@ -678,7 +682,7 @@ function createStyles(theme: AppTheme) {
       borderColor: theme.accent,
     },
     value: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    input: { color: theme.text, fontSize: 16, lineHeight: 22, paddingVertical: 0, minHeight: 24 },
+    input: { color: theme.text, fontSize: 15, lineHeight: 21, paddingVertical: 0, minHeight: 21 },
     sectionLabel: {
       marginTop: 18,
       marginBottom: 8,
@@ -688,6 +692,19 @@ function createStyles(theme: AppTheme) {
       lineHeight: 18,
     },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    addChip: {
+      minHeight: 40,
+      paddingLeft: 10,
+      paddingRight: 14,
+      borderWidth: 1.2,
+      borderStyle: "dashed",
+      borderColor: theme.accent,
+      borderRadius: radius.chip,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    addChipText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
     transferHint: {
       marginTop: 22,
       paddingHorizontal: 16,
@@ -713,7 +730,7 @@ function createStyles(theme: AppTheme) {
       paddingVertical: 5,
       borderRadius: radius.tile,
       backgroundColor: theme.surface,
-      ...shadow.dialog,
+      ...menuShadow(theme),
     },
     menuItem: { minHeight: 48, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10 },
   });
