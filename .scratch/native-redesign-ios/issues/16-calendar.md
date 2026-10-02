@@ -12,9 +12,9 @@
 
 **Why blocked:** ใช้ period/consumer refresh ของ Home ที่พร้อม; API Summary/งบเดิมใช้ทดสอบขอบเขตได้โดยไม่ต้องรอเปลี่ยนหน้าตาของสองหน้า
 
-- [ ] Radio cards/chips/day grid ครบ month/week/fortnight, weekday, anchor this/last week และ month day1–31 ไม่มี save-confirm
-- [ ] Changing weekday reset anchor ตามต้นแบบ ใช้ actual ranges/capped month days และ labels start month
-- [ ] Apply จริงและ refresh Home/summary/budget consumers ให้ตรงกัน มี caption ระบุ month start มีผลกับหน้าใด
+- [ ] Radio cards/chips/day grid ครบ month/week/fortnight, weekday, anchor this/last week และ month day1–31 ไม่มี save-confirm (story 91)
+- [ ] Changing weekday reset anchor ตามต้นแบบ ใช้ actual ranges/capped month days และ labels start month (story 92)
+- [ ] Apply จริงและ refresh Home/summary/budget consumers ให้ตรงกัน มี caption ระบุ month start มีผลกับหน้าใด (story 93)
 - [ ] Rapid changes/คำตอบเก่าที่มาทีหลังไม่ย้อนค่า และ failure จัดการ optimistic rollback/pending ตามจริง
-- [ ] Reset default แสดงเฉพาะเมื่อค่าไม่ default พร้อม undo คืน preferences ก่อน reset ไม่ reset financial entries
+- [ ] Reset default แสดงเฉพาะเมื่อค่าไม่ default พร้อม undo คืน preferences ก่อน reset ไม่ reset financial entries (story 94)
 - [ ] ตรวจ contracts/order/ranges/leap month และ tap→Home range/reset/undo บน iOS

@@ -12,7 +12,7 @@
 
 **Why blocked:** ต้องเปลี่ยนชุดข้อมูลและผ่านเส้นทางหลักในงานเริ่มข้อมูลทดลองใหม่ก่อนรับงานทั้งชุด
 
-- [ ] เดิน auth/onboarding/Home/editor/slips/summary/search/budgets/rules/manager/calendar/streak/profile/cards/CSV ครบ primary task พร้อม failure/recovery ของ flow โหลดหรือ save
+- [ ] เดิน auth/onboarding/Home/editor/slips/summary/search/budgets/rules/manager/calendar/streak/profile/cards/CSV ครบ primary task พร้อม failure/recovery ของ flow โหลดหรือ save (stories 1–110)
 - [ ] เปรียบเทียบภาพ 29 ภาพและ states/sheets ที่ไม่มีภาพกับ handoff ทั้ง light/dark คง copy/spacing/assets/motion/targets
 - [ ] ตรวจ iPhone 13 Pro/ExpoGo จริง และ iPhone 11 จำลอง/DeviceHub แยกผล; permission/photo behaviors ที่ simulator พิสูจน์ไม่ได้ตรวจเครื่องจริง
 - [ ] Keyboard, safe areas, Dynamic Type, ไทย/ชื่อ/ยอดยาว, scroll/back/dismiss/unsaved draft ยังทำงานครบ

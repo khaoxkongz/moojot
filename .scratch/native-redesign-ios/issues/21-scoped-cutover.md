@@ -15,7 +15,7 @@
 - [ ] เตรียม runbook/คำสั่งที่ review ได้ ระบุ account/environment/รุ่น schema-API-client และรายการข้อมูลที่ reset ไม่ใส่ credentials ลงเอกสาร
 - [ ] ก่อน reset หยุด scheduling/writes ใหม่และให้ผลคำขอเดิมแน่นอน ไม่ถือว่าปิด client แล้ว server หยุดเขียน
 - [ ] ตรวจ schema/index/generated client/contract ในฐานทดสอบแยกก่อนใช้กับชุดทดลองจริง
-- [ ] Reset เฉพาะ entries/rules/budgets/tags/custom categories/preferences ของบัญชีที่เลือก คง auth/email/credentials/system categories และบัญชีอื่น
+- [ ] Reset เฉพาะ entries/rules/budgets/tags/custom categories/preferences ของบัญชีที่เลือก คง auth/email/credentials/system categories และบัญชีอื่น (story 109)
 - [ ] Local scan/work memory/image bindings/query cache ของบัญชีเดียวกันเริ่มใหม่จริง และ errors แต่ละขั้นกู้/retry ได้โดยไม่ปนข้อมูลเก่า
-- [ ] เข้า onboarding ใหม่แล้วจด/อ่านรูปเดิม/จัดหมวด/ดูยอด/จดซ้ำ/CSV ได้จริง ชุดใหม่ไม่ถูก memory เก่าห้ามอ่านหรือสร้างซ้ำในชุดเดียวกัน
+- [ ] เข้า onboarding ใหม่แล้วจด/อ่านรูปเดิม/จัดหมวด/ดูยอด/จดซ้ำ/CSV ได้จริง ชุดใหม่ไม่ถูก memory เก่าห้ามอ่านหรือสร้างซ้ำในชุดเดียวกัน (story 109)
 - [ ] พิสูจน์ reset isolation/auth preservation ในฐานทดสอบ; การ cutover จริงระบุเป้าหมายและขอบเขตให้ review ก่อนดำเนินการ และรายงานสิ่งที่ยังไม่ทำ

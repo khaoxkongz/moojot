@@ -7,6 +7,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 - One feature per directory: `.scratch/<feature-slug>/`
 - The spec is `.scratch/<feature-slug>/spec.md`
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
+- A ticket that lists `User stories:` ends a checkbox with `(story N)`, `(stories N, M)` or `(stories N–M)` for each one, adding a box when none delivers that story; `scripts/check-tickets.mjs` enforces it on commit
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings); the bold form `**Status:**` is equivalent
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 - Finishing an issue: in the same session that commits the work, set `Status: done` and add a `Done in:` line naming the commit hash and subject. `done` is not a triage role; it means nothing is left to pick up. A spec is `done` once all its issues are; while only `ready-for-human` issues remain, the spec is `ready-for-human` too

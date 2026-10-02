@@ -12,9 +12,9 @@
 
 **Why blocked:** ต้องมี actual-time/evidence fields และ card/bank identity ที่ครบก่อนตรวจไฟล์
 
-- [ ] Export/share ไฟล์จริง UTF-8 BOM เปิด Excel/Sheets ได้ และ data ครบทุกหน้าตาม scope
-- [ ] คอลัมน์เรียง วันที่ เวลา ประเภท ชื่อรายการ หมวด จำนวนเงิน (บาท) บัญชี แท็ก โน้ต ที่มา ตรง spec
-- [ ] Actual time เมื่อมีหลักฐานจริง; unknown/manual/recurring ที่มีเพียงวันให้ช่องเวลาว่าง ไม่ใช้ createdAt/เวลารูป/seed
+- [ ] Export/share ไฟล์จริง UTF-8 BOM เปิด Excel/Sheets ได้ และ data ครบทุกหน้าตาม scope (story 107)
+- [ ] คอลัมน์เรียง วันที่ เวลา ประเภท ชื่อรายการ หมวด จำนวนเงิน (บาท) บัญชี แท็ก โน้ต ที่มา ตรง spec (story 107)
+- [ ] Actual time เมื่อมีหลักฐานจริง; unknown/manual/recurring ที่มีเพียงวันให้ช่องเวลาว่าง ไม่ใช้ createdAt/เวลารูป/seed (story 108)
 - [ ] Bank/card name+last4/tag names/note/source/satang precision ถูกต้อง และ Thai text/escaping/formula guard ยังอยู่
 - [ ] Server/native formatters ให้ผลความหมายเดียวกัน และ save/share failure มีทางลองใหม่ไม่แจ้งไฟล์สำเร็จเทียม
 - [ ] ตรวจ fixture >1,000 rows, CSV dangerous text/unknown time และ export/share/open บน iOS

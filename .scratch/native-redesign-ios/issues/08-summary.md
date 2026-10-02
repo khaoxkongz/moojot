@@ -12,9 +12,9 @@
 
 **Why blocked:** ใช้ period/filter state และคิวหมวดที่เสร็จในงานหน้าแรก
 
-- [ ] Monthly/custom bounds, income/expense/net และเหลือ/ใช้เกินรายรับตรงข้อมูลและตัวกรอง
-- [ ] Category/tag bars แสดงยอด/share จริงและ pending group เปิดคิวเฉพาะ period/filter; transfer แยกจาก income/expense
+- [ ] Monthly/custom bounds, income/expense/net และเหลือ/ใช้เกินรายรับตรงข้อมูลและตัวกรอง (story 60)
+- [ ] Category/tag bars แสดงยอด/share จริงและ pending group เปิดคิวเฉพาะ period/filter; transfer แยกจาก income/expense (stories 61, 62)
 - [ ] Tag หลายแท็กใช้ kind total เป็นฐาน ไม่ normalize shares ให้รวม 100% โดยผิดความหมาย
-- [ ] Trend หกเดือนสิ้นสุดเดือนที่เลือกพร้อม comparison และ zero/empty/error states
+- [ ] Trend หกเดือนสิ้นสุดเดือนที่เลือกพร้อม comparison และ zero/empty/error states (story 63)
 - [ ] ลิงก์วางแผนงบคงเดือนที่เกี่ยวข้องและไม่อ้าง budget เป็นของ wallet filter โดยไม่มี contract
 - [ ] ตรวจ API totals กับ fixtures หลายเดือน/หลายแท็ก/custom dates และ Home→Summary→queue บน iOS
