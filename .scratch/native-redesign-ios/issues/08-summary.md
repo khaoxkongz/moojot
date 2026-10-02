@@ -4,7 +4,9 @@
 
 **Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
 
-**Status:** ready-for-human
+**Status:** done
+
+**Done in:** b337701 feat(native): redesign Summary with month totals, share bars and six-month trend; 6da0d45 fix(native): address ticket 08 review findings (notes, ภาพ และ flow Maestro อยู่ใน bab7950 และ 513431d)
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
@@ -17,7 +19,7 @@
 - [x] Tag หลายแท็กใช้ kind total เป็นฐาน ไม่ normalize shares ให้รวม 100% โดยผิดความหมาย
 - [x] Trend หกเดือนสิ้นสุดเดือนที่เลือกพร้อม comparison และ zero/empty/error states (story 63)
 - [x] ลิงก์วางแผนงบคงเดือนที่เกี่ยวข้องและไม่อ้าง budget เป็นของ wallet filter โดยไม่มี contract
-- [ ] ตรวจ API totals กับ fixtures หลายเดือน/หลายแท็ก/custom dates และ Home→Summary→queue บน iOS
+- [x] ตรวจ API totals กับ fixtures หลายเดือน/หลายแท็ก/custom dates และ Home→Summary→queue บน iOS
 
 ## Comments
 
@@ -34,3 +36,5 @@
 9. ตั้งปฏิทินรายสัปดาห์/สองสัปดาห์ แล้วกด "ดูสรุป" → สรุปยังเป็นรายเดือน เปิดที่เดือนของวันสุดท้ายในช่วง (ยังไม่เคยดูบน simulator)
 10. ปิดเน็ตแล้วเปลี่ยนเดือน → การ์ด "โหลดสรุปไม่สำเร็จ" (`-error-dark`); เปิดเน็ตกด "ลองอีกครั้ง" → โหลดได้ (`-recovered-dark`)
 11. ถ้ามีงบ: ใช้เท่างบพอดี หน้าสรุปบอกยังไม่เกิน แต่หน้างบยังบอกเกิน — รู้อยู่แล้ว ตั๋ว 10 แก้
+
+2026-10-02: ผู้ใช้ลองบน iPhone แล้วบอกว่าโอเค แต่ยังไม่ได้ไล่ทุกข้อในรายการด้านบน (1–11) อย่างละเอียด จึงปิดตั๋วเป็น `done` ตามที่ผู้ใช้ตกลง ข้อ 8–9 (วันเริ่มเดือนอื่น, หน้าแรกรายสัปดาห์/สองสัปดาห์) ยังไม่เคยเห็นบนเครื่องจริงหรือ simulator ควรดูอีกครั้งตอนตรวจรวมในตั๋ว 22
