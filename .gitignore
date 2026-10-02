@@ -13,6 +13,9 @@ apps/web/src/routeTree.gen.ts
 local.db
 local.db-*
 
+# iOS preview service logs
+.preview-logs
+
 # Environment variables
 .env
 .env*.local
