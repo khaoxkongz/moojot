@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { FinanceTransaction, TransactionInput, TransactionKind, WalletCard } from "../../types/finance";
 import { formatBaht, isValidISODate, kindLabel, todayISO, toSatang } from "../../utils/format";
 import { bankDisplayName, bankId, commonBanks } from "../wallets/banks";
-import { walletCardKey } from "../wallets/cards";
+import { walletCardKey, walletCardLabel } from "../wallets/cards";
 
 export type EntryDraft = {
   kind: TransactionKind;
@@ -125,7 +125,7 @@ const cardChoice = (card: WalletCard): EntrySourceChoice => {
   const cardLast4 = card.cardLast4?.trim() || null;
   return {
     key: "card:" + walletCardKey(card),
-    label: cardLast4 ? `บัตร ${cardName} •• ${cardLast4}` : `บัตร ${cardName}`,
+    label: walletCardLabel({ cardName, cardLast4 }),
     type: "card",
     cardName,
     cardLast4,

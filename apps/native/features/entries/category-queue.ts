@@ -1,0 +1,63 @@
+import type { FinanceTransaction } from "../../types/finance";
+import { shortThaiDate, sourceLabel } from "../../utils/format";
+import { entryWalletLabel } from "../wallets/entry-wallet";
+
+/** An expense or income without a category waits in the pending-category queue; a transfer never does. */
+export const needsCategory = (entry: Pick<FinanceTransaction, "kind" | "categoryId">) =>
+  entry.kind !== "transfer" && !entry.categoryId;
+
+/**
+ * The pending-category queue: the entries of one scope (Home's pending link, one row, a Summary group) that wait for a
+ * category, shown one at a time. Picking saves and moves on; skipping moves on and leaves the entry pending.
+ */
+export type CategoryQueue = { ids: string[]; index: number };
+
+/** A queue of the given entries that still wait for a category, in the order given; null when none do. */
+export function openCategoryQueue(entries: Pick<FinanceTransaction, "id" | "kind" | "categoryId">[]) {
+  const ids = entries.filter(needsCategory).map((entry) => entry.id);
+  return ids.length ? ({ ids, index: 0 } satisfies CategoryQueue) : null;
+}
+
+/** "2 จาก 3" while there is more than one entry. */
+export function queueProgress(queue: CategoryQueue) {
+  return queue.ids.length > 1 ? `${queue.index + 1} จาก ${queue.ids.length}` : null;
+}
+
+/** “ข้ามไปก่อน” only shows while there is a later entry to skip to. */
+export const canSkipInQueue = (queue: CategoryQueue) => queue.index + 1 < queue.ids.length;
+
+/** The queue after the current entry, by a pick or a skip; null when it was the last. */
+export function nextInQueue(queue: CategoryQueue): CategoryQueue | null {
+  return canSkipInQueue(queue) ? { ...queue, index: queue.index + 1 } : null;
+}
+
+/**
+ * The entry to show now. Entries that got a category or were deleted elsewhere meanwhile (the editor opened from the
+ * queue) are passed over; null when nothing in the rest of the queue still waits.
+ */
+export function currentInQueue(queue: CategoryQueue, isPending: (id: string) => boolean) {
+  for (let index = queue.index; index < queue.ids.length; index++) {
+    const id = queue.ids[index]!;
+    if (isPending(id)) return { queue: { ...queue, index }, id };
+  }
+  return null;
+}
+
+/** The toast after the last pick: whether anything anywhere still waits for a category. */
+export const queueDoneMessage = (stillPending: number) => (stillPending > 0 ? "บันทึกหมวดแล้ว" : "เลือกหมวดครบแล้ว");
+
+/**
+ * The toast when nothing in the queue waits any more without a pick here (the rest got a category in the editor, or
+ * nothing waited when it opened). A queue that ran out ends like a last pick.
+ */
+export const queueEmptiedMessage = (queue: CategoryQueue | null, stillPending: number) =>
+  queue === null ? "ไม่มีรายการรอเลือกหมวด" : queueDoneMessage(stillPending);
+
+/** The queue card's second line: "กสิกรไทย · สลิป · วันนี้". The entry's time of day is not recorded, so none is shown. */
+export function queueEntryMeta(
+  entry: Pick<FinanceTransaction, "bank" | "cardName" | "cardLast4" | "source" | "occurredOn">,
+  today: string
+) {
+  const day = entry.occurredOn === today ? "วันนี้" : shortThaiDate(entry.occurredOn);
+  return `${entryWalletLabel(entry)} · ${sourceLabel(entry.source)} · ${day}`;
+}

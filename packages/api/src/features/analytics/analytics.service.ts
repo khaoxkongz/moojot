@@ -5,14 +5,14 @@ import { getPeriodBounds, getPeriodForDate, shiftPeriodKey, todayISO } from "../
 import { PrismaProvider } from "../../providers/prisma.provider";
 import { FinanceCategories } from "../../shared/finance/category.service";
 import { FinanceSettings } from "../../shared/finance/settings.service";
-import { analyticsInputs, walletFilterSchema } from "./analytics.schema";
+import { analyticsInputs } from "./analytics.schema";
+import type { WalletFilter } from "../../shared/finance/wallet-filter";
 import { FinanceBadRequestError, financeOperation } from "../../shared/finance/error";
 
 function assertPeriod(from: string, to: string) {
   if (from > to) throw new FinanceBadRequestError({ message: "Start date must not be after end date" });
 }
 
-type WalletFilter = typeof walletFilterSchema.Type;
 type WalletFields = {
   bank: string | null;
   cardName: string | null;
@@ -38,7 +38,8 @@ function matchesWallet(transaction: WalletFields, filter?: WalletFilter): boolea
   ) {
     return true;
   }
-  return filter.includeOther && (transaction.source === "manual" || (!cardName && (!bank || Boolean(cardLast4))));
+  // Same meaning as the Ledger filter (`walletWhere`): no bank or card chosen, manual or not.
+  return filter.includeUnspecified && !cardName && (!bank || Boolean(cardLast4));
 }
 
 function summarize(from: string, to: string, transactions: Array<{ kind: string; amountSatang: bigint }>) {

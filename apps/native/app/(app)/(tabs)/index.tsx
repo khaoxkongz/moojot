@@ -14,12 +14,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Amount, bahtFontSize } from "@/components/ui/controls";
+import { bahtFontSize } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
-import { SkeletonReveal } from "@/components/ui/skeleton-reveal";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
-import { radius, shadow, touch, type AppTheme } from "@/constants/theme";
+import { accentRing, radius, shadow, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { useAppData } from "@/context/app-data";
 import { authClient } from "@/lib/auth-client";
@@ -28,8 +27,17 @@ import { entriesQueryOptions } from "@/features/entries/query-options";
 import { PigMascot } from "@/features/home/components/pig-mascot";
 import { SlipFlowCards } from "@/features/home/components/slip-flow-cards";
 import { TimelineSkeletonRow } from "@/features/home/components/timeline-skeleton";
+import { needsCategory } from "@/features/entries/category-queue";
+import {
+  dayLabel,
+  homeDays,
+  homeSpeech,
+  latestJotLabel,
+  sumOf,
+  type HomeDay,
+  type HomeRow,
+} from "@/features/home/home-days";
 import { selectedHomePeriod, weekStartForDate, type CalendarPeriod } from "@/features/home/period";
-import { homeQueryOptions } from "@/features/home/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { homeScan, useHomeScanDisplay } from "@/features/slips/auto-import";
@@ -41,8 +49,8 @@ import type { StreakSettings } from "@/features/streak/types";
 import { WalletFilterSheet } from "@/features/wallets/components/wallet-filter-sheet";
 import { emptyWalletOptions, isAllWalletSources, selectAllWalletSources } from "@/features/wallets/filter";
 import { walletsQueryOptions } from "@/features/wallets/query-options";
-import type { Category, FinanceTransaction, WalletFilterSelection } from "@/types/finance";
-import { formatBaht, isValidISODate, kindLabel, thaiDate, todayISO } from "@/utils/format";
+import type { WalletFilterSelection } from "@/types/finance";
+import { formatBaht, isValidISODate, todayISO } from "@/utils/format";
 
 const emptyRows: never[] = [];
 
@@ -59,96 +67,78 @@ function amountLabel(satang: number) {
   return formatBaht(satang, satang % 100 === 0 ? 0 : 2);
 }
 
-function latestJotLabel(rows: FinanceTransaction[]) {
-  if (!rows.length) return "ยังไม่มีรายการที่จด";
-  const latest = rows.reduce((current, row) => (row.createdAt > current ? row.createdAt : current), rows[0].createdAt);
-  const date = new Date(latest);
-  if (Number.isNaN(date.getTime())) return "มีรายการใหม่แล้ว";
-  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  const when = iso === todayISO() ? "วันนี้" : thaiDate(iso, { day: "numeric", month: "short" });
-  return `จดล่าสุด${when} ${date.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
-}
-
-function TimelineRow({ item, category }: { item: FinanceTransaction; category?: Category }) {
+function DayRow({ row, divider }: { row: HomeRow; divider: boolean }) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const needsCategory = item.kind !== "transfer" && !item.categoryId;
+  const income = row.entry.kind === "income";
+  const amount = (income ? "+" : "") + amountLabel(row.entry.amountSatang);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${kindLabel(item.kind)} ${item.title} ${amountLabel(item.amountSatang)} บาท`}
-      onPress={() => router.push({ pathname: "/entry/[id]", params: { id: item.id } })}
-      style={({ pressed }) => [styles.transaction, { opacity: pressed ? 0.72 : 1 }]}
+      accessibilityLabel={`${row.title} ${amount} บาท ${row.meta}${row.isNew ? " ใหม่" : ""}`}
+      accessibilityHint={row.pending ? "เลือกหมวดของรายการนี้" : "แก้ไขรายการนี้"}
+      onPress={() =>
+        row.pending
+          ? router.push({ pathname: "/pending-categories", params: { ids: row.id } })
+          : router.push({ pathname: "/entry/[id]", params: { id: row.id } })
+      }
+      style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.raised }]}
     >
-      {needsCategory ? <View style={styles.uncategorizedCorner} /> : null}
-      <View style={styles.categoryCircle}>
-        {category ? (
-          <Text style={styles.categoryEmoji}>{category.icon}</Text>
-        ) : (
-          <HomeIcon name="edit" size={22} color={theme.text} />
-        )}
-      </View>
-      <View style={styles.transactionCopy}>
-        <Text numberOfLines={1} style={styles.transactionKind}>
-          {kindLabel(item.kind)}
+      {divider ? <View style={styles.rowDivider} /> : null}
+      {row.pending ? (
+        <View style={styles.pendingIcon}>
+          <HomeIcon name="edit" size={16} color={theme.accentText} />
+        </View>
+      ) : (
+        <View style={styles.rowIcon}>
+          <Text style={styles.rowEmoji}>{row.icon}</Text>
+        </View>
+      )}
+      <View style={styles.rowCopy}>
+        <View style={styles.rowTitleLine}>
+          <Text numberOfLines={1} style={styles.rowTitle}>
+            {row.title}
+          </Text>
+          {row.isNew ? (
+            <View style={styles.newBadge}>
+              <Text style={styles.newBadgeText}>ใหม่</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text numberOfLines={1} style={[styles.rowMeta, row.pending && { color: theme.accentText }]}>
+          {row.meta}
         </Text>
-        <Text numberOfLines={1} style={styles.transactionTitle}>
-          {item.title}
-        </Text>
       </View>
-      <Amount
-        selectable
-        showBaht={false}
-        size={15}
-        value={(item.kind === "income" ? "+" : "") + amountLabel(item.amountSatang)}
-        color={item.kind === "income" ? theme.success : theme.text}
-      />
+      <Text selectable style={[styles.rowAmount, income && { color: theme.success }]}>
+        {amount}
+      </Text>
     </Pressable>
   );
 }
 
-function DayGroup({
-  date,
-  items,
-  categories,
-  showSkeleton = false,
-}: {
-  date: string;
-  items: FinanceTransaction[];
-  categories: Map<string, Category>;
-  showSkeleton?: boolean;
-}) {
+function DayGroup({ day, reading }: { day: HomeDay; reading: boolean }) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const today = date === todayISO();
-  const expense = items.filter((item) => item.kind === "expense").reduce((sum, item) => sum + item.amountSatang, 0);
-  const income = items.filter((item) => item.kind === "income").reduce((sum, item) => sum + item.amountSatang, 0);
-  const total = expense > 0 ? expense : income > 0 ? income : items.reduce((sum, row) => sum + row.amountSatang, 0);
+  const skeleton = reading && day.isToday;
   return (
-    <View style={styles.dayGroup}>
-      <View style={styles.dayRail}>
-        <View style={[styles.dayAccent, { backgroundColor: today ? theme.accent : theme.text }]} />
-        <Text style={[styles.dayName, today && { color: theme.accentText }]}>
-          {today ? "วันนี้" : thaiDate(date, { weekday: "short" })}
+    <View>
+      <View style={styles.dayHeader}>
+        {day.isToday ? (
+          <View style={styles.dayToday}>
+            <Text style={styles.todayLabel}>วันนี้</Text>
+            <Text style={styles.dayMuted}>{day.label}</Text>
+          </View>
+        ) : (
+          <Text style={styles.dayLabel}>{day.label}</Text>
+        )}
+        <Text style={styles.dayMuted}>
+          {day.totalLabel} <Text style={styles.dayNumber}>{amountLabel(day.totalSatang)}</Text>
         </Text>
-        <Text style={[styles.dayNumber, today && { color: theme.accentText }]}>{Number(date.slice(-2))}</Text>
       </View>
-      <View style={styles.dayContents}>
-        <View style={styles.daySubtotal}>
-          <Text style={styles.daySubtotalTitle}>{expense > 0 ? "รายจ่าย" : income > 0 ? "รายรับ" : "ย้ายเงิน"}</Text>
-          <Amount showBaht={false} size={17} value={amountLabel(total)} />
-        </View>
-        {showSkeleton ? (
-          <SkeletonReveal loading={showSkeleton} skeleton={<TimelineSkeletonRow />}>
-            {items[0] ? (
-              <TimelineRow key={items[0].id} item={items[0]} category={categories.get(items[0].categoryId ?? "")} />
-            ) : (
-              <TimelineSkeletonRow />
-            )}
-          </SkeletonReveal>
-        ) : null}
-        {(showSkeleton && items.length > 0 ? items.slice(1) : items).map((item) => (
-          <TimelineRow key={item.id} item={item} category={categories.get(item.categoryId ?? "")} />
+      <View style={styles.dayCard}>
+        {skeleton ? <TimelineSkeletonRow /> : null}
+        {day.rows.map((row, index) => (
+          <DayRow key={row.id} row={row} divider={index > 0 || skeleton} />
         ))}
       </View>
     </View>
@@ -169,10 +159,7 @@ export default function HomeScreen() {
   const appActive = useSyncExternalStore(subscribeAppState, isAppActive);
 
   const [dayKey, setDayKey] = useState(todayISO());
-  const [periodSelection, setPeriodSelection] = useState<{
-    signature: string | null;
-    offset: number;
-  }>({
+  const [periodSelection, setPeriodSelection] = useState<{ signature: string | null; offset: number }>({
     signature: null,
     offset: 0,
   });
@@ -182,18 +169,9 @@ export default function HomeScreen() {
   );
 
   const monthStartQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
-  const modeQuery = useQuery({
-    ...settingsQueryOptions.value("calendar_open_period"),
-    enabled: isFocused,
-  });
-  const weekStartQuery = useQuery({
-    ...settingsQueryOptions.value("calendar_week_start"),
-    enabled: isFocused,
-  });
-  const anchorQuery = useQuery({
-    ...settingsQueryOptions.value("calendar_fortnight_anchor"),
-    enabled: isFocused,
-  });
+  const modeQuery = useQuery({ ...settingsQueryOptions.value("calendar_open_period"), enabled: isFocused });
+  const weekStartQuery = useQuery({ ...settingsQueryOptions.value("calendar_week_start"), enabled: isFocused });
+  const anchorQuery = useQuery({ ...settingsQueryOptions.value("calendar_fortnight_anchor"), enabled: isFocused });
 
   const calendarReady = [monthStartQuery, modeQuery, weekStartQuery, anchorQuery].every(
     (query) => query.data !== undefined
@@ -213,68 +191,48 @@ export default function HomeScreen() {
       : periodMode === "week"
         ? `${periodMode}:${weekStart}`
         : `${periodMode}:${fortnightAnchor}`;
+  // A changed calendar setting starts again from the current period.
   if (calendarReady && periodSelection.signature !== signature) {
     setPeriodSelection({ signature, offset: 0 });
   }
   const offset = periodSelection.signature === signature ? periodSelection.offset : 0;
-  const period = selectedHomePeriod(dayKey, offset, periodMode, monthStartQuery.data ?? 1, weekStart, fortnightAnchor);
-  const periodLabel = period.label;
+  const period = selectedHomePeriod(dayKey, offset, periodMode, {
+    monthStartDay: monthStartQuery.data ?? 1,
+    weekStart,
+    fortnightAnchor,
+  });
 
-  const transactionsQuery = useQuery({
-    ...entriesQueryOptions.list({
-      from: period.from,
-      to: period.to,
-      limit: 1000,
-      walletFilter: appliedWalletFilter ?? undefined,
-    }),
+  // Every entry of the period, all pages: day totals, the hero and the filter count are never cut at one page.
+  const periodQuery = useQuery({
+    ...entriesQueryOptions.all({ from: period.from, to: period.to, walletFilter: appliedWalletFilter ?? undefined }),
     enabled: isFocused && calendarReady,
   });
+  const todayQuery = useQuery({ ...entriesQueryOptions.all({ from: dayKey, to: dayKey }), enabled: isFocused });
+  const latestQuery = useQuery({ ...entriesQueryOptions.list({ sort: "recorded", limit: 1 }), enabled: isFocused });
   const categoriesQuery = useQuery({ ...categoriesQueryOptions.list(), enabled: isFocused });
-  const summaryQuery = useQuery({
-    ...homeQueryOptions.periodSummary(period.from, period.to, appliedWalletFilter ?? undefined),
-    enabled: isFocused && calendarReady,
-  });
-  const todayQuery = useQuery({
-    ...entriesQueryOptions.list({ from: dayKey, to: dayKey, limit: 1000 }),
-    enabled: isFocused,
-  });
-  const recentQuery = useQuery({
-    ...entriesQueryOptions.list({ limit: 1000 }),
-    enabled: isFocused,
-  });
-  const activityQuery = useQuery({
-    ...streakQueryOptions.dailyActivity(dayKey),
-    enabled: isFocused,
-  });
+  const activityQuery = useQuery({ ...streakQueryOptions.dailyActivity(dayKey), enabled: isFocused });
   const streakSettingsQuery = useQuery({ ...streakQueryOptions.settings(), enabled: isFocused });
-  const walletOptionsQuery = useQuery({
-    ...walletsQueryOptions.filterOptions(),
-    enabled: isFocused,
-  });
+  const walletOptionsQuery = useQuery({ ...walletsQueryOptions.filterOptions(), enabled: isFocused });
 
   const dataQueries = [
     monthStartQuery,
     modeQuery,
     weekStartQuery,
     anchorQuery,
-    transactionsQuery,
-    categoriesQuery,
-    summaryQuery,
+    periodQuery,
     todayQuery,
-    recentQuery,
+    latestQuery,
+    categoriesQuery,
     activityQuery,
     streakSettingsQuery,
     walletOptionsQuery,
   ];
-  const firstError = dataQueries.find((query) => query.data === undefined && query.error)?.error;
-  const error = firstError?.message ?? null;
+  const error = dataQueries.find((query) => query.data === undefined && query.error)?.error ?? null;
   const loading = !error && dataQueries.some((query) => query.data === undefined);
   const refreshError = dataQueries.find((query) => query.data !== undefined && query.error)?.error;
-  const transactions = transactionsQuery.data ?? emptyRows;
+  const entries = periodQuery.data ?? emptyRows;
+  const todayEntries = todayQuery.data ?? emptyRows;
   const categories = categoriesQuery.data ?? emptyRows;
-  const summary = summaryQuery.data;
-  const todayTransactions = todayQuery.data ?? emptyRows;
-  const recentTransactions = recentQuery.data ?? emptyRows;
   const dailyActivity = activityQuery.data ?? emptyRows;
   const streakSettings = streakSettingsQuery.data ?? defaultStreakSettings;
   const walletOptions = walletOptionsQuery.data ?? emptyWalletOptions;
@@ -307,15 +265,33 @@ export default function HomeScreen() {
     }
   };
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, FinanceTransaction[]>();
-    for (const item of transactions) map.set(item.occurredOn, [...(map.get(item.occurredOn) ?? []), item]);
-    return [...map.entries()];
-  }, [transactions]);
-  const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
-  const todayActivity = dailyActivity.find((day) => day.date === dayKey);
-  const autoToday = todayTransactions.filter((item) => item.source === "slip" || item.source === "statement").length;
-  const pendingToday = todayActivity?.pendingCategoryCount ?? 0;
+  const days = useMemo(() => {
+    const grouped = homeDays(entries, { today: dayKey, categories });
+    // While a slip is read, today's card shows a placeholder row even before today has entries.
+    const todayInPeriod = dayKey >= period.from && dayKey <= period.to;
+    if (!slipScan.reading || !todayInPeriod || grouped.some((day) => day.isToday)) return grouped;
+    const today: HomeDay = {
+      date: dayKey,
+      isToday: true,
+      label: dayLabel(dayKey),
+      rows: [],
+      totalLabel: "รายจ่าย",
+      totalSatang: 0,
+    };
+    return [today, ...grouped];
+  }, [entries, dayKey, categories, slipScan.reading, period.from, period.to]);
+  const expenseSatang = sumOf(entries, "expense");
+  // The link and its queue cover what Home shows: every pending entry of the viewed period under the applied filter.
+  const pendingIds = useMemo(() => entries.filter(needsCategory).map((row) => row.id), [entries]);
+  const speech = homeSpeech({
+    reading: slipScan.reading,
+    photoMessage: photoPrompt?.message ?? null,
+    autoToday: todayEntries.filter((row) => row.source === "slip" || row.source === "statement").length,
+    pendingInView: pendingIds.length,
+    pendingToday: todayEntries.filter(needsCategory).length,
+    todayCount: todayEntries.length,
+    canRead: slipScan.access !== "unsupported",
+  });
   const streak = useMemo(
     () => computeStreakStats(dailyActivity, dayKey, streakSettings).current,
     [dailyActivity, dayKey, streakSettings]
@@ -346,6 +322,20 @@ export default function HomeScreen() {
     if (homeScan.pullReady()) refetchHome();
   };
 
+  const emptyTitle = appliedWalletFilter
+    ? "ไม่พบรายการจากตัวกรองนี้"
+    : periodMode === "month"
+      ? offset === 0
+        ? "ยังไม่มีรายการในเดือนนี้"
+        : "ยังไม่มีรายการในเดือนที่เลือก"
+      : periodMode === "week"
+        ? offset === 0
+          ? "ยังไม่มีรายการในสัปดาห์นี้"
+          : "ยังไม่มีรายการในสัปดาห์ที่เลือก"
+        : offset === 0
+          ? "ยังไม่มีรายการในช่วง 2 สัปดาห์นี้"
+          : "ยังไม่มีรายการในช่วง 2 สัปดาห์ที่เลือก";
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -363,7 +353,7 @@ export default function HomeScreen() {
           // Home shows reading and the pull itself; the native indicator never stays open.
           <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="transparent" colors={["transparent"]} />
         }
-        contentContainerStyle={{ paddingTop: Math.max(insets.top + 12, 28), paddingBottom: 145 }}
+        contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 110 }}
       >
         <View style={styles.content}>
           <View style={styles.topBar}>
@@ -371,227 +361,183 @@ export default function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel={streakSettings.enabled ? `ดูสถิติแครอตสตรีค ${streak} วัน` : "ดูสถิติแครอตสตรีคที่ปิดอยู่"}
               onPress={() => router.push("/streak-stats")}
-              style={styles.streakPill}
+              style={({ pressed }) => [styles.streakChip, pressed && { opacity: 0.72 }]}
             >
               <Image
                 source={require("../../../assets/generated/carrot-reward.png")}
                 contentFit="contain"
-                accessibilityLabel="แครอตของน้องหมู"
-                style={{ width: 27, height: 27 }}
+                accessible={false}
+                style={{ width: 26, height: 26 }}
               />
-              <Text style={styles.streakText}>{streakSettings.enabled ? `${streak} วัน` : "ปิดการนับ"}</Text>
+              <Text style={styles.streakText}>{streakSettings.enabled ? `${streak} วัน` : "ปิดอยู่"}</Text>
             </Pressable>
             <View style={styles.topActions}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="ค้นหารายการ"
                 onPress={() => router.push("/search")}
-                style={styles.topAction}
+                style={({ pressed }) => [styles.topAction, pressed && { opacity: 0.72 }]}
               >
-                <HomeIcon name="search" color={theme.text} size={25} />
+                <HomeIcon name="search" color={theme.text} size={21} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="กรองรายการ"
-                onPress={() => {
-                  void openWalletFilter();
-                }}
-                style={[styles.topAction, (filterOpen || appliedWalletFilter) && styles.topActionFiltered]}
+                accessibilityState={{ selected: Boolean(appliedWalletFilter) }}
+                onPress={() => void openWalletFilter()}
+                style={({ pressed }) => [
+                  styles.topAction,
+                  (filterOpen || appliedWalletFilter) && accentRing(theme),
+                  pressed && { opacity: 0.72 },
+                ]}
               >
-                <HomeIcon name="wallet" color={theme.text} size={25} />
+                <HomeIcon name="wallet" color={theme.text} size={21} />
               </Pressable>
             </View>
           </View>
           {appliedWalletFilter ? (
-            <View style={styles.activeFilter}>
+            <View style={styles.filterNotice}>
               <HomeIcon name="filter" size={16} color={theme.accentText} />
-              <Text style={styles.activeFilterText}>กำลังแสดง {transactions.length} รายการจากตัวกรอง</Text>
+              <Text style={styles.filterNoticeText}>
+                {periodQuery.data ? `กำลังแสดง ${entries.length} รายการจากตัวกรอง` : "กำลังกรองรายการ"}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="ล้างตัวกรอง"
                 onPress={() => setAppliedWalletFilter(null)}
+                style={styles.clearFilter}
               >
-                <Text style={styles.clearFilter}>ล้าง</Text>
+                <Text style={styles.clearFilterText}>ล้าง</Text>
               </Pressable>
             </View>
           ) : null}
 
-          <View style={styles.speechBubble}>
-            {slipScan.reading ? (
-              <>
-                <Text style={styles.speechTitle}>หมูกำลังอ่านสลิปใหม่</Text>
-                <Text style={styles.speechBody}>เปิดแอปไว้ก่อนน้า</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.speechTitle}>
-                  {autoToday > 0 ? `วันนี้หมูจดให้ ${autoToday} รายการ` : "วันนี้หมูพร้อมช่วยจด"}
-                </Text>
-                <Text style={styles.speechBody}>
-                  {photoPrompt
-                    ? photoPrompt.message
-                    : pendingToday > 0
-                      ? `มี ${pendingToday} รายการรอเลือกหมวด`
-                      : (todayActivity?.transactionCount ?? 0) > 0
-                        ? "วันนี้เลือกหมวดครบแล้ว"
-                        : slipScan.access === "unsupported"
-                          ? "แตะ “จดเพิ่ม” เพื่อจดรายการเอง"
-                          : "หมูอ่านสลิปใหม่ให้อัตโนมัติ"}
-                </Text>
-                {photoPrompt ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityHint={photoPrompt.hint}
-                    onPress={() => void allowPhotoAccess()}
-                    style={styles.speechLink}
-                  >
-                    <Text style={styles.speechLinkText}>{photoPrompt.label}</Text>
-                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
-                  </Pressable>
-                ) : null}
-                {pendingToday > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push("/pending-categories")}
-                    style={styles.speechLink}
-                  >
-                    <Text style={styles.speechLinkText}>เลือกหมวดต่อเนื่อง</Text>
-                    <HomeIcon name="chevronRight" size={17} color={theme.accentText} />
-                  </Pressable>
-                ) : null}
-              </>
-            )}
-            <View style={styles.speechTail} />
+          <View style={styles.speech}>
+            <PigMascot size={72} />
+            <View style={styles.speechCopy}>
+              <Text style={styles.speechTitle}>{speech.title}</Text>
+              {speech.body ? <Text style={styles.speechBody}>{speech.body}</Text> : null}
+              {!slipScan.reading && photoPrompt ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityHint={photoPrompt.hint}
+                  onPress={() => void allowPhotoAccess()}
+                  style={styles.speechLink}
+                >
+                  <Text style={styles.speechLinkText}>{photoPrompt.label}</Text>
+                  <HomeIcon name="chevronRight" size={15} strokeWidth={2.2} color={theme.accentText} />
+                </Pressable>
+              ) : null}
+              {!slipScan.reading && pendingIds.length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    router.push({ pathname: "/pending-categories", params: { ids: pendingIds.join(",") } })
+                  }
+                  style={styles.speechLink}
+                >
+                  <Text style={styles.speechLinkText}>มี {pendingIds.length} รายการรอเลือกหมวด</Text>
+                  <HomeIcon name="chevronRight" size={15} strokeWidth={2.2} color={theme.accentText} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
           {slipScan.animating ? (
-            <View style={styles.flowCardSlot}>
+            <View style={styles.flowCards}>
               <SlipFlowCards />
             </View>
-          ) : (
-            <View style={styles.latestRow}>
-              <HomeIcon name="clock" size={17} color={theme.muted} />
-              <Text style={styles.latestText}>{latestJotLabel(recentTransactions)}</Text>
-            </View>
-          )}
-          <View style={styles.monthCard}>
-            <View style={styles.mascot}>
-              <PigMascot size={96} />
-            </View>
-            <View style={styles.monthNav}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  periodMode === "month" ? "เดือนก่อน" : periodMode === "week" ? "สัปดาห์ก่อน" : "ช่วง 2 สัปดาห์ก่อน"
-                }
-                onPress={() => setPeriodSelection({ signature, offset: offset - 1 })}
-                style={styles.monthArrow}
-              >
-                <HomeIcon name="chevronLeft" color={theme.accentText} size={30} strokeWidth={2.7} />
-              </Pressable>
-              <HomeIcon name="calendar" color={theme.accentText} size={22} />
-              <Text
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.monthLabel, periodMode !== "month" && styles.rangeMonthLabel]}
-              >
-                {periodLabel}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  periodMode === "month" ? "เดือนถัดไป" : periodMode === "week" ? "สัปดาห์ถัดไป" : "ช่วง 2 สัปดาห์ถัดไป"
-                }
-                disabled={offset >= 0}
-                onPress={() => setPeriodSelection({ signature, offset: offset + 1 })}
-                style={[styles.monthArrow, offset >= 0 && { opacity: 0.35 }]}
-              >
-                <HomeIcon name="chevronRight" color={theme.accentText} size={30} strokeWidth={2.7} />
-              </Pressable>
-            </View>
-            <View style={styles.monthBottom}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.monthCaption}>ยอดใช้จ่าย</Text>
-                <View style={styles.monthAmountRow}>
-                  <SpinningCounter
-                    value={formatBaht(summary?.expenseSatang ?? 0)}
-                    style={styles.monthAmount}
-                    cellHeight={42}
-                  />
-                  <Text style={styles.monthBaht}> ฿</Text>
-                </View>
+          ) : null}
+
+          <View style={styles.hero}>
+            <View style={styles.heroTop}>
+              <View style={styles.periodNav}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={period.previousLabel}
+                  onPress={() => setPeriodSelection({ signature, offset: offset - 1 })}
+                  style={({ pressed }) => [styles.periodArrow, pressed && { opacity: 0.6 }]}
+                >
+                  <HomeIcon name="chevronLeft" color={theme.onAccent} size={20} strokeWidth={2.2} />
+                </Pressable>
+                <Text numberOfLines={1} style={styles.periodLabel}>
+                  {period.label}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={period.nextLabel}
+                  accessibilityState={{ disabled: period.isCurrent }}
+                  disabled={period.isCurrent}
+                  onPress={() => setPeriodSelection({ signature, offset: Math.min(0, offset + 1) })}
+                  style={({ pressed }) => [
+                    styles.periodArrow,
+                    { opacity: period.isCurrent ? 0.35 : pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <HomeIcon name="chevronRight" color={theme.onAccent} size={20} strokeWidth={2.2} />
+                </Pressable>
               </View>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push("/summary")}
-                style={styles.summaryButton}
+                accessibilityLabel="ดูสรุป"
+                onPress={() => router.push({ pathname: "/summary", params: { date: period.summaryDate } })}
+                style={({ pressed }) => [styles.summaryButton, pressed && { opacity: 0.72 }]}
               >
-                <HomeIcon name="chart" color={theme.text} size={22} />
-                <Text style={styles.summaryButtonText}>ดูสรุป</Text>
+                <View style={styles.summaryPill}>
+                  <HomeIcon name="chart" color={theme.onAccent} size={16} />
+                  <Text style={styles.summaryText}>ดูสรุป</Text>
+                </View>
               </Pressable>
+            </View>
+            <Text style={styles.heroCaption}>{period.caption}</Text>
+            {/* Until the period's entries are read the total is unknown, not 0. */}
+            <View
+              accessible
+              accessibilityLabel={
+                periodQuery.data ? `${period.caption} ${formatBaht(expenseSatang)} บาท` : `${period.caption} ยังไม่ทราบ`
+              }
+              style={styles.heroAmountRow}
+            >
+              {periodQuery.data ? (
+                <SpinningCounter value={formatBaht(expenseSatang)} style={styles.heroAmount} cellHeight={42} />
+              ) : (
+                <Text style={styles.heroAmount}>–</Text>
+              )}
+              <Text style={styles.heroBaht}>฿</Text>
             </View>
           </View>
 
-          {refreshError ? (
-            <Text selectable style={styles.errorText}>
-              {refreshError.message}
-            </Text>
+          <View style={styles.latestRow}>
+            <HomeIcon name="clock" size={14} color={theme.muted} />
+            <Text style={styles.latestText}>{latestJotLabel(latestQuery.data?.[0]?.createdAt ?? null, dayKey)}</Text>
+          </View>
+
+          {refreshError && !error ? (
+            <Pressable accessibilityRole="button" onPress={refetchHome} style={styles.refreshErrorRow}>
+              <Text style={styles.refreshError}>
+                อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.retryText}>ลองอีกครั้ง</Text>
+              </Text>
+            </Pressable>
           ) : null}
           {loading ? (
-            <ActivityIndicator color={theme.accentText} style={styles.loading} />
+            <ActivityIndicator accessibilityLabel="กำลังโหลดรายการ" color={theme.accentText} style={styles.loading} />
           ) : error ? (
-            <View style={styles.messagePanel}>
-              <Text selectable style={styles.errorText}>
-                {error}
-              </Text>
-              <Pressable
-                onPress={() => {
-                  for (const query of dataQueries) if (query.isEnabled) void query.refetch();
-                }}
-              >
-                <Text style={styles.errorText}>ลองอีกครั้ง</Text>
+            <View style={styles.messageCard}>
+              <Text style={styles.messageTitle}>โหลดรายการไม่สำเร็จ</Text>
+              <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
+              <Pressable accessibilityRole="button" onPress={refetchHome} style={styles.retry}>
+                <Text style={styles.retryText}>ลองอีกครั้ง</Text>
               </Pressable>
             </View>
-          ) : slipScan.reading && grouped.length === 0 ? (
-            <View style={styles.dayGroup}>
-              <View style={styles.dayRail}>
-                <View style={[styles.dayAccent, { backgroundColor: theme.accent }]} />
-                <Text style={[styles.dayName, { color: theme.accentText }]}>วันนี้</Text>
-                <Text style={[styles.dayNumber, { color: theme.accentText }]}>{new Date().getDate()}</Text>
-              </View>
-              <View style={styles.dayContents}>
-                <TimelineSkeletonRow />
-              </View>
-            </View>
-          ) : grouped.length === 0 ? (
-            <View style={styles.messagePanel}>
-              <Text style={styles.emptyTitle}>
-                {appliedWalletFilter
-                  ? "ไม่พบรายการจากตัวกรองนี้"
-                  : periodMode === "month"
-                    ? "ยังไม่มีรายการในเดือนนี้"
-                    : periodMode === "week"
-                      ? offset === 0
-                        ? "ยังไม่มีรายการในสัปดาห์นี้"
-                        : "ยังไม่มีรายการในสัปดาห์ที่เลือก"
-                      : offset === 0
-                        ? "ยังไม่มีรายการในช่วง 2 สัปดาห์นี้"
-                        : "ยังไม่มีรายการในช่วง 2 สัปดาห์ที่เลือก"}
-              </Text>
-              <Text style={styles.emptyBody}>
+          ) : days.length === 0 ? (
+            <View style={styles.messageCard}>
+              <Text style={styles.messageTitle}>{emptyTitle}</Text>
+              <Text style={styles.messageBody}>
                 {appliedWalletFilter ? "ลองเลือกบัญชี บัตร หรือรายการอื่นเพิ่มเติม" : "แตะ “จดเพิ่ม” เพื่อเริ่มบันทึกรายรับรายจ่าย"}
               </Text>
             </View>
           ) : (
-            grouped.map(([date, items], index) => (
-              <DayGroup
-                key={date}
-                date={date}
-                items={items}
-                categories={categoryById}
-                showSkeleton={slipScan.reading && index === 0}
-              />
-            ))
+            days.map((day) => <DayGroup key={day.date} day={day} reading={slipScan.reading} />)
           )}
         </View>
       </ScrollView>
@@ -610,7 +556,7 @@ export default function HomeScreen() {
           onPress={() => router.push("/entry")}
           style={({ pressed }) => [styles.addButton, { opacity: pressed ? 0.84 : 1 }]}
         >
-          <HomeIcon name="plus" color={theme.onAccent} size={24} strokeWidth={2.6} />
+          <HomeIcon name="plus" color={theme.onAccent} size={20} strokeWidth={2.4} />
           <Text style={styles.addButtonText}>จดเพิ่ม</Text>
         </Pressable>
       </View>
@@ -622,206 +568,179 @@ function createStyles(theme: AppTheme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: theme.background },
     content: { width: "100%", maxWidth: 680, alignSelf: "center" },
-    topBar: {
-      paddingHorizontal: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    streakPill: {
-      height: 43,
-      paddingHorizontal: 12,
+    topBar: { paddingHorizontal: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    streakChip: {
+      height: touch.min,
+      paddingLeft: 10,
+      paddingRight: 14,
       borderRadius: 12,
       backgroundColor: theme.raised,
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
+      gap: 6,
     },
-    streakEmoji: { fontSize: 24 },
-    streakText: { color: theme.text, fontSize: 17, fontWeight: "800" },
-    topActions: { flexDirection: "row", gap: 9 },
+    streakText: { color: theme.text, fontSize: 14, lineHeight: 20 },
+    topActions: { flexDirection: "row", gap: 8 },
     topAction: {
-      width: 43,
-      height: 43,
-      borderRadius: 24,
+      width: touch.min,
+      height: touch.min,
+      borderRadius: touch.min / 2,
       backgroundColor: theme.raised,
       alignItems: "center",
       justifyContent: "center",
     },
-    topActionFiltered: { borderWidth: 2, borderColor: theme.accent },
-    activeFilter: {
+    filterNotice: {
+      marginTop: 6,
       marginHorizontal: 16,
-      marginTop: 12,
+      paddingLeft: 4,
       flexDirection: "row",
       alignItems: "center",
       gap: 7,
     },
-    activeFilterText: { color: theme.text, flex: 1, fontSize: 12 },
-    clearFilter: { color: theme.accentText, fontSize: 12, fontWeight: "800" },
-    speechBubble: {
-      marginTop: 23,
-      marginLeft: 58,
-      marginRight: 16,
-      paddingHorizontal: 17,
-      paddingVertical: 17,
-      minHeight: 108,
-      borderRadius: 19,
-      backgroundColor: theme.raised,
-    },
-    speechTitle: { color: theme.text, fontSize: 18, fontWeight: "900" },
-    speechBody: { color: theme.accentText, fontSize: 14, marginTop: 4, fontWeight: "600" },
+    filterNoticeText: { flex: 1, color: theme.text, fontSize: 13, lineHeight: 19 },
+    clearFilter: { minHeight: touch.min, paddingHorizontal: 6, justifyContent: "center" },
+    clearFilterText: { color: theme.accentText, fontSize: 13, lineHeight: 19 },
+    speech: { marginTop: 16, marginHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12 },
+    speechCopy: { flex: 1, minWidth: 0 },
+    speechTitle: { color: theme.text, fontSize: 16, lineHeight: 22 },
+    speechBody: { marginTop: 2, color: theme.muted, fontSize: 14, lineHeight: 20 },
     speechLink: {
+      minHeight: touch.min,
+      marginTop: -4,
+      marginBottom: -8,
       alignSelf: "flex-start",
-      marginTop: 11,
-      flexDirection: "row",
-      gap: 3,
-      alignItems: "center",
-    },
-    speechLinkText: { color: theme.accentText, fontSize: 14, fontWeight: "800" },
-    speechTail: {
-      position: "absolute",
-      right: 60,
-      bottom: -13,
-      width: 0,
-      height: 0,
-      borderLeftWidth: 13,
-      borderLeftColor: "transparent",
-      borderTopWidth: 14,
-      borderTopColor: theme.raised,
-    },
-    flowCardSlot: {
-      marginLeft: 58,
-      marginRight: 16,
-      marginTop: 10,
-      marginBottom: 8,
-      height: 70,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    latestRow: {
-      marginLeft: 58,
-      marginRight: 16,
-      marginTop: 68,
-      marginBottom: 8,
       flexDirection: "row",
       alignItems: "center",
-      gap: 7,
+      gap: 2,
     },
-    latestText: { color: theme.muted, fontSize: 12 },
-    monthCard: {
-      marginLeft: 58,
-      minHeight: 156,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
+    speechLinkText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    flowCards: { marginTop: 6, marginHorizontal: 16, height: 70 },
+    hero: {
+      marginTop: 14,
+      marginHorizontal: 16,
+      paddingTop: 6,
+      paddingHorizontal: 16,
+      paddingBottom: 18,
+      borderRadius: radius.hero,
       backgroundColor: theme.accent,
-      paddingHorizontal: 17,
-      paddingTop: 13,
-      paddingBottom: 17,
     },
-    mascot: { position: "absolute", right: 18, top: -65, zIndex: 2 },
-    monthNav: { flexDirection: "row", alignItems: "center", gap: 9, paddingRight: 6 },
-    monthArrow: { width: 24, height: 34, justifyContent: "center" },
-    monthLabel: { color: theme.onAccent, fontSize: 17, fontWeight: "900", flexShrink: 1 },
-    rangeMonthLabel: { fontSize: 13 },
-    monthBottom: { marginTop: 19, flexDirection: "row", alignItems: "flex-end", gap: 8 },
-    monthCaption: { color: theme.onAccent, fontSize: 13 },
-    monthAmountRow: { flexDirection: "row", alignItems: "flex-end" },
-    monthBaht: {
+    heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    periodNav: { marginLeft: -12, flexDirection: "row", alignItems: "center", flexShrink: 1 },
+    periodArrow: { width: touch.min, height: touch.min, alignItems: "center", justifyContent: "center" },
+    periodLabel: {
+      minWidth: 52,
+      flexShrink: 1,
       color: theme.onAccent,
-      fontSize: bahtFontSize(36),
-      fontWeight: "400",
-      fontVariant: ["tabular-nums"],
-      marginBottom: 5,
+      fontSize: 15,
+      lineHeight: 20,
+      textAlign: "center",
     },
-    monthAmount: {
+    summaryButton: { height: touch.min, marginRight: -4, justifyContent: "center" },
+    summaryPill: {
+      height: 34,
+      paddingHorizontal: 12,
+      borderRadius: 17,
+      backgroundColor: "rgba(30,27,25,0.1)",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    summaryText: { color: theme.onAccent, fontSize: 13, lineHeight: 18 },
+    heroCaption: { marginTop: 6, color: theme.onAccent, fontSize: 13, lineHeight: 18 },
+    heroAmountRow: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
+    heroAmount: {
       color: theme.onAccent,
       fontSize: 36,
       fontWeight: "500",
       letterSpacing: -0.3,
       fontVariant: ["tabular-nums"],
     },
-    summaryButton: {
-      paddingHorizontal: 13,
-      height: 42,
-      borderRadius: 25,
-      backgroundColor: theme.accent,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-    },
-    summaryButtonText: { color: theme.onAccent, fontSize: 14, fontWeight: "900" },
-    dayGroup: { flexDirection: "row", backgroundColor: theme.background, marginBottom: 8 },
-    dayRail: { width: 58, paddingTop: 17, alignItems: "center", backgroundColor: theme.background },
-    dayAccent: { position: "absolute", top: 0, left: 0, width: 4, height: 76 },
-    dayName: { color: theme.text, fontSize: 13 },
-    dayNumber: { color: theme.text, fontSize: 21, fontWeight: "800", marginTop: 2 },
-    dayContents: { flex: 1 },
-    daySubtotal: {
-      height: 76,
-      backgroundColor: theme.raised,
-      alignItems: "flex-end",
-      justifyContent: "center",
-      paddingRight: 17,
-    },
-    daySubtotalTitle: { color: theme.muted, fontSize: 13 },
-    transaction: {
-      minHeight: 86,
+    heroBaht: { color: theme.onAccent, fontSize: bahtFontSize(36), lineHeight: 28, marginBottom: 4 },
+    latestRow: { marginTop: 10, marginHorizontal: 20, flexDirection: "row", alignItems: "center", gap: 6 },
+    latestText: { color: theme.muted, fontSize: 12, lineHeight: 17 },
+    refreshErrorRow: { marginTop: 4, marginHorizontal: 20, minHeight: touch.min, justifyContent: "center" },
+    refreshError: { color: theme.danger, fontSize: 12, lineHeight: 17 },
+    loading: { marginTop: 40 },
+    messageCard: {
+      marginTop: 22,
+      marginHorizontal: 16,
+      padding: 20,
+      borderRadius: radius.card,
+      borderWidth: 1,
+      borderColor: theme.raised,
       backgroundColor: theme.surface,
-      paddingLeft: 18,
-      paddingRight: 16,
+    },
+    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
+    messageBody: { marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 20 },
+    retry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center", marginTop: 4 },
+    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    dayHeader: {
+      paddingTop: 22,
+      paddingHorizontal: 20,
+      paddingBottom: 8,
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    dayToday: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+    todayLabel: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    dayLabel: { color: theme.text, fontSize: 14, lineHeight: 20 },
+    dayMuted: { color: theme.muted, fontSize: 13, lineHeight: 18 },
+    dayNumber: { fontWeight: "500", fontVariant: ["tabular-nums"] },
+    dayCard: {
+      marginHorizontal: 16,
+      borderRadius: radius.card,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: theme.raised,
+      backgroundColor: theme.surface,
+    },
+    row: {
+      minHeight: 62,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
       flexDirection: "row",
       alignItems: "center",
-      gap: 11,
-      overflow: "hidden",
+      gap: 12,
     },
-    uncategorizedCorner: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: 0,
-      height: 0,
-      borderTopWidth: 15,
-      borderRightWidth: 15,
-      borderTopColor: theme.accentText,
-      borderRightColor: "transparent",
+    rowDivider: { position: "absolute", top: 0, left: 60, right: 0, height: 1, backgroundColor: theme.raised },
+    pendingIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      borderColor: theme.accent,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    categoryCircle: {
-      width: 37,
-      height: 37,
-      borderRadius: 21,
+    rowIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       backgroundColor: theme.raised,
       alignItems: "center",
       justifyContent: "center",
     },
-    categoryEmoji: { fontSize: 19 },
-    transactionCopy: { flex: 1, minWidth: 0, gap: 2 },
-    transactionKind: { color: theme.text, fontSize: 16, fontWeight: "900" },
-    transactionTitle: { color: theme.text, fontSize: 14 },
-    loading: { marginTop: 35 },
-    messagePanel: {
-      marginLeft: 58,
-      marginTop: 8,
-      marginRight: 16,
-      padding: 21,
-      borderRadius: 15,
-      backgroundColor: theme.raised,
-      gap: 4,
-    },
-    errorText: { color: theme.danger, fontSize: 13 },
-    emptyTitle: { color: theme.text, fontSize: 16, fontWeight: "800" },
-    emptyBody: { color: theme.muted, fontSize: 12, lineHeight: 18 },
-    floatingWrap: { position: "absolute", bottom: 17, right: 16, alignItems: "flex-end", gap: 9 },
+    rowEmoji: { fontSize: 17, lineHeight: 22 },
+    rowCopy: { flex: 1, minWidth: 0 },
+    rowTitleLine: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 },
+    rowTitle: { flexShrink: 1, color: theme.text, fontSize: 15, lineHeight: 21 },
+    newBadge: { paddingHorizontal: 7, borderRadius: 6, backgroundColor: theme.accent },
+    newBadgeText: { color: theme.onAccent, fontSize: 11, lineHeight: 18 },
+    rowMeta: { color: theme.muted, fontSize: 12, lineHeight: 17 },
+    rowAmount: { color: theme.text, fontSize: 15, lineHeight: 21, fontWeight: "500", fontVariant: ["tabular-nums"] },
+    floatingWrap: { position: "absolute", bottom: 16, right: 16 },
     addButton: {
       backgroundColor: theme.accent,
       borderRadius: radius.pill,
-      minWidth: 140,
       height: touch.button,
-      paddingHorizontal: 20,
+      paddingLeft: 16,
+      paddingRight: 20,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
+      gap: 8,
       ...shadow.float,
     },
     addButtonText: { color: theme.onAccent, fontSize: 16, lineHeight: 22 },

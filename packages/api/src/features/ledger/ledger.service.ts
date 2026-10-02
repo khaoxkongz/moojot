@@ -117,8 +117,9 @@ export function walletWhere(
       cardLast4,
     });
   }
-  if (filter.includeOther) {
-    options.push({ source: "manual" });
+  // “ไม่ระบุ” is an entry with no bank or card chosen, however it was recorded: a manual entry with a bank belongs to
+  // that bank. A last four without a card name never matches a bank or card row, so it stays here too.
+  if (filter.includeUnspecified) {
     options.push({
       cardName: null,
       OR: [{ bank: null }, { cardLast4: { not: null } }],
@@ -180,7 +181,11 @@ async function listTransactionsFrom(db: Database, userId: string, filters: Trans
   const where = await transactionWhere(db, userId, filters);
   const rows = await db.financeTransaction.findMany({
     where,
-    orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }],
+    // `id` last makes the order total, so paging by offset never repeats or drops entries recorded at the same moment.
+    orderBy:
+      filters.sort === "recorded"
+        ? [{ createdAt: "desc" }, { id: "desc" }]
+        : [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     ...(!unlimited ? { take: filters.limit ?? 200, skip: filters.offset ?? 0 } : {}),
   });
   return rows.map(mapTransaction);

@@ -42,9 +42,8 @@ export interface WalletCard {
 export interface WalletFilterSelection {
   banks: string[];
   cards: WalletCard[];
-  includeOther: boolean;
-  /** Reserved for a future card registry; transactions do not currently record card deletion. */
-  includeDeletedCards: boolean;
+  /** รายการไม่ระบุบัญชี: entries with no bank and no card, however they were recorded. */
+  includeUnspecified: boolean;
 }
 
 export interface WalletFilterOptions {
@@ -65,6 +64,8 @@ export interface TransactionFilters {
   source?: TransactionSource;
   search?: string;
   walletFilter?: WalletFilterSelection;
+  /** "occurred" (default): newest day first. "recorded": the entry recorded last first. */
+  sort?: "occurred" | "recorded";
   limit?: number;
   offset?: number;
 }

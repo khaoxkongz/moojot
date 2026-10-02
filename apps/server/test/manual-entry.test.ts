@@ -134,7 +134,7 @@ describe("manual entry", () => {
     const groups = bankFilterGroups((await client.analytics.listWalletFilterOptions()).banks);
     expect(groups.map((group) => group.label)).toEqual(["กสิกรไทย"]);
     const rows = await client.ledger.listTransactions({
-      walletFilter: { banks: groups[0]!.banks, cards: [], includeOther: false, includeDeletedCards: false },
+      walletFilter: { banks: groups[0]!.banks, cards: [], includeUnspecified: false },
     });
     expect(rows.map((row) => row.id).sort()).toEqual([slip.id, manual.id].sort());
   });
@@ -153,7 +153,7 @@ describe("manual entry", () => {
     const groups = bankFilterGroups((await client.analytics.listWalletFilterOptions()).banks);
     expect(groups.map((group) => group.label)).toEqual(["กสิกรไทย", "ไทยพาณิชย์"]);
     const rows = await client.ledger.listTransactions({
-      walletFilter: { banks: groups[0]!.banks, cards: [], includeOther: false, includeDeletedCards: false },
+      walletFilter: { banks: groups[0]!.banks, cards: [], includeUnspecified: false },
     });
     expect(rows.map((row) => row.title).sort()).toEqual(["KBank", "กสิกรไทย"].sort());
   });

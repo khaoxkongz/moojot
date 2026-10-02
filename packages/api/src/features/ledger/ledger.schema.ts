@@ -1,6 +1,7 @@
 import * as S from "effect/Schema";
 
 import { amountSatangSchema, isoDateSchema } from "../../shared/finance/common";
+import { walletFilterSchema } from "../../shared/finance/wallet-filter";
 
 const transactionKindSchema = S.Literals(["income", "expense", "transfer"]);
 const transactionSourceSchema = S.Literals(["manual", "slip", "statement", "recurring"]);
@@ -40,18 +41,6 @@ const transactionPatchSchema = S.Struct({
   dedupeKey: S.optional(S.NullOr(S.String)),
 });
 
-const walletCardSchema = S.Struct({
-  cardName: S.String,
-  cardLast4: S.optional(S.NullOr(S.String)),
-});
-
-const walletFilterSchema = S.Struct({
-  banks: S.mutable(S.Array(S.String)),
-  cards: S.mutable(S.Array(walletCardSchema)),
-  includeOther: S.Boolean,
-  includeDeletedCards: S.Boolean,
-});
-
 export const transactionFiltersSchema = S.Struct({
   from: S.optional(isoDateSchema),
   to: S.optional(isoDateSchema),
@@ -64,6 +53,8 @@ export const transactionFiltersSchema = S.Struct({
   source: S.optional(transactionSourceSchema),
   search: S.optional(S.String),
   walletFilter: S.optional(walletFilterSchema),
+  /** "occurred" (default): newest day first. "recorded": the entry recorded last first, whatever its day. */
+  sort: S.optional(S.Literals(["occurred", "recorded"])),
   limit: S.optional(S.Int.check(S.isBetween({ minimum: 1, maximum: 1000 }))),
   offset: S.optional(S.Int.check(S.isGreaterThanOrEqualTo(0))),
 });

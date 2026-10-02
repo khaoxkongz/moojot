@@ -1,0 +1,147 @@
+# Ticket 05 Home, filter and pending-category queue states, named <NN>-app-<state> to pair with the design shots in
+# .scratch/native-redesign-ios/notes/design-shots/. It saves one KBank entry of 42 baht without a category (the queue
+# and the bank filter need one), picks a category for it in the queue, and deletes it again at the end.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home
+# Previous period: the next arrow is enabled there, and the label changes.
+- tapOn: "เดือนก่อน"
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home-previous
+# ดูสรุป from there opens Summary on that month, not the current one.
+- tapOn: "ดูสรุป"
+- extendedWaitUntil:
+    visible: "กลับหน้าแรก"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-summary-previous
+- tapOn: "กลับหน้าแรก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "เดือนถัดไป"
+    commands:
+      - tapOn: "เดือนถัดไป"
+# A pending entry: amount and bank, no category.
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- tapOn: "4"
+- tapOn: "2"
+- tapOn: "เสร็จ"
+- extendedWaitUntil:
+    visible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "ปิด"
+- extendedWaitUntil:
+    notVisible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "กสิกรไทย"
+- tapOn: "กสิกรไทย"
+- tapOn: "บันทึก"
+- extendedWaitUntil:
+    visible: "มี .* รายการรอเลือกหมวด"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home-pending
+# Filter: open, clear everything (notice + disabled apply), choose the bank only, apply, then clear.
+- tapOn: "กรองรายการ"
+- extendedWaitUntil:
+    visible: "แสดงรายการ"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-filter-sheet
+- tapOn: "เลือกทั้งหมด"
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-filter-none
+- tapOn: "กสิกรไทย"
+- tapOn: "แสดงรายการ"
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home-filtered
+- tapOn: "ล้างตัวกรอง"
+- waitForAnimationToEnd
+# The queue for every pending entry of the month on screen (the dev account may have others besides this one).
+- tapOn: "มี .* รายการรอเลือกหมวด"
+- extendedWaitUntil:
+    visible: "แก้ไขรายการนี้"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-queue
+# Edit from the queue opens the editor over it; closing comes back to the same entry.
+- tapOn: "แก้ไขรายการนี้"
+- extendedWaitUntil:
+    visible: "ตัวเลือกเพิ่มเติม"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-queue-edit
+- tapOn: "ปิดหน้าจดรายการ"
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-queue-back
+- tapOn: "หมวด อาหาร"
+# The pick saves, then the sheet moves on ("2 จาก N") or closes with its toast.
+- extendedWaitUntil:
+    notVisible: "1 จาก .*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-queue-done
+# Leave the account's other pending entries alone: close the sheet if it moved on to one.
+- runFlow:
+    when:
+      visible: "แก้ไขรายการนี้"
+    commands:
+      - tapOn: "ปิด"
+      - waitForAnimationToEnd
+# A run that stopped early can leave more of its entries pending: give each a category from its own row.
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+- repeat:
+    while:
+      visible: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+    commands:
+      - tapOn: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+      - waitForAnimationToEnd
+      # The row may have been read just before it got its category, and then opens the editor instead.
+      - runFlow:
+          when:
+            visible: "แก้ไขรายการนี้"
+          commands:
+            - tapOn: "หมวด อาหาร"
+      - runFlow:
+          when:
+            visible: "ปิดหน้าจดรายการ"
+          commands:
+            - tapOn: "ปิดหน้าจดรายการ"
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
+      - waitForAnimationToEnd
+# Clean up: delete every entry this flow saved.
+- repeat:
+    while:
+      visible: "รายจ่าย 42 บาท อาหาร · จดเอง.*"
+    commands:
+      - tapOn:
+          text: "รายจ่าย 42 บาท อาหาร · จดเอง.*"
+          retryTapIfNoChange: true
+      - extendedWaitUntil:
+          visible: "ตัวเลือกเพิ่มเติม"
+          timeout: 10000
+      - tapOn: "ตัวเลือกเพิ่มเติม"
+      - tapOn: ".*ลบรายการ"
+      # Home refreshes before the next row is looked for.
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd

@@ -27,7 +27,8 @@ export async function click(p, text, { exact = false } = {}) {
         if (!r.width || !r.height) continue;
         const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
         if (hit && (hit === e || e.contains(hit))) {
-          hit.click();
+          // An SVG icon inside the button has no click(); click the button itself then.
+          (typeof hit.click === "function" ? hit : e).click();
           return true;
         }
       }
