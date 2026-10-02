@@ -1,0 +1,177 @@
+# Ticket 08 Summary states, named <NN>-app-<state> to pair with the design shots in
+# .scratch/native-redesign-ios/notes/design-shots/. It saves one KBank entry of 42 baht without a category (the pending
+# group and the bank filter need one), opens Summary from Home, picks a category for it from Summary's pending group,
+# and deletes it again at the end.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- waitForAnimationToEnd
+# A pending entry: amount and bank, no category.
+- tapOn: "จดเพิ่ม"
+- extendedWaitUntil:
+    visible: "แป้นใส่จำนวนเงิน"
+    timeout: 10000
+- tapOn: "4"
+- tapOn: "2"
+- tapOn: "เสร็จ"
+- extendedWaitUntil:
+    visible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "ปิด"
+- extendedWaitUntil:
+    notVisible: "หมวด อาหาร"
+    timeout: 10000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: "กสิกรไทย"
+- tapOn: "กสิกรไทย"
+- tapOn: "บันทึก"
+- extendedWaitUntil:
+    visible: "มี .* รายการรอเลือกหมวด"
+    timeout: 15000
+- waitForAnimationToEnd
+# Home → Summary on the month Home shows.
+- tapOn: "ดูสรุป"
+- extendedWaitUntil:
+    visible: "ภาพรวมเดือนนี้"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "ยังไม่เลือกหมวด.*"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary
+- scrollUntilVisible:
+    element: "ยังไม่เลือกหมวด.*"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-pending
+- scrollUntilVisible:
+    element: "วางแผนงบ.*"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-bottom
+- scrollUntilVisible:
+    element: "ตามแท็ก"
+    direction: UP
+- tapOn: "ตามแท็ก"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-tags
+- tapOn: "ตามหมวด"
+- tapOn: "รายรับ"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-income
+- tapOn: "ย้ายเงิน"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-transfer
+- tapOn: "รายจ่าย"
+- scrollUntilVisible:
+    element: "เดือนก่อน"
+    direction: UP
+- tapOn: "เดือนก่อน"
+- extendedWaitUntil:
+    visible: "ภาพรวม.*"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-previous
+- tapOn: "เดือนถัดไป"
+- extendedWaitUntil:
+    visible: "ภาพรวมเดือนนี้"
+    timeout: 10000
+# Filter to the bank: the totals and bars narrow to it.
+- tapOn: "กรองรายการ"
+- extendedWaitUntil:
+    visible: "แสดงรายการ"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "เลือกทั้งหมด"
+- tapOn: "กสิกรไทย"
+- tapOn: "แสดงรายการ"
+- extendedWaitUntil:
+    visible: "สรุปเฉพาะบัญชีและบัตรที่เลือก"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-filtered
+# The pending group opens the queue for its entries (month and filter on screen).
+- scrollUntilVisible:
+    element: "ยังไม่เลือกหมวด.*"
+- tapOn: "ยังไม่เลือกหมวด.*"
+- extendedWaitUntil:
+    visible: "แก้ไขรายการนี้"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-queue
+- tapOn: "หมวด อาหาร"
+- waitForAnimationToEnd
+# Leave the account's other pending entries alone: close the sheet if it moved on to one.
+- runFlow:
+    when:
+      visible: "แก้ไขรายการนี้"
+    commands:
+      - tapOn: "ปิด"
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "สรุปเฉพาะบัญชีและบัตรที่เลือก"
+    timeout: 10000
+# The bars read the pick back: with this flow's entry the only pending KBank one, the pending group goes away.
+- extendedWaitUntil:
+    notVisible: "ยังไม่เลือกหมวด.*"
+    timeout: 15000
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-after-queue
+- tapOn: "ล้างตัวกรอง"
+- waitForAnimationToEnd
+# วางแผนงบ opens the plan on Summary's month, here the one before.
+- tapOn: "เดือนก่อน"
+- extendedWaitUntil:
+    visible: "ภาพรวม.*"
+    timeout: 10000
+- scrollUntilVisible:
+    element: "วางแผนงบ.*"
+- tapOn: "วางแผนงบ.*"
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-plan-from-summary
+- tapOn: "\\(insights\\)/summary"
+- waitForAnimationToEnd
+- tapOn: "กลับหน้าแรก"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 10000
+- waitForAnimationToEnd
+# Clean up: delete every entry this flow saved (and any a stopped run left pending).
+- repeat:
+    while:
+      visible: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+    commands:
+      - tapOn: "รายจ่าย 42 บาท รอเลือกหมวด · จดเอง.*"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "แก้ไขรายการนี้"
+          commands:
+            - tapOn: "หมวด อาหาร"
+      - runFlow:
+          when:
+            visible: "ปิดหน้าจดรายการ"
+          commands:
+            - tapOn: "ปิดหน้าจดรายการ"
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
+      - waitForAnimationToEnd
+- repeat:
+    while:
+      visible: "รายจ่าย 42 บาท อาหาร · จดเอง.*"
+    commands:
+      - tapOn:
+          text: "รายจ่าย 42 บาท อาหาร · จดเอง.*"
+          retryTapIfNoChange: true
+      - extendedWaitUntil:
+          visible: "ตัวเลือกเพิ่มเติม"
+          timeout: 10000
+      - tapOn: "ตัวเลือกเพิ่มเติม"
+      - tapOn: ".*ลบรายการ"
+      - extendedWaitUntil:
+          visible: "จดเพิ่ม"
+          timeout: 10000
+      - waitForAnimationToEnd
+      - waitForAnimationToEnd

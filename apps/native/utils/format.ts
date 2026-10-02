@@ -61,6 +61,25 @@ const SHORT_THAI_MONTHS = [
 /** "ก.ย." for month 9. */
 export const shortThaiMonth = (month: number) => SHORT_THAI_MONTHS[month - 1]!;
 
+/** Thai full month names, fixed for the same reason. */
+const LONG_THAI_MONTHS = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
+];
+
+/** "กันยายน" for month 9. */
+export const longThaiMonth = (month: number) => LONG_THAI_MONTHS[month - 1]!;
+
 /** "30 ก.ย." from "2026-09-30". */
 export function shortThaiDate(iso: string) {
   const [, month = 1, day = 1] = iso.split("-").map(Number);

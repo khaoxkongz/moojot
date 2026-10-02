@@ -39,6 +39,16 @@ export function shiftPeriodKey(key: PeriodKey, months: number): PeriodKey {
   return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+/** How many months `target` is before `current` (0 or fewer); 0 for a later or malformed key. */
+export function periodKeyOffset(current: PeriodKey, target: string): number {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(target)) return 0;
+  const months = (key: string) => {
+    const [year = 0, month = 1] = key.split("-").map(Number);
+    return year * 12 + month;
+  };
+  return Math.min(0, months(target) - months(current));
+}
+
 export function dateInMonth(key: PeriodKey, dayOfMonth: number): ISODate {
   assertPeriodKey(key);
   if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
