@@ -4,7 +4,9 @@
 
 **Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
 
-**Status:** ready-for-human
+**Status:** done
+
+**Done in:** b786f2c feat(search): search every month by amount, bank name and card; dc0a5d2 fix(search): match a bank only when the whole term names it, and share search helpers
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
@@ -17,7 +19,7 @@
 - [x] Grouped day/newest order, matched highlights, initial focus/clear, examples/no-results และ recent add/remove ทำงานจริง (stories 66, 67)
 - [x] ผล pending ไปคิวและผลอื่นไป editor; prefilled query รองรับ exact card name+last4 scope เพื่อใช้จากหน้าบัตรภายหลัง (story 68)
 - [x] คำขอเก่าหรือ error ไม่ทับผลของคำล่าสุด และ recovery ไม่ทำคำค้นหาย
-- [ ] ตรวจ authenticated query contract กับ >1,000 rows และหลายใบชื่อเดียวกัน พร้อมเดิน search→edit/queue บน iOS
+- [x] ตรวจ authenticated query contract กับ >1,000 rows และหลายใบชื่อเดียวกัน พร้อมเดิน search→edit/queue บน iOS
 
 ## Comments
 
@@ -33,3 +35,5 @@
 6. กด × ในช่อง: คำที่ค้นไปขึ้นใน "ค้นหาล่าสุด" แตะคำนั้นค้นได้อีก กด × ท้ายแถวลบได้ ปิดแอปเปิดใหม่แล้วรายการล่าสุดยังตรง
 7. ปิด Wi-Fi/เน็ต แล้วพิมพ์คำใหม่: ขึ้น "ค้นหาไม่สำเร็จ" คำค้นยังอยู่ เปิดเน็ตแล้วกด "ลองอีกครั้ง" ครั้งเดียว: ผลโหลดขึ้น
 8. ดูทั้งธีมสว่างและมืด ว่าตัวอักษร ระยะ และพื้นสีของคำที่ตรงอ่านง่าย
+
+2026-10-03: ผู้ใช้ลองบน iPhone แล้วบอกว่าโอเค แต่ยังไม่ได้ไล่ทุกข้อในรายการด้านบน (1–8) อย่างละเอียด จึงปิดตั๋วเป็น `done` ตามที่ผู้ใช้ตกลง ข้อ 7 (ปิดเน็ตแล้วกดลองอีกครั้ง) และการแก้หลังรีวิว (dc0a5d2: ค้น "bangkok" และคำที่มีชื่อธนาคารปนอยู่ เช่น "ค่ารถไปกรุงเทพ") ยังไม่เคยเห็นบนเครื่องจริง ควรดูอีกครั้งตอนตรวจรวมในตั๋ว 22
