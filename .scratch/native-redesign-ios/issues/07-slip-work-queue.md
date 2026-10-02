@@ -8,11 +8,11 @@
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
-**User stories:** 48–59
+**User stories:** 47–59
 
 **Why blocked:** ใช้ Home navigation/status ที่เสร็จและผลอ่านพร้อมหลักฐาน/transaction binding จากงานอ่านสลิป
 
-- [ ] Owner รอบอ่านระดับ signed-in app อ่านต่อเมื่อเปลี่ยน route; background/lock/permission loss หยุดส่งรูปใหม่ และ resume เมื่อ eligible; account switch/logout แยกผล (stories 48, 49)
+- [ ] Owner รอบอ่านระดับ signed-in app อ่านต่อเมื่อเปลี่ยน route; background/lock/permission loss หยุดส่งรูปใหม่ และ resume เมื่อ eligible; account switch/logout แยกผล (stories 47, 48, 49)
 - [ ] หน้าผลแยก created→จดให้แล้ว, duplicate/no-candidate→ข้ามไป, incomplete→ต้องช่วย พร้อม actions ที่ทำงานจริง (stories 50, 57)
 - [ ] เก็บงานค้างตามบัญชีบนมือถือข้ามรอบ/วัน/restart และเกินช่วงค้นรูป 30 วันจนจัดการเสร็จ ไม่ใช้ lastRound แทน durable queue (story 51)
 - [ ] Incomplete รูปเดิมที่จำผลไว้ไม่ส่ง GenAI ซ้ำอัตโนมัติ; transient failures ใช้ backoff/Retry-After/eligibility และ targeted retry ที่เลือกงานได้ (stories 52, 53)

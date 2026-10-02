@@ -8,7 +8,7 @@
 
 **Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
 
-**User stories:** 41, 85–87
+**User stories:** 85–87
 
 **Why blocked:** ต้องกลับเข้า editor พร้อม draft และเลือกข้อมูลที่เพิ่งแก้จากงานจดเองได้
 
@@ -16,6 +16,6 @@
 - [ ] Custom category เลือก emoji และ tags มี suggestions/one-tap add; ไม่มี color picker ตาม handoff (story 86)
 - [ ] Name duplicates และ tag ≤20 ตรวจทั้ง create/update/inline editor paths ไม่ขึ้นกับ UI เพียงทางเดียว (story 87)
 - [ ] System category แก้/ลบไม่ได้ทั้ง UI และ API (story 87)
-- [ ] Editor เปิด manager ซ้อนแล้วกลับมายัง draft เดิมได้ ตัวเลือกใหม่/แก้ refresh และเลือกไปบันทึกรายการจริง (story 41)
+- [ ] Editor เปิด manager ซ้อนแล้วกลับมายัง draft เดิมได้ ตัวเลือกใหม่/แก้ refresh และเลือกไปบันทึกรายการจริง
 - [ ] Loading/error/save failure ไม่กลายเป็น empty/success และรักษาข้อมูลกรอก
 - [ ] ตรวจ server validation/usage counts กับ fixtures และ manager→editor บน iOS; cascade undo เป็นงานแยกที่ต้องเสร็จก่อนรับ feature ทั้งชุด
