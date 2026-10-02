@@ -111,7 +111,9 @@ export interface BudgetStatus {
   spentSatang: number;
   remainingSatang: number;
   percentUsed: number;
+  /** ใกล้ครบงบ: at or past the warning percent. Also true when over, so read `isOverLimit` first. */
   isNearLimit: boolean;
+  /** เกินงบ: spending is more than the limit; spending exactly the limit is not over. */
   isOverLimit: boolean;
 }
 

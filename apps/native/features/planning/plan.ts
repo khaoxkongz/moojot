@@ -1,5 +1,5 @@
 import type { IconName } from "../../components/ui/controls";
-import type { Budget, BudgetStatus } from "../../types/finance";
+import type { Budget, BudgetStatus, PeriodKey } from "../../types/finance";
 import { buddhistYear, getPeriodBounds, periodKeyParts } from "../../utils/dates";
 import { amountLabel, longThaiMonth, shortThaiDate } from "../../utils/format";
 
@@ -37,12 +37,11 @@ const tones = {
 export const budgetTarget = (budget: Pick<Budget, "categoryId" | "tagId">): BudgetTarget =>
   budget.categoryId ? "category" : budget.tagId ? "tag" : "all";
 
-/** One budget as the plan shows it. Over only when spending is more than the limit; near at the warning percent. */
+/** One budget as the plan shows it, with the server's เกินงบ / ใกล้ครบงบ (over wins when both are true). */
 export function budgetRow(status: BudgetStatus, names: BudgetNames): BudgetRow {
-  const { budget, spentSatang } = status;
-  const over = spentSatang > budget.limitSatang;
+  const { budget, spentSatang, isOverLimit: over } = status;
   const percent = (spentSatang / budget.limitSatang) * 100;
-  const tone = over ? "over" : percent >= budget.warningThresholdPercent ? "near" : "ok";
+  const tone = over ? "over" : status.isNearLimit ? "near" : "ok";
   const category = names.categories.find((item) => item.id === budget.categoryId);
   const tag = names.tags.find((item) => item.id === budget.tagId);
   const target = budgetTarget(budget);
@@ -80,7 +79,7 @@ export function planBudgets(statuses: readonly BudgetStatus[], names: BudgetName
 }
 
 /** Under the form's title: the month and its first and last day. */
-export function budgetPeriodLine(periodKey: string, monthStartDay: number) {
+export function budgetPeriodLine(periodKey: PeriodKey, monthStartDay: number) {
   const { year, month } = periodKeyParts(periodKey);
   const { from, to } = getPeriodBounds(periodKey, monthStartDay);
   return `สำหรับเดือน${longThaiMonth(month)} ${buddhistYear(year)} · ${shortThaiDate(from)} – ${shortThaiDate(to)}`;
@@ -93,18 +92,19 @@ export function warningLine(limitSatang: number | null, percent: number) {
     : `เช่น ตั้งงบ 1,000 ฿ หมูจะเตือนเมื่อใช้ไป ${amountLabel(percent * 1000)} ฿`;
 }
 
-type Draft = { id?: string | null; target: BudgetTarget; categoryId: string | null; tagId: string | null };
+/** The target the form has picked, and the budget being edited if any. */
+type TargetPick = { id?: string | null; target: BudgetTarget; categoryId: string | null; tagId: string | null };
 
-/** The budget saving this draft would replace: another budget of the month set for the same target. */
+/** The budget saving this pick would replace: another budget of the month set for the same target. */
 export function replacedBudget<B extends Pick<Budget, "id" | "categoryId" | "tagId">>(
   budgets: readonly B[],
-  draft: Draft
+  pick: TargetPick
 ) {
-  const categoryId = draft.target === "category" ? draft.categoryId : null;
-  const tagId = draft.target === "tag" ? draft.tagId : null;
-  if (draft.target !== "all" && !categoryId && !tagId) return null;
+  const categoryId = pick.target === "category" ? pick.categoryId : null;
+  const tagId = pick.target === "tag" ? pick.tagId : null;
+  if (pick.target !== "all" && !categoryId && !tagId) return null;
   return (
-    budgets.find((budget) => budget.id !== draft.id && budget.categoryId === categoryId && budget.tagId === tagId) ??
+    budgets.find((budget) => budget.id !== pick.id && budget.categoryId === categoryId && budget.tagId === tagId) ??
     null
   );
 }
@@ -112,8 +112,8 @@ export function replacedBudget<B extends Pick<Budget, "id" | "categoryId" | "tag
 /** Under the amount: saving onto a target that has a budget replaces its limit, so the user does not add one twice. */
 export function replaceNote(
   budgets: ReadonlyArray<Pick<Budget, "id" | "categoryId" | "tagId" | "limitSatang">>,
-  draft: Draft
+  pick: TargetPick
 ) {
-  const replaced = replacedBudget(budgets, draft);
+  const replaced = replacedBudget(budgets, pick);
   return replaced ? `มีงบนี้อยู่แล้ว ${amountLabel(replaced.limitSatang)} ฿ บันทึกแล้วจะใช้วงเงินใหม่แทน` : null;
 }
