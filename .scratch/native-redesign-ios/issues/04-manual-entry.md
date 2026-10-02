@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — [ตัวอักษรและธีมบน iOS](01-ios-theme-foundation.md)
 
-**Status:** ready-for-human
+**Status:** done
 
 **Done in:** 7618bba feat(native): redesign manual entry editor with keypad, sources and undo; 6f3ac22 fix(native): address ticket 04 review findings; 98db784 fix(native): match entry editor to the design prototype
 
@@ -53,3 +53,5 @@
 18. ปฏิทิน (`04-calendar`): หัว "เลือกวันที่จด" อยู่กลาง ลูกศรสีส้มเข้ม ลูกศรเดือนถัดไปจางเมื่ออยู่เดือนนี้ วันนี้มีวงสีส้ม วันที่เลือกเป็นแคปซูลส้มเต็มช่อง วันอนาคตจาง กดไม่ได้ ปุ่ม "ยกเลิก" เป็นขอบส้ม "วันนี้" เป็นสีส้มเต็ม
 19. แป้นตัวเลข (`04-keypad-calculating`), แผงเลือกหมวด (`04-category-sheet`), เพิ่มแท็ก (`04-tag-add`: ปุ่มกลับ ช่อง # และปุ่ม + กลมอยู่แถวเดียว แตะชิปแนะนำแล้วแท็กถูกเพิ่มทันที), ฟอร์ม (`04-form-new`, `04-form-empty`, `04-type-transfer`), ยอดว่าง (`04-save-missing-amount`), กล่องปิด (`04-exit-dialog`: ปุ่ม "ไม่บันทึก" เป็นขอบ), แก้ไข/เมนู ⋮ (`04-edit-manual`, `04-edit-menu`), toast (`04-delete-toast`)
 20. ชิปบัญชีไม่มีไอคอน บัตรขึ้นเป็น "บัตร KTC •• 4821"; ชิป "เพิ่มบัตร" เป็นเส้นประสีส้ม (ไม่มีในดีไซน์ ใช้แบบเดียวกับ "เพิ่มแท็ก")
+
+2026-10-02: ผู้ใช้ตรวจบน iPhone ครบทุกข้อในรายการด้านบน (รวม 18–20 เทียบกับภาพดีไซน์) แล้ว ผ่านทั้งหมด จึงปิดตั๋วเป็น `done`
