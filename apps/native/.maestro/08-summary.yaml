@@ -130,7 +130,7 @@ appId: com.anonymous.moojot
 - tapOn: "วางแผนงบ.*"
 - waitForAnimationToEnd
 - takeScreenshot: 08-app-plan-from-summary
-- tapOn: "\\(insights\\)/summary"
+- tapOn: "ย้อนกลับ"
 - waitForAnimationToEnd
 - tapOn: "กลับหน้าแรก"
 - extendedWaitUntil:

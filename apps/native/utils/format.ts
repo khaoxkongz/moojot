@@ -22,6 +22,27 @@ export function toSatang(value: string) {
   return Math.round(amount * 100);
 }
 
+/**
+ * A baht amount as the user types it into a text field: digits and one decimal point only, at most nine baht digits
+ * and two satang digits, baht grouped with commas ("1234.5" → "1,234.5"). `toSatang` reads the result.
+ */
+export function typedAmount(text: string) {
+  let value = text.replace(/[^\d.]/g, "");
+  const dot = value.indexOf(".");
+  if (dot >= 0)
+    value =
+      value.slice(0, dot + 1) +
+      value
+        .slice(dot + 1)
+        .replace(/\./g, "")
+        .slice(0, 2);
+  const [rawBaht = "", satang] = value.split(".");
+  let baht = rawBaht.replace(/^0+(?=\d)/, "").slice(0, 9);
+  if (!baht && satang !== undefined) baht = "0";
+  const grouped = baht.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return satang !== undefined ? `${grouped}.${satang}` : grouped;
+}
+
 export function todayISO() {
   const now = new Date();
   const y = now.getFullYear();

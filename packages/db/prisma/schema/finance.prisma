@@ -111,6 +111,25 @@ model FinanceBudget {
   @@map("finance_budget")
 }
 
+// One delete the user can undo. The deleting code writes everything its restore needs into `snapshot`, so the restore
+// brings back the same IDs and fields instead of a copy. Budgets use it now; rules, categories and tags reuse it.
+model FinanceDeletion {
+  id         String    @id @default(cuid()) @map("_id")
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // What was deleted, such as "budget".
+  kind       String
+  // The deleted record's ID, so repeating the delete finds this operation again.
+  targetId   String
+  snapshot   Json
+  createdAt  DateTime  @default(now())
+  restoredAt DateTime?
+
+  @@index([userId, kind, targetId])
+  @@index([userId, createdAt])
+  @@map("finance_deletion")
+}
+
 model FinanceSetting {
   id     String @id @default(cuid()) @map("_id")
   userId String

@@ -1,358 +1,415 @@
-import { useForm, useSelector } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useQuery } from "@tanstack/react-query";
 import { router, useIsFocused, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from "react-native";
-import { z } from "zod";
+import { useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Card, Field, Pill, SectionHeading } from "@/components/ui/moo-ui";
-import { Text } from "@/components/ui/typography";
-import { useAppTheme } from "@/lib/use-app-theme";
+import { Chip, IconButton, PillButton, SegmentedControl } from "@/components/ui/controls";
+import { Text, TextInput } from "@/components/ui/typography";
+import { accentRing, radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
-import { planningMutationOptions } from "@/features/planning/mutation-options";
+import {
+  budgetPeriodLine,
+  budgetTarget,
+  replaceNote,
+  WARNING_OPTIONS,
+  warningLine,
+  type BudgetTarget,
+} from "@/features/planning/plan";
 import { planningQueryOptions } from "@/features/planning/query-options";
-import { getPeriodBounds } from "@/utils/dates";
-import { formatBaht, thaiDate, toSatang } from "@/utils/format";
+import { useBudgetActions } from "@/features/planning/use-budget-actions";
+import { toast } from "@/lib/toast";
+import { useAppTheme } from "@/lib/use-app-theme";
+import type { Budget } from "@/types/finance";
+import { getPeriodForDate } from "@/utils/dates";
+import { amountLabel, toSatang, todayISO, typedAmount } from "@/utils/format";
 
-type Target = "all" | "category" | "tag";
+const targets: Array<{ value: BudgetTarget; label: string }> = [
+  { value: "all", label: "รวมทุกหมวด" },
+  { value: "category", label: "เลือกหมวด" },
+  { value: "tag", label: "เลือกแท็ก" },
+];
 
-const budgetFormSchema = z
-  .object({
-    target: z.enum(["all", "category", "tag"]),
-    categoryId: z.string().nullable(),
-    tagId: z.string().nullable(),
-    amount: z.string().refine((value) => toSatang(value) !== null, "กรุณาใส่งบที่มากกว่า 0 บาท"),
-    warning: z.string().refine((value) => {
-      const percent = Number(value);
-      return value.trim() !== "" && Number.isInteger(percent) && percent >= 1 && percent <= 100;
-    }, "แจ้งเตือนต้องอยู่ระหว่าง 1–100%"),
-  })
-  .superRefine((value, context) => {
-    if (value.target === "category" && !value.categoryId) {
-      context.addIssue({ code: "custom", path: ["categoryId"], message: "กรุณาเลือกหมวดหมู่" });
-    }
-    if (value.target === "tag" && !value.tagId) {
-      context.addIssue({ code: "custom", path: ["tagId"], message: "กรุณาเลือกแท็ก" });
-    }
-  });
+type Draft = {
+  target: BudgetTarget;
+  categoryId: string | null;
+  tagId: string | null;
+  amount: string;
+  warn: number;
+};
 
-function confirmDelete(onConfirm: () => void) {
-  if (process.env.EXPO_OS === "web") {
-    if (window.confirm("ลบงบประมาณนี้ใช่ไหม?")) onConfirm();
-  } else {
-    Alert.alert("ลบงบประมาณ", "ลบงบประมาณนี้ใช่ไหม?", [
-      { text: "ยกเลิก", style: "cancel" },
-      { text: "ลบ", style: "destructive", onPress: onConfirm },
-    ]);
-  }
+const draftOf = (budget: Budget): Draft => ({
+  target: budgetTarget(budget),
+  categoryId: budget.categoryId,
+  tagId: budget.tagId,
+  amount: typedAmount(amountLabel(budget.limitSatang)),
+  warn: budget.warningThresholdPercent,
+});
+
+/** Why the draft cannot be saved yet, in the prototype's words. */
+function draftError(draft: Draft) {
+  if (draft.target === "category" && !draft.categoryId) return "กรุณาเลือกหมวด";
+  if (draft.target === "tag" && !draft.tagId) return "กรุณาเลือกแท็ก";
+  if (!toSatang(draft.amount)) return "กรุณาใส่งบที่มากกว่า 0 บาท";
+  return null;
 }
 
 export default function BudgetFormScreen() {
   const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const actions = useBudgetActions();
 
-  const params = useLocalSearchParams<{
-    id?: string;
-    periodKey?: string;
-    categoryId?: string;
-    tagId?: string;
-  }>();
-
-  const deleteBudgetMutation = useMutation(planningMutationOptions.deleteBudget());
-  const upsertBudgetMutation = useMutation(planningMutationOptions.upsertBudget());
-
-  const currentPeriodQuery = useQuery({
-    ...planningQueryOptions.currentPeriod(),
-    enabled: isFocused,
-  });
-  const monthStartQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
-  const categoriesQuery = useQuery({
-    ...categoriesQueryOptions.list("expense"),
-    enabled: isFocused,
-  });
+  // The plan opens a new budget with its month and target, or an existing budget with its ID.
+  const params = useLocalSearchParams<{ id?: string; periodKey?: string; target?: BudgetTarget }>();
+  const startDayQuery = useQuery({ ...planningQueryOptions.monthStartDay(), enabled: isFocused });
+  const startDay = startDayQuery.data ?? 1;
+  const periodKey = params.periodKey ?? getPeriodForDate(todayISO(), startDay).periodKey;
+  const budgetsQuery = useQuery({ ...planningQueryOptions.budgets(periodKey), enabled: isFocused });
+  const categoriesQuery = useQuery({ ...categoriesQueryOptions.list("expense"), enabled: isFocused });
   const tagsQuery = useQuery({ ...categoriesQueryOptions.tags(), enabled: isFocused });
-  const periodKey = params.periodKey ?? currentPeriodQuery.data?.periodKey ?? null;
-  const budgetsQuery = useQuery({
-    ...planningQueryOptions.budgets(periodKey ?? ""),
-    enabled: isFocused && Boolean(periodKey),
-  });
-  const monthStartDay = monthStartQuery.data ?? 1;
-  const existing = params.id ? (budgetsQuery.data?.find((budget) => budget.id === params.id) ?? null) : null;
-  const missingBudget = Boolean(params.id && budgetsQuery.data && !existing && !budgetsQuery.isFetching);
+  const queries = [startDayQuery, budgetsQuery, categoriesQuery, tagsQuery];
+  const loaded = queries.every((query) => query.data !== undefined);
+  const loadError = !loaded && queries.some((query) => query.data === undefined && query.error);
+
+  const budgets = budgetsQuery.data ?? [];
+  const editing = params.id ? (budgets.find((budget) => budget.id === params.id) ?? null) : null;
+  const missing = Boolean(params.id && budgetsQuery.data && !editing);
+
+  // The draft starts from the budget being edited once it has loaded, and is the user's from the first change on.
+  const [changed, setChanged] = useState<Draft | null>(null);
+  const draft: Draft = changed ??
+    (editing ? draftOf(editing) : null) ?? {
+      target: params.target ?? "all",
+      categoryId: null,
+      tagId: null,
+      amount: "",
+      warn: 80,
+    };
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"save" | "delete" | null>(null);
+  const busyRef = useRef(false);
+
+  const patch = (next: Partial<Draft>) => {
+    setChanged({ ...draft, ...next });
+    setError(null);
+  };
+  // Picking a choice closes the number pad (it has no return key), so the choice and the save button show.
+  const pick = (next: Partial<Draft>) => {
+    Keyboard.dismiss();
+    patch(next);
+  };
+
+  const close = () => (router.canGoBack() ? router.back() : router.replace("/plan"));
+
+  const save = async () => {
+    if (busyRef.current) return;
+    const invalid = draftError(draft);
+    if (invalid) return setError(invalid);
+    busyRef.current = true;
+    setBusy("save");
+    setError(null);
+    try {
+      await actions.save({
+        id: editing?.id,
+        periodKey,
+        categoryId: draft.target === "category" ? draft.categoryId : null,
+        tagId: draft.target === "tag" ? draft.tagId : null,
+        limitSatang: toSatang(draft.amount)!,
+        warningThresholdPercent: draft.warn,
+      });
+      toast.show({ message: editing ? "บันทึกงบแล้ว" : "ตั้งงบแล้ว หมูจะช่วยดูให้" });
+      close();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      busyRef.current = false;
+      setBusy(null);
+    }
+  };
+
+  const remove = async () => {
+    if (!editing || busyRef.current) return;
+    busyRef.current = true;
+    setBusy("delete");
+    setError(null);
+    try {
+      const deletionId = await actions.remove(editing.id);
+      toast.show({
+        message: "ลบงบแล้ว",
+        action: { label: "เอากลับคืน", busyLabel: "กำลังเอากลับคืน…", run: () => actions.restore(deletionId) },
+      });
+      close();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      busyRef.current = false;
+      setBusy(null);
+    }
+  };
+
+  const note = replaceNote(budgets, { id: editing?.id, ...draft });
+  const limitSatang = toSatang(draft.amount);
   const categories = categoriesQuery.data ?? [];
   const tags = tagsQuery.data ?? [];
-  const loadQueries = [currentPeriodQuery, monthStartQuery, categoriesQuery, tagsQuery, budgetsQuery];
-  const loadError = loadQueries.find((query) => query.data === undefined && query.error)?.error?.message;
-  const loading = !loadError && loadQueries.some((query) => query.data === undefined);
-  const queryError = loadQueries.find((query) => query.error)?.error?.message;
-
-  const hydratedKey = useRef<string | null>(null);
-
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const form = useForm({
-    defaultValues: {
-      target: "all" as Target,
-      categoryId: null as string | null,
-      tagId: null as string | null,
-      amount: "",
-      warning: "80",
-    },
-    validators: { onSubmit: budgetFormSchema },
-    onSubmitInvalid: ({ value }) => {
-      const result = budgetFormSchema.safeParse(value);
-      if (!result.success) setError(result.error.issues[0]?.message ?? "ตรวจสอบข้อมูลอีกครั้ง");
-    },
-    onSubmit: async ({ value }) => {
-      if (!periodKey) return setError("ยังไม่พบรอบเดือน");
-      try {
-        setSaving(true);
-        setError(null);
-        const input = budgetFormSchema.parse(value);
-        const saved = await upsertBudgetMutation.mutateAsync({
-          periodKey,
-          categoryId: input.target === "category" ? input.categoryId : null,
-          tagId: input.target === "tag" ? input.tagId : null,
-          limitSatang: toSatang(input.amount)!,
-          warningThresholdPercent: Number(input.warning),
-        });
-        if (existing && existing.id !== saved.id) await deleteBudgetMutation.mutateAsync({ id: existing.id });
-        router.back();
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
-      } finally {
-        setSaving(false);
-      }
-    },
-  });
-
-  const target = useSelector(form.store, (state) => state.values.target);
-  const categoryId = useSelector(form.store, (state) => state.values.categoryId);
-  const tagId = useSelector(form.store, (state) => state.values.tagId);
-
-  useEffect(() => {
-    if (!isFocused || !periodKey || !categoriesQuery.data || !tagsQuery.data || !budgetsQuery.data) return;
-    if (
-      (!params.periodKey && currentPeriodQuery.isFetching) ||
-      categoriesQuery.isFetching ||
-      tagsQuery.isFetching ||
-      budgetsQuery.isFetching
-    )
-      return;
-    const key = `${params.id ?? "new"}:${params.periodKey ?? "current"}:${params.categoryId ?? ""}:${params.tagId ?? ""}`;
-    if (hydratedKey.current === key) return;
-    if (params.id) {
-      const found = existing;
-      if (!found) return;
-      form.reset({
-        target: found.categoryId ? "category" : found.tagId ? "tag" : "all",
-        categoryId: found.categoryId,
-        tagId: found.tagId,
-        amount: formatBaht(found.limitSatang),
-        warning: String(found.warningThresholdPercent),
-      });
-    } else if (params.categoryId) {
-      form.reset({
-        target: "category",
-        categoryId: params.categoryId,
-        tagId: null,
-        amount: "",
-        warning: "80",
-      });
-    } else if (params.tagId) {
-      form.reset({
-        target: "tag",
-        categoryId: null,
-        tagId: params.tagId,
-        amount: "",
-        warning: "80",
-      });
-    }
-    hydratedKey.current = key;
-  }, [
-    form,
-    periodKey,
-    params.id,
-    params.periodKey,
-    params.categoryId,
-    params.tagId,
-    existing,
-    categoriesQuery.data,
-    tagsQuery.data,
-    budgetsQuery.data,
-    currentPeriodQuery.isFetching,
-    categoriesQuery.isFetching,
-    tagsQuery.isFetching,
-    budgetsQuery.isFetching,
-    isFocused,
-  ]);
-
-  const bounds = useMemo(
-    () => (periodKey ? getPeriodBounds(periodKey, monthStartDay) : null),
-    [periodKey, monthStartDay]
-  );
-
-  const remove = () =>
-    existing &&
-    confirmDelete(async () => {
-      try {
-        setSaving(true);
-        await deleteBudgetMutation.mutateAsync({ id: existing.id });
-        router.back();
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
-      } finally {
-        setSaving(false);
-      }
-    });
 
   return (
-    <ScrollView
-      bounces={false}
-      alwaysBounceVertical={false}
-      overScrollMode="never"
-      showsVerticalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ alignItems: "center", padding: 18, paddingBottom: 52 }}
-    >
-      <View style={{ width: "100%", maxWidth: 620, gap: 18 }}>
-        <View style={{ alignItems: "center", gap: 5, paddingVertical: 7 }}>
-          <Text style={{ fontSize: 42 }}>🎯</Text>
-          <Text style={{ color: theme.text, fontSize: 20, fontWeight: "900" }}>
-            {existing ? "แก้ไขงบประมาณ" : "ตั้งงบไว้ให้หมูช่วยดู"}
+    <KeyboardAvoidingView style={styles.screen} behavior={process.env.EXPO_OS === "ios" ? "padding" : undefined}>
+      <View style={{ paddingTop: insets.top }}>
+        <View style={styles.header}>
+          <IconButton icon="close" size={26} label="ปิด" onPress={close} />
+          <Text accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>
+            {params.id ? "แก้ไขงบ" : "ตั้งงบใหม่"}
           </Text>
-          <Text style={{ color: theme.muted, fontSize: 13, textAlign: "center" }}>
-            ใกล้ถึงงบเมื่อไร หมูจะบอกให้รู้ในหน้าวางแผน
-          </Text>
+          <View style={{ width: touch.min }} />
         </View>
-        {loading ? (
-          <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 35 }} />
-        ) : loadError ? (
-          <Card>
-            <Text selectable style={{ color: theme.danger }}>
-              {loadError}
-            </Text>
-            <Button
-              label="ลองอีกครั้ง"
+      </View>
+
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.content, { paddingBottom: 24 }]}
+      >
+        {loadError ? (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageTitle}>โหลดงบไม่สำเร็จ</Text>
+            <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
+            <Pressable
+              accessibilityRole="button"
               onPress={() => {
-                void currentPeriodQuery.refetch();
-                void monthStartQuery.refetch();
-                void categoriesQuery.refetch();
-                void tagsQuery.refetch();
-                if (periodKey) void budgetsQuery.refetch();
+                for (const query of queries) if (query.data === undefined) void query.refetch();
               }}
-            />
-          </Card>
+              style={styles.retry}
+            >
+              <Text style={styles.retryText}>ลองอีกครั้ง</Text>
+            </Pressable>
+          </View>
+        ) : !loaded ? (
+          <ActivityIndicator color={theme.accentText} style={{ paddingVertical: 40 }} />
+        ) : missing ? (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageTitle}>ไม่พบงบนี้แล้ว</Text>
+            <Text style={styles.messageBody}>งบนี้อาจถูกลบไปแล้ว กลับไปเลือกจากหน้าวางแผนอีกครั้ง</Text>
+          </View>
         ) : (
           <>
-            {bounds ? (
-              <Card
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  backgroundColor: theme.raised,
-                }}
-              >
-                <Text style={{ fontSize: 28 }}>🗓️</Text>
-                <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "800" }}>รอบเดือนที่ตั้งงบ</Text>
-                  <Text selectable style={{ color: theme.muted, fontSize: 13 }}>
-                    {thaiDate(bounds.from)} – {thaiDate(bounds.to)}
-                  </Text>
-                </View>
-              </Card>
-            ) : null}
-            <Card style={{ gap: 15 }}>
-              <SectionHeading title="งบนี้ใช้กับอะไร" />
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                <Pill label="ทุกหมวด" selected={target === "all"} onPress={() => form.setFieldValue("target", "all")} />
-                <Pill
-                  label="หมวดหมู่"
-                  selected={target === "category"}
-                  onPress={() => form.setFieldValue("target", "category")}
-                />
-                <Pill label="แท็ก" selected={target === "tag"} onPress={() => form.setFieldValue("target", "tag")} />
-              </View>
-              {target === "category" ? (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {categories.map((category) => (
-                    <Pill
+            <Text style={styles.periodLine}>{budgetPeriodLine(periodKey, startDay)}</Text>
+
+            <Text style={[styles.label, { marginTop: 16 }]}>งบนี้ใช้กับ</Text>
+            <SegmentedControl options={targets} value={draft.target} onChange={(target) => pick({ target })} />
+            {draft.target === "category" ? (
+              <View style={styles.tiles}>
+                {categories.map((category) => {
+                  const selected = draft.categoryId === category.id;
+                  return (
+                    <Pressable
                       key={category.id}
-                      label={`${category.icon} ${category.name}`}
-                      selected={categoryId === category.id}
-                      onPress={() => form.setFieldValue("categoryId", category.id)}
-                      color={category.color}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={category.name}
+                      onPress={() => pick({ categoryId: category.id })}
+                      style={({ pressed }) => [
+                        styles.tile,
+                        pressed && !selected && { backgroundColor: theme.border },
+                        selected && accentRing(theme),
+                      ]}
+                    >
+                      <Text style={styles.tileIcon}>{category.icon}</Text>
+                      <Text style={styles.tileName}>{category.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            {draft.target === "tag" ? (
+              tags.length ? (
+                <View style={styles.chips}>
+                  {tags.map((tag) => (
+                    <Chip
+                      key={tag.id}
+                      label={`# ${tag.name}`}
+                      selected={draft.tagId === tag.id}
+                      onPress={() => pick({ tagId: tag.id })}
                     />
                   ))}
                 </View>
-              ) : null}
-              {target === "tag" ? (
-                tags.length ? (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {tags.map((tag) => (
-                      <Pill
-                        key={tag.id}
-                        label={tag.name}
-                        selected={tagId === tag.id}
-                        onPress={() => form.setFieldValue("tagId", tag.id)}
-                        color={tag.color}
-                      />
-                    ))}
-                  </View>
-                ) : (
-                  <Button label="สร้างแท็กก่อน" variant="soft" onPress={() => router.push("/tags")} />
-                )
-              ) : null}
-            </Card>
-            <Card style={{ gap: 16 }}>
-              <form.Field name="amount">
-                {(field) => (
-                  <Field
-                    label="วงเงิน (บาท)"
-                    value={field.state.value}
-                    onChangeText={field.handleChange}
-                    onBlur={field.handleBlur}
-                    keyboardType="decimal-pad"
-                    placeholder="เช่น 5,000"
-                    autoFocus={!existing}
-                  />
-                )}
-              </form.Field>
-              <form.Field name="warning">
-                {(field) => (
-                  <Field
-                    label="เตือนเมื่องบใช้ไป (%)"
-                    value={field.state.value}
-                    onChangeText={field.handleChange}
-                    onBlur={field.handleBlur}
-                    keyboardType="number-pad"
-                    placeholder="80"
-                    hint="เช่น 80 หมายถึงแสดงสัญญาณเตือนเมื่อใช้ไป 80% ของงบ"
-                  />
-                )}
-              </form.Field>
-            </Card>
-            {error || queryError || missingBudget ? (
-              <Text selectable style={{ color: theme.danger, textAlign: "center", fontSize: 13 }}>
-                {error ?? queryError ?? "ไม่พบงบประมาณนี้ กรุณากลับไปเลือกจากหน้าวางแผนอีกครั้ง"}
-              </Text>
+              ) : (
+                <Text style={[styles.hint, { marginTop: 10 }]}>ยังไม่มีแท็ก เพิ่มแท็กได้ตอนจดรายการ</Text>
+              )
             ) : null}
-            <Button
-              label={saving ? "กำลังบันทึก…" : "บันทึกงบประมาณ"}
-              onPress={() => void form.handleSubmit()}
-              disabled={saving || !periodKey || (Boolean(params.id) && !existing)}
-            />
-            {existing ? (
-              <Pressable onPress={remove} disabled={saving} style={{ alignItems: "center", padding: 14 }}>
-                <Text style={{ color: theme.danger, fontWeight: "800" }}>ลบงบประมาณนี้</Text>
+
+            <Text style={[styles.label, { marginTop: 18 }]}>ใช้ได้เดือนละ</Text>
+            <View style={styles.amountBox}>
+              <TextInput
+                value={draft.amount}
+                onChangeText={(text) => patch({ amount: typedAmount(text) })}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={theme.muted}
+                accessibilityLabel="วงเงินต่อเดือน (บาท)"
+                autoFocus={!params.id}
+                style={styles.amountInput}
+              />
+              <Text style={styles.amountBaht}>฿</Text>
+            </View>
+            {note ? <Text style={[styles.hint, { marginTop: 8, color: theme.accentText }]}>{note}</Text> : null}
+
+            <Text style={[styles.label, { marginTop: 18 }]}>ให้หมูเตือนเมื่อใช้ไป</Text>
+            <View accessibilityRole="radiogroup" accessibilityLabel="ให้หมูเตือนเมื่อใช้ไป" style={styles.warns}>
+              {WARNING_OPTIONS.map((percent) => {
+                const selected = draft.warn === percent;
+                return (
+                  <Pressable
+                    key={percent}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => pick({ warn: percent })}
+                    style={({ pressed }) => [
+                      styles.warn,
+                      selected && { backgroundColor: theme.accent },
+                      pressed && !selected && { backgroundColor: theme.border },
+                    ]}
+                  >
+                    <Text style={[styles.warnText, selected && { color: theme.onAccent }]}>{percent}%</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={[styles.hint, { marginTop: 8 }]}>{warningLine(limitSatang, draft.warn)}</Text>
+
+            {editing ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={busy === "delete" ? "กำลังลบ…" : "ลบงบนี้"}
+                accessibilityState={{ busy: busy === "delete" }}
+                onPress={() => void remove()}
+                style={({ pressed }) => [styles.delete, pressed && { opacity: 0.7 }]}
+              >
+                <MaterialCommunityIcons name="trash-can-outline" size={20} color={theme.danger} />
+                <Text style={styles.deleteText}>{busy === "delete" ? "กำลังลบ…" : "ลบงบนี้"}</Text>
               </Pressable>
             ) : null}
           </>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+
+      {loaded && !missing ? (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+          ) : null}
+          <PillButton
+            label={editing ? "บันทึก" : "ตั้งงบนี้"}
+            busy={busy !== null}
+            busyLabel={busy === "delete" ? "กำลังลบ…" : "กำลังบันทึก…"}
+            onPress={() => void save()}
+          />
+        </View>
+      ) : null}
+    </KeyboardAvoidingView>
   );
+}
+
+function createStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    header: { height: 52, paddingHorizontal: 6, flexDirection: "row", alignItems: "center" },
+    headerTitle: { flex: 1, color: theme.text, fontSize: 17, lineHeight: 24, textAlign: "center" },
+    content: { paddingTop: 4, paddingHorizontal: 16 },
+    periodLine: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" },
+    label: { marginHorizontal: 4, marginBottom: 8, color: theme.muted, fontSize: 13, lineHeight: 18 },
+    hint: { paddingHorizontal: 4, color: theme.muted, fontSize: 13, lineHeight: 19 },
+    tiles: { marginTop: 10, flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    tile: {
+      // Three to a row: (100% - two 8 gaps) / 3.
+      width: "31.6%",
+      flexGrow: 1,
+      maxWidth: "33.3%",
+      minHeight: 78,
+      paddingVertical: 10,
+      paddingHorizontal: 6,
+      borderRadius: radius.tile,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+    },
+    tileIcon: { fontSize: 22, lineHeight: 27 },
+    tileName: { color: theme.text, fontSize: 12, lineHeight: 16, textAlign: "center" },
+    chips: { marginTop: 10, flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    amountBox: {
+      minHeight: 72,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      borderRadius: radius.card,
+      backgroundColor: theme.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      ...raisedRing(theme),
+    },
+    amountInput: {
+      flex: 1,
+      minWidth: 0,
+      padding: 0,
+      color: theme.text,
+      fontSize: 32,
+      lineHeight: 38,
+      fontWeight: "500",
+      fontVariant: ["tabular-nums"],
+    },
+    amountBaht: { color: theme.muted, fontSize: 20, lineHeight: 26 },
+    warns: { flexDirection: "row", gap: 8 },
+    warn: {
+      flex: 1,
+      minHeight: touch.min,
+      borderRadius: 12,
+      backgroundColor: theme.raised,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    warnText: { color: theme.text, fontSize: 16, lineHeight: 22, fontVariant: ["tabular-nums"] },
+    delete: {
+      marginTop: 22,
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+    },
+    deleteText: { color: theme.danger, fontSize: 15, lineHeight: 21 },
+    // In the flow under the scroll view, so the keyboard pushes it up instead of covering it.
+    footer: {
+      paddingTop: 10,
+      paddingHorizontal: 16,
+      backgroundColor: theme.background,
+    },
+    error: { marginBottom: 8, color: theme.danger, fontSize: 13, lineHeight: 19, textAlign: "center" },
+    messageCard: {
+      marginTop: 12,
+      padding: 18,
+      borderRadius: radius.card,
+      backgroundColor: theme.surface,
+      alignItems: "center",
+      gap: 4,
+      ...raisedRing(theme),
+    },
+    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
+    messageBody: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" },
+    retry: { minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 },
+    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+  });
 }
