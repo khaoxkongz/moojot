@@ -78,5 +78,7 @@ export default defineConfig({
     "*.{js,ts,jsx,tsx,vue,svelte,json,jsonc,css,md}": "vp check --fix",
     // Not part of the built-in `vp check` (Oxlint can't read Markdown), so tickets get their own check.
     ".scratch/**/issues/*.md": "node scripts/check-tickets.mjs",
+    // Hand-written copies of native helpers (CODING_STANDARDS.md, "One helper per domain value").
+    "apps/native/**/*.{ts,tsx}": "node scripts/check-domain-helpers.mjs",
   },
 });

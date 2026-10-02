@@ -1,5 +1,5 @@
 import type { CategoryBreakdownItem, PeriodSummary, TagBreakdownItem, TransactionKind } from "../../types/finance";
-import { getPeriodBounds, getPeriodForDate, periodKeyParts, shiftPeriodKey } from "../../utils/dates";
+import { buddhistYear, getPeriodBounds, getPeriodForDate, periodKeyParts, shiftPeriodKey } from "../../utils/dates";
 import { amountLabel, formatBaht, kindLabel, longThaiMonth, shortThaiDate, shortThaiMonth } from "../../utils/format";
 
 export type SummaryMode = "category" | "tag";
@@ -27,7 +27,7 @@ export function summaryMonth(today: string, offset: number, monthStartDay: numbe
     periodKey,
     from,
     to,
-    title: `${name} ${year + 543}${monthStartDay === 1 ? "" : ` · ${shortThaiDate(from)} – ${shortThaiDate(to)}`}`,
+    title: `${name} ${buddhistYear(year)}${monthStartDay === 1 ? "" : ` · ${shortThaiDate(from)} – ${shortThaiDate(to)}`}`,
     overviewTitle: offset >= 0 ? "ภาพรวมเดือนนี้" : `ภาพรวม${name}`,
     isCurrent: offset >= 0,
   };

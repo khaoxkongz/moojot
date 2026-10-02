@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { isoYear, nextMonthOffset, periodKeyOffset, shortBuddhistYear } from "./dates";
+import { buddhistYear, isoYear, nextMonthOffset, periodKeyOffset, shortBuddhistYear } from "./dates";
 
 describe("Years", () => {
+  it("writes a year in the Buddhist era", () => {
+    expect(buddhistYear(2026)).toBe(2569);
+  });
+
   it("writes a date's Buddhist-era year in two digits", () => {
     expect(shortBuddhistYear(isoYear("2025-12-31"))).toBe("68");
     expect(shortBuddhistYear(isoYear("2057-01-01"))).toBe("00");

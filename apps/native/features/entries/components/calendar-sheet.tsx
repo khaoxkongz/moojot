@@ -7,6 +7,7 @@ import { Text } from "@/components/ui/typography";
 import { radius, shadow, touch } from "@/constants/theme";
 import { fromISO, longMonths, toISO } from "@/features/entries/date";
 import { useAppTheme } from "@/lib/use-app-theme";
+import { buddhistYear } from "@/utils/dates";
 import { todayISO } from "@/utils/format";
 
 const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -55,7 +56,7 @@ function CalendarContents({
   const offset = month.getDay();
   const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = Array.from({ length: offset + dayCount }, (_, index) => (index < offset ? 0 : index - offset + 1));
-  const monthTitle = longMonths[month.getMonth()] + " " + (month.getFullYear() + 543);
+  const monthTitle = longMonths[month.getMonth()] + " " + buddhistYear(month.getFullYear());
   const pick = (iso: string) => {
     onSelect(iso);
     onClose();

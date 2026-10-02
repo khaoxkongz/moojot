@@ -1,3 +1,12 @@
-vp test
-vp run check-types
-node scripts/check-tickets.mjs
+# Print a check's output only when it fails, so a passing push stays one line in an agent's context.
+run() {
+  out=$("$@" 2>&1) || {
+    printf '%s\n' "$out"
+    exit 1
+  }
+}
+run vp test
+run vp run check-types
+run node scripts/check-tickets.mjs
+run node scripts/check-domain-helpers.mjs
+echo "pre-push: tests, types, tickets and helpers pass"

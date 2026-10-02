@@ -38,7 +38,7 @@
     "dev": "vp run -r dev",
     "build": "vp run -r build",
     "check-types": "vp run -r check-types",
-    "check": "vp lint && vp fmt --check && node scripts/check-tickets.mjs",
+    "check": "vp lint && vp fmt --check && node scripts/check-tickets.mjs && node scripts/check-domain-helpers.mjs",
     "lint": "vp lint",
     "format": "vp fmt",
     "staged": "vp staged",

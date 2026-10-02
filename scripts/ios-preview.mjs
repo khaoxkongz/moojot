@@ -1,6 +1,8 @@
 // Runs a Maestro flow against the dev build on the booted iOS simulator and copies its screenshots out.
-// Usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark] [--metro-port 8081]
+// Usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark] [--metro-port 8081] [--offline] [--keep-app]
 // Needs: API server on :3000 (`vp run dev:server`) and Metro for the dev build (`vp exec expo start --dev-client` in apps/native).
+// --offline: the API server is meant to be stopped (error-state flows), so skip its check.
+// --keep-app: run on the screen the last flow left open instead of relaunching the app (recovery flows).
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,7 +11,12 @@ import { parseArgs } from "node:util";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
-  options: { theme: { type: "string" }, "metro-port": { type: "string", default: "8081" } },
+  options: {
+    theme: { type: "string" },
+    "metro-port": { type: "string", default: "8081" },
+    offline: { type: "boolean", default: false },
+    "keep-app": { type: "boolean", default: false },
+  },
 });
 const [flow, outDir] = positionals;
 if (!flow || !outDir) throw new Error("usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark]");
@@ -29,7 +36,7 @@ env.JAVA_HOME ??= "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home";
 
 const port = values["metro-port"];
 for (const [name, url] of [
-  ["API server", "http://localhost:3000/"],
+  ...(values.offline ? [] : [["API server", "http://localhost:3000/"]]),
   ["Metro", `http://localhost:${port}/status`],
 ]) {
   try {
@@ -40,14 +47,16 @@ for (const [name, url] of [
 }
 
 if (values.theme) execFileSync("xcrun", ["simctl", "ui", "booted", "appearance", values.theme]);
-const metroUrl = encodeURIComponent(`http://127.0.0.1:${port}`);
-try {
-  execFileSync("xcrun", ["simctl", "terminate", "booted", "com.anonymous.moojot"], { stdio: "ignore" });
-} catch {
-  // not running yet
+if (!values["keep-app"]) {
+  const metroUrl = encodeURIComponent(`http://127.0.0.1:${port}`);
+  try {
+    execFileSync("xcrun", ["simctl", "terminate", "booted", "com.anonymous.moojot"], { stdio: "ignore" });
+  } catch {
+    // not running yet
+  }
+  execFileSync("xcrun", ["simctl", "openurl", "booted", `exp+moojot://expo-development-client/?url=${metroUrl}`]);
+  execFileSync("sleep", ["15"]);
 }
-execFileSync("xcrun", ["simctl", "openurl", "booted", `exp+moojot://expo-development-client/?url=${metroUrl}`]);
-execFileSync("sleep", ["15"]);
 
 const runDir = mkdtempSync(path.join(tmpdir(), "ios-preview-"));
 try {
