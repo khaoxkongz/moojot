@@ -8,6 +8,7 @@ import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { Text } from "@/components/ui/typography";
 import type { FinanceTransaction } from "@/types/finance";
+import { shortBuddhistYear } from "@/utils/dates";
 
 const weekdays = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
 const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -20,7 +21,7 @@ function slipDateLabel(occurredOn: string, createdAt: string) {
   const time = Number.isNaN(when.getTime())
     ? ""
     : ` ${when.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", hour12: false })} น.`;
-  return `${weekdays[date.getDay()]} ${day} ${months[month - 1]} ${String(year + 543).slice(-2)}${time}`;
+  return `${weekdays[date.getDay()]} ${day} ${months[month - 1]} ${shortBuddhistYear(year)}${time}`;
 }
 
 function BankIcon() {

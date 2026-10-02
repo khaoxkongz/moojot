@@ -20,7 +20,13 @@ import { radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
 import { entriesQueryOptions } from "@/features/entries/query-options";
-import { searchResults, type SearchDay, type SearchRow, type TextPart } from "@/features/search/search";
+import {
+  searchCardFromParams,
+  searchResults,
+  type SearchDay,
+  type SearchRow,
+  type TextPart,
+} from "@/features/search/search";
 import { walletCardLabel } from "@/features/wallets/cards";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
@@ -104,7 +110,7 @@ function ResultDay({ day, onOpen }: { day: SearchDay; onOpen: (row: SearchRow) =
         ) : (
           <Text style={styles.dayLabel}>{day.label}</Text>
         )}
-        <Text style={styles.dayMuted}>{day.count}</Text>
+        <Text style={styles.dayMuted}>{day.countLabel}</Text>
       </View>
       <View style={styles.dayCard}>
         {day.rows.map((row, index) => (
@@ -139,11 +145,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState(prefilled);
   const [settledTerm, setSettledTerm] = useState(prefilled.trim());
   // A card's “ดูทั้งหมด” opens search on that card only (name and last four), until the user lets it go.
-  const [card, setCard] = useState<WalletCard | null>(
-    typeof params.cardName === "string" && params.cardName.trim()
-      ? { cardName: params.cardName, cardLast4: typeof params.cardLast4 === "string" ? params.cardLast4 || null : null }
-      : null
-  );
+  const [card, setCard] = useState<WalletCard | null>(() => searchCardFromParams(params));
 
   const addRecent = useMutation(entriesMutationOptions.addRecentSearch());
   const removeRecent = useMutation(entriesMutationOptions.removeRecentSearch());

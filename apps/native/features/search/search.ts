@@ -1,7 +1,9 @@
 import { matchesAmountSearch } from "@moojot/api/shared/finance/search-terms";
 
-import type { Category, FinanceTransaction, TransactionFilters, WalletCard } from "../../types/finance";
-import { formatBaht, kindLabel } from "../../utils/format";
+import type { Category, FinanceTransaction, WalletCard } from "../../types/finance";
+import { isoYear, shortBuddhistYear } from "../../utils/dates";
+import { amountLabel, kindLabel } from "../../utils/format";
+import type { AllEntriesFilters } from "../entries/all-entries";
 import { needsCategory } from "../entries/category-queue";
 import { dayLabel } from "../home/home-days";
 import { entryWalletLabel } from "../wallets/entry-wallet";
@@ -10,9 +12,18 @@ import { entryWalletLabel } from "../wallets/entry-wallet";
  * The Ledger filters for a search: every month at once. A card scope (opened from a card's “ดูทั้งหมด”) keeps to that
  * card by name and last four, so another card with the same name stays out.
  */
-export function searchFilters(term: string, card?: WalletCard | null): Omit<TransactionFilters, "limit" | "offset"> {
+export function searchFilters(term: string, card?: WalletCard | null): AllEntriesFilters {
   const search = term.trim();
   return card ? { search, walletFilter: { banks: [], cards: [card], includeUnspecified: false } } : { search };
+}
+
+/** The card a search was opened for, from the `cardName`/`cardLast4` route params; none without a card name. */
+export function searchCardFromParams(params: { cardName?: unknown; cardLast4?: unknown }): WalletCard | null {
+  if (typeof params.cardName !== "string" || !params.cardName.trim()) return null;
+  return {
+    cardName: params.cardName,
+    cardLast4: typeof params.cardLast4 === "string" ? params.cardLast4 || null : null,
+  };
 }
 
 export type TextPart = { text: string; hit: boolean };
@@ -48,9 +59,8 @@ export type SearchRow = {
   income: boolean;
 };
 
-export type SearchDay = { date: string; isToday: boolean; label: string; count: string; rows: SearchRow[] };
+export type SearchDay = { date: string; isToday: boolean; label: string; countLabel: string; rows: SearchRow[] };
 
-const amountLabel = (satang: number) => formatBaht(satang, satang % 100 === 0 ? 0 : 2);
 const countLabel = (count: number) => `${count.toLocaleString("en-US")} รายการ`;
 
 function searchRow(entry: FinanceTransaction, term: string, categories: Map<string, Category>): SearchRow {
@@ -87,14 +97,11 @@ export function searchResults(
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const byDate = new Map<string, FinanceTransaction[]>();
   for (const entry of entries) byDate.set(entry.occurredOn, [...(byDate.get(entry.occurredOn) ?? []), entry]);
-  const year = today.slice(0, 4);
   const days = [...byDate].map(([date, rows]) => ({
     date,
     isToday: date === today,
-    label: date.startsWith(year)
-      ? dayLabel(date)
-      : `${dayLabel(date)} ${String(Number(date.slice(0, 4)) + 543).slice(-2)}`,
-    count: countLabel(rows.length),
+    label: isoYear(date) === isoYear(today) ? dayLabel(date) : `${dayLabel(date)} ${shortBuddhistYear(isoYear(date))}`,
+    countLabel: countLabel(rows.length),
     rows: rows.map((row) => searchRow(row, term, categoryById)),
   }));
   const expense = entries

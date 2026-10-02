@@ -171,12 +171,11 @@ export async function transactionWhere(
       }),
     ]);
     // Entries store a bank's identity ("KBank") and older rows its Thai name, so the term matches every spelling of
-    // the bank it names, not only the text typed.
+    // the bank it names, not only the text typed (a stored name that contains the term is one of them).
     const bankNames = banks.flatMap((row) => (row.bank && bankMatchesSearch(row.bank, search) ? [row.bank] : []));
     const or: Prisma.FinanceTransactionWhereInput[] = [
       { title: { contains: search, mode: "insensitive" } },
       { note: { contains: search, mode: "insensitive" } },
-      { bank: { contains: search, mode: "insensitive" } },
       ...(bankNames.length ? [{ bank: { in: bankNames } }] : []),
       { cardName: { contains: search, mode: "insensitive" } },
       { cardLast4: { contains: search, mode: "insensitive" } },

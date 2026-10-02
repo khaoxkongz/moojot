@@ -98,6 +98,35 @@ describe("search by bank", () => {
     expect(await titles(client, "kbank")).toEqual(["old-k", "slip-k"]);
     expect(await titles(client, "ไทยพาณิชย์")).toEqual(["slip-s"]);
   });
+
+  it("does not find a bank's entries when the term only mentions the bank inside other words", async () => {
+    const client = await signUp("bank-in-sentence@example.test");
+    await expense(client, { title: "trip", note: "ค่ารถไปกรุงเทพ" });
+    await expense(client, { title: "transfer", note: "โอนจาก kbank ไปออม" });
+    await expense(client, { title: "slip-b", bank: "BBL", source: "slip" });
+    await expense(client, { title: "slip-k", bank: "KBank", source: "slip" });
+
+    expect(await titles(client, "ค่ารถไปกรุงเทพ")).toEqual(["trip"]);
+    expect(await titles(client, "โอนจาก kbank ไปออม")).toEqual(["transfer"]);
+  });
+
+  it("finds Bangkok Bank by its English name, whichever spelling the entry stored", async () => {
+    const client = await signUp("bank-bangkok@example.test");
+    await expense(client, { title: "slip-b", bank: "BBL", source: "slip" });
+    await expense(client, { title: "old-b", bank: "ธนาคารกรุงเทพ" });
+    await expense(client, { title: "slip-k", bank: "KBank", source: "slip" });
+
+    expect(await titles(client, "bangkok")).toEqual(["old-b", "slip-b"]);
+    expect(await titles(client, "Bangkok Bank")).toEqual(["old-b", "slip-b"]);
+  });
+
+  it("finds a bank the app does not know by part of the name the entry stored", async () => {
+    const client = await signUp("bank-unknown@example.test");
+    await expense(client, { title: "gsb", bank: "ออมสิน" });
+    await expense(client, { title: "cash" });
+
+    expect(await titles(client, "ออม")).toEqual(["gsb"]);
+  });
 });
 
 describe("search across every month", () => {
@@ -128,7 +157,7 @@ describe("search across every month", () => {
     const entries = await loadAllEntries((filters) => client.ledger.listTransactions(filters), searchFilters("ค่ากาแฟ"));
     const results = searchResults(entries, { term: "ค่ากาแฟ", today, categories: [] });
     expect(results.summary).toBe("พบ 1,003 รายการ · รายจ่ายรวม 1,051.50 ฿");
-    expect(results.days.map((day) => [day.date, day.count])).toEqual([
+    expect(results.days.map((day) => [day.date, day.countLabel])).toEqual([
       [today, "2 รายการ"],
       ...Array.from({ length: 12 }, (_, index) => {
         const month = 12 - index;

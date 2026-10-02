@@ -4,24 +4,62 @@
  * (“กสิกรไทย”, “kasikorn”), so selection and filters work on groups of spellings, never on one exact string.
  */
 const knownBanks = [
-  { id: "KBank", name: "กสิกรไทย", pattern: /kbank|kasikorn|กสิกร/ },
-  { id: "TrueMoney", name: "ทรูมันนี่", pattern: /truemoney|ทรูมันนี/ },
-  { id: "KTB", name: "กรุงไทย", pattern: /krungthai|กรุงไทย|ktb/ },
-  { id: "SCB", name: "ไทยพาณิชย์", pattern: /scb|siamcommercial|ไทยพาณิชย์/ },
-  { id: "Krungsri", name: "กรุงศรี", pattern: /krungsri|^bay$|กรุงศรี/ },
-  { id: "BBL", name: "กรุงเทพ", pattern: /bangkokbank|bbl|ธนาคารกรุงเทพ|กรุงเทพ/ },
-  { id: "ttb", name: "ทหารไทยธนชาต", pattern: /ttb|ทหารไทย|ธนชาต|ทีทีบี/ },
+  {
+    id: "KBank",
+    name: "กสิกรไทย",
+    pattern: /kbank|kasikorn|กสิกร/,
+    spellings: ["kbank", "kasikornbank", "กสิกรไทย"],
+  },
+  { id: "TrueMoney", name: "ทรูมันนี่", pattern: /truemoney|ทรูมันนี/, spellings: ["truemoney", "ทรูมันนี่"] },
+  { id: "KTB", name: "กรุงไทย", pattern: /krungthai|กรุงไทย|ktb/, spellings: ["ktb", "krungthaibank", "กรุงไทย"] },
+  {
+    id: "SCB",
+    name: "ไทยพาณิชย์",
+    pattern: /scb|siamcommercial|ไทยพาณิชย์/,
+    spellings: ["scb", "siamcommercialbank", "ไทยพาณิชย์"],
+  },
+  {
+    id: "Krungsri",
+    name: "กรุงศรี",
+    pattern: /krungsri|^bay$|กรุงศรี/,
+    spellings: ["krungsri", "bay", "กรุงศรีอยุธยา"],
+  },
+  {
+    id: "BBL",
+    name: "กรุงเทพ",
+    pattern: /bangkokbank|bbl|ธนาคารกรุงเทพ|กรุงเทพ/,
+    spellings: ["bbl", "bangkokbank", "กรุงเทพ"],
+  },
+  {
+    id: "ttb",
+    name: "ทหารไทยธนชาต",
+    pattern: /ttb|ทหารไทย|ธนชาต|ทีทีบี/,
+    spellings: ["ttb", "ทีทีบี", "ทหารไทยธนชาต", "ธนชาต"],
+  },
 ] as const;
 
 /** Banks offered for a manual entry before the user has any of their own, by identity. */
 export const commonBanks = ["KBank", "SCB", "KTB", "BBL", "Krungsri", "ttb"] as const;
 
-function knownBank(name: string) {
-  const key = name
+function nameKey(name: string) {
+  return name
     .trim()
     .toLocaleLowerCase()
     .replace(/[\s._-]+/g, "");
+}
+
+function knownBank(name: string) {
+  const key = nameKey(name);
   return knownBanks.find((bank) => bank.pattern.test(key));
+}
+
+/**
+ * Whether a whole search term names a bank: the term, without a leading “ธนาคาร”, is the start of one of the bank's
+ * spellings (“กสิกร”, “kbank”, “bangkok”). A term that mentions a bank among other words names no bank.
+ */
+function termNamesBank(term: string, bank: (typeof knownBanks)[number]) {
+  const key = nameKey(term).replace(/^ธนาคาร/, "");
+  return key !== "" && bank.spellings.some((spelling) => spelling.startsWith(key));
 }
 
 /** The identity an entry stores for a bank, however it was written. Unknown names are kept as given. */
@@ -60,5 +98,5 @@ export function bankMatchesSearch(storedName: string, term: string) {
   const names = [storedName, bankId(storedName), bankDisplayName(storedName)];
   if (names.some((name) => name.toLocaleLowerCase().includes(needle))) return true;
   const bank = knownBank(storedName);
-  return bank !== undefined && knownBank(term)?.id === bank.id;
+  return bank !== undefined && termNamesBank(term, bank);
 }
