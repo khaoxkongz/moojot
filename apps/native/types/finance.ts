@@ -150,6 +150,7 @@ export interface PeriodSummary {
   incomeSatang: number;
   expenseSatang: number;
   transferSatang: number;
+  transferCount: number;
   netSatang: number;
   transactionCount: number;
 }
@@ -162,6 +163,8 @@ export interface CategoryBreakdownItem {
   totalSatang: number;
   transactionCount: number;
   percentage: number;
+  /** The entries waiting for a category, newest first; empty for a group with a category. */
+  pendingIds: string[];
 }
 
 export interface TagBreakdownItem {
@@ -170,6 +173,8 @@ export interface TagBreakdownItem {
   color: string;
   totalSatang: number;
   transactionCount: number;
+  /** Share of the kind's whole total; an entry with several tags counts in each, so shares may pass 100% together. */
+  percentage: number;
 }
 
 export interface TrendItem extends PeriodSummary {

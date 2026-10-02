@@ -46,10 +46,14 @@ function summarize(from: string, to: string, transactions: Array<{ kind: string;
   let income = 0n;
   let expense = 0n;
   let transfer = 0n;
+  let transferCount = 0;
   for (const transaction of transactions) {
     if (transaction.kind === "income") income += transaction.amountSatang;
     else if (transaction.kind === "expense") expense += transaction.amountSatang;
-    else if (transaction.kind === "transfer") transfer += transaction.amountSatang;
+    else if (transaction.kind === "transfer") {
+      transfer += transaction.amountSatang;
+      transferCount += 1;
+    }
   }
   return {
     from,
@@ -57,6 +61,7 @@ function summarize(from: string, to: string, transactions: Array<{ kind: string;
     incomeSatang: satangToNumber(income),
     expenseSatang: satangToNumber(expense),
     transferSatang: satangToNumber(transfer),
+    transferCount,
     netSatang: satangToNumber(income - expense),
     transactionCount: transactions.length,
   };
@@ -228,7 +233,10 @@ function makeAnalyticsOperations(
               occurredOn: { gte: input.from, lte: input.to },
               kind: input.kind ?? "expense",
             },
+            // The order Home lists entries in, so the pending group's ids queue newest first.
+            orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
             select: {
+              id: true,
               categoryId: true,
               amountSatang: true,
               bank: true,
@@ -245,13 +253,14 @@ function makeAnalyticsOperations(
         const categoryById = new Map<string, CategoryMeta>(
           categories.map((category: CategoryMeta) => [category.id, category])
         );
-        const groups = new Map<string | null, { total: bigint; count: number }>();
+        const groups = new Map<string | null, { total: bigint; count: number; pendingIds: string[] }>();
         let grandTotal = 0n;
         for (const transaction of transactions) {
           if (!matchesWallet(transaction, input.walletFilter)) continue;
-          const group = groups.get(transaction.categoryId) ?? { total: 0n, count: 0 };
+          const group = groups.get(transaction.categoryId) ?? { total: 0n, count: 0, pendingIds: [] };
           group.total += transaction.amountSatang;
           group.count += 1;
+          if (!transaction.categoryId) group.pendingIds.push(transaction.id);
           grandTotal += transaction.amountSatang;
           groups.set(transaction.categoryId, group);
         }
@@ -267,6 +276,8 @@ function makeAnalyticsOperations(
               totalSatang: satangToNumber(group.total),
               transactionCount: group.count,
               percentage: grandTotal ? (satangToNumber(group.total) / satangToNumber(grandTotal)) * 100 : 0,
+              // The entries waiting for a category (only the group without one), for the pending-category queue.
+              pendingIds: group.pendingIds,
             };
           });
       });
@@ -302,8 +313,10 @@ function makeAnalyticsOperations(
         ]);
         const tagById = new Map<string, TagMeta>(tags.map((tag: TagMeta) => [tag.id, tag]));
         const groups = new Map<string | null, { total: bigint; count: number }>();
+        let kindTotal = 0n;
         for (const transaction of transactions) {
           if (!matchesWallet(transaction, input.walletFilter)) continue;
+          kindTotal += transaction.amountSatang;
           for (const tagId of transaction.tagIds.length ? transaction.tagIds : [null]) {
             const group = groups.get(tagId) ?? { total: 0n, count: 0 };
             group.total += transaction.amountSatang;
@@ -321,6 +334,9 @@ function makeAnalyticsOperations(
               color: tag?.color ?? "#A9B5C3",
               totalSatang: satangToNumber(group.total),
               transactionCount: group.count,
+              // Of the kind's whole total, not of the tag totals: an entry with two tags counts in both, so shares
+              // may add up to more than 100%.
+              percentage: kindTotal ? (satangToNumber(group.total) / satangToNumber(kindTotal)) * 100 : 0,
             };
           });
       });
