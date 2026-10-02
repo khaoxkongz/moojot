@@ -164,7 +164,7 @@ describe("manual entry", () => {
     await entries.save({ draft: draft({ amount: "20", cardName: "KTC", cardLast4: "1234" }) });
 
     const cards = await client.analytics.listCards();
-    const second = entrySourceChoices({ banks: [], cards }, draft({})).find((c) => c.label === "KTC •• 1234")!;
+    const second = entrySourceChoices({ banks: [], cards }, draft({})).find((c) => c.label === "บัตร KTC •• 1234")!;
     const saved = await entries.save({ draft: selectEntrySource(draft({ amount: "30" }), second) });
 
     expect(await client.ledger.getTransaction({ id: saved.id })).toMatchObject({ cardName: "KTC", cardLast4: "1234" });

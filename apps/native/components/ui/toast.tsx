@@ -44,8 +44,8 @@ export function ToastHost({ bottomOffset = 132 }: { bottomOffset?: number }) {
             minHeight: 48,
             borderRadius: radius.toast,
             paddingLeft: 16,
-            paddingRight: current.action ? 6 : 16,
-            paddingVertical: 6,
+            paddingRight: 6,
+            paddingVertical: 4,
             flexDirection: "row",
             alignItems: "center",
             gap: 8,
@@ -53,7 +53,9 @@ export function ToastHost({ bottomOffset = 132 }: { bottomOffset?: number }) {
             ...shadow.toast,
           }}
         >
-          <Text style={{ flex: 1, color: theme.onInverse, fontSize: 14, lineHeight: 20 }}>{current.message}</Text>
+          <Text style={{ flex: 1, paddingVertical: 8, color: theme.onInverse, fontSize: 14, lineHeight: 20 }}>
+            {current.message}
+          </Text>
           {current.action ? (
             <Pressable
               accessibilityRole="button"
@@ -62,9 +64,10 @@ export function ToastHost({ bottomOffset = 132 }: { bottomOffset?: number }) {
               onPress={current.busy ? undefined : () => void toast.runAction()}
               hitSlop={4}
               style={({ pressed }) => ({
-                minHeight: touch.min,
+                minHeight: 40,
                 minWidth: touch.min,
                 paddingHorizontal: 10,
+                borderRadius: 8,
                 justifyContent: "center",
                 opacity: pressed ? 0.7 : 1,
               })}

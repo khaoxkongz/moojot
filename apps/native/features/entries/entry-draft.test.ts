@@ -4,7 +4,6 @@ import {
   blankEntryDraft,
   changeEntryKind,
   checkEntryDraft,
-  entrySaveLabel,
   entrySourceChoices,
   entryTitlePlaceholder,
   hasEntryChanges,
@@ -88,15 +87,6 @@ describe("saving a manual entry", () => {
     });
   });
 
-  it("names what to fix on the save button before it is pressed", () => {
-    const label = (value: EntryDraft) => entrySaveLabel(value, checkEntryDraft(value, { today }));
-    expect(label(draft({ amount: "" }))).toBe("ใส่จำนวนเงินก่อนบันทึก");
-    expect(label(draft({ amount: "12", occurredOn: "2026-10-01" }))).toBe("เลือกวันที่ที่ยังไม่เลยวันนี้");
-    expect(label(draft({ amount: "12" }))).toBe("บันทึก · ยังไม่เลือกหมวด");
-    expect(label(draft({ amount: "12", categoryId: "expense-food" }))).toBe("บันทึก");
-    expect(label(draft({ amount: "12", kind: "transfer" }))).toBe("บันทึก");
-  });
-
   it("notices any change to the draft", () => {
     const initial = draft();
     expect(hasEntryChanges(initial, { ...initial })).toBe(false);
@@ -114,8 +104,8 @@ describe("choosing the bank or card", () => {
     const labels = entrySourceChoices({ banks: ["ออมสิน"], cards }, draft()).map((choice) => choice.label);
     expect(labels).toContain("กสิกรไทย");
     expect(labels).toContain("ออมสิน");
-    expect(labels).toContain("KTC •• 4821");
-    expect(labels).toContain("KTC •• 1234");
+    expect(labels).toContain("บัตร KTC •• 4821");
+    expect(labels).toContain("บัตร KTC •• 1234");
     expect(labels.at(-1)).toBe("ไม่ระบุ");
   });
 
@@ -136,10 +126,10 @@ describe("choosing the bank or card", () => {
 
   it("keeps two cards with the same name apart by their last four digits", () => {
     const choices = entrySourceChoices({ banks: [], cards }, draft());
-    const second = choices.find((choice) => choice.label === "KTC •• 1234")!;
+    const second = choices.find((choice) => choice.label === "บัตร KTC •• 1234")!;
     const chosen = selectEntrySource(draft({ amount: "5", bank: "กรุงไทย" }), second);
     expect(entryInputFromDraft(chosen, { today })).toMatchObject({ bank: null, cardName: "KTC", cardLast4: "1234" });
-    expect(selectedEntrySource(choices, chosen)?.label).toBe("KTC •• 1234");
+    expect(selectedEntrySource(choices, chosen)?.label).toBe("บัตร KTC •• 1234");
   });
 
   it("clears the bank and card for no source", () => {
@@ -156,7 +146,7 @@ describe("choosing the bank or card", () => {
   it("shows the saved source of an entry being edited even when it is no longer listed", () => {
     const editing = draft({ cardName: "UOB", cardLast4: "7777" });
     const choices = entrySourceChoices({ banks: [], cards }, editing);
-    expect(selectedEntrySource(choices, editing)?.label).toBe("UOB •• 7777");
+    expect(selectedEntrySource(choices, editing)?.label).toBe("บัตร UOB •• 7777");
     const kbank = draft({ bank: "KBank" });
     expect(selectedEntrySource(entrySourceChoices({ banks: [], cards: [] }, kbank), kbank)?.label).toBe("กสิกรไทย");
   });

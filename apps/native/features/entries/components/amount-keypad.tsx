@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/typography";
-import { radius, touch } from "@/constants/theme";
+import { radius, shadow, touch } from "@/constants/theme";
 import { calculatorKeyForHardware, type CalculatorKey, type CalculatorState } from "@/features/entries/calculator";
 import { useAppTheme } from "@/lib/use-app-theme";
 
@@ -77,19 +77,19 @@ export function AmountKeypad({
         left: 0,
         right: 0,
         bottom: 0,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        borderTopLeftRadius: radius.keypad,
+        borderTopRightRadius: radius.keypad,
         backgroundColor: theme.surface,
-        boxShadow: "0 -8px 28px rgba(0, 0, 0, 0.14)",
+        ...shadow.keypad,
       }}
     >
       <View
         style={{
-          minHeight: 48,
+          height: 48,
           paddingLeft: 6,
           paddingRight: 14,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: radius.keypad,
+          borderTopRightRadius: radius.keypad,
           backgroundColor: theme.raised,
           flexDirection: "row",
           alignItems: "center",
@@ -103,6 +103,7 @@ export function AmountKeypad({
           style={({ pressed }) => ({
             minHeight: touch.min,
             paddingHorizontal: 10,
+            borderRadius: 10,
             flexDirection: "row",
             alignItems: "center",
             gap: 6,
@@ -159,12 +160,12 @@ export function AmountKeypad({
                 >
                   {key === "⌫" ? (
                     <MaterialCommunityIcons name="backspace-outline" size={24} color={theme.text} />
-                  ) : shown === "done" ? (
-                    <Text style={{ color: theme.onAccent, fontSize: 17 }}>เสร็จ</Text>
+                  ) : isDone ? (
+                    <Text style={{ color: theme.onAccent, fontSize: 17 }}>{shown === "done" ? "เสร็จ" : "="}</Text>
                   ) : (
                     <Text
                       style={{
-                        color: isDone ? theme.onAccent : theme.text,
+                        color: theme.text,
                         fontSize: key === "AC" ? 18 : 22,
                         fontVariant: ["tabular-nums"],
                         fontWeight: "400",
