@@ -26,9 +26,11 @@ export default function EditEntryRoute() {
     ...entriesQueryOptions.detail(entryId ?? ""),
     enabled: isFocused && Boolean(entryId),
   });
-  // The editor keeps the entry it opened with, so a refresh after saving or deleting never resets the draft.
+  // The editor keeps the entry it opened with, so a refresh after saving or deleting never resets the draft. It opens
+  // only once a stale cached copy has been read again: an entry changed elsewhere since (a category picked in the
+  // queue after the editor was last open on it) must not come back with its old fields.
   const [opened, setOpened] = useState<FinanceTransaction | null>(null);
-  if (!opened && transactionQuery.data) setOpened(transactionQuery.data);
+  if (!opened && transactionQuery.data && !transactionQuery.isFetching) setOpened(transactionQuery.data);
 
   if (entryId && opened) return <EditEntry key={entryId} id={entryId} transaction={opened} />;
 
