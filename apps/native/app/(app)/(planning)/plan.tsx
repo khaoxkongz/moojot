@@ -9,7 +9,7 @@ import { Text } from "@/components/ui/typography";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
-import { getPeriodForDate, periodKeyOffset, shiftPeriodKey } from "@/utils/dates";
+import { getPeriodForDate, nextMonthOffset, periodKeyOffset, shiftPeriodKey } from "@/utils/dates";
 import { formatMoney, kindLabel, todayISO } from "@/utils/format";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -163,7 +163,7 @@ export default function PlanScreen() {
               accessibilityRole="button"
               accessibilityLabel="เดือนถัดไป"
               disabled={offset >= 0}
-              onPress={() => setOffset(Math.min(0, offset + 1))}
+              onPress={() => setOffset(nextMonthOffset(offset))}
               style={{
                 width: 42,
                 height: 42,
