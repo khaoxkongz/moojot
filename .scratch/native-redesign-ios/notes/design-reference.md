@@ -16,6 +16,10 @@ Read this before building or restyling any screen, sheet, dialog or toast in thi
 3. **Look at it rendered.** Open the matching image in [design-shots/](design-shots/) (light and `-dark`). If the state you are building has no image, capture it first (below) and commit the images with your ticket.
 4. **Compare** your screen against the image, light and dark, before calling the ticket done, and list any deliberate differences in the ticket's notes.
 
+## Reviewing a UI diff
+
+A spec review of this feature also checks design fidelity. For each screen, sheet, dialog or toast the diff adds or restyles, find its block in the HTML (step 1 above) and report every size, radius, spacing, colour, icon or copy that differs from it, unless the ticket's notes list that difference as deliberate. A UI diff that adds no app captures (`notes/<NN>-app-<state>.png`) or names no reason it could not render the app is itself a finding.
+
 ## Capturing prototype states
 
 The prototype runs in headless Chrome. The scripts in [design-shots/capture/](design-shots/capture/) sign in to the demo account and click through it:
