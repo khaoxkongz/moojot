@@ -10,14 +10,12 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-// Builds a simulator data container with the given entries, as the container manager lays one out.
-function container(entries) {
+// Builds a simulator data container with the given files and directories.
+function container({ files = [], dirs = [] }) {
   const root = mkdtempSync(path.join(tmpdir(), "moojot-sim-container-"));
   roots.push(root);
-  for (const entry of entries) {
-    if (entry.startsWith(".")) writeFileSync(path.join(root, entry), "");
-    else mkdirSync(path.join(root, entry), { recursive: true });
-  }
+  for (const dir of dirs) mkdirSync(path.join(root, dir), { recursive: true });
+  for (const file of files) writeFileSync(path.join(root, file), "");
   return root;
 }
 
@@ -25,17 +23,22 @@ const metadata = ".com.apple.mobile_container_manager.metadata.plist";
 
 describe("containerNeedsReinstall", () => {
   it("accepts a container the container manager made", () => {
-    expect(containerNeedsReinstall(container([metadata, "Documents", "Library", "SystemData", "tmp"]))).toBe(false);
+    expect(
+      containerNeedsReinstall(container({ files: [metadata], dirs: ["Documents", "Library", "SystemData", "tmp"] }))
+    ).toBe(false);
   });
 
-  // Issue 30: the container was deleted and the app re-created only Library/Caches, so URLSession had no tmp/
-  // for its download file and every Metro asset (the icon fonts) failed with UnableToDownloadAssetException.
+  // Issue 30: the app re-created only Library/Caches after the container was deleted.
   it("rejects a container the app re-created without tmp or metadata", () => {
-    expect(containerNeedsReinstall(container(["Library/Caches"]))).toBe(true);
+    expect(containerNeedsReinstall(container({ dirs: ["Library/Caches"] }))).toBe(true);
   });
 
   it("rejects a container without tmp", () => {
-    expect(containerNeedsReinstall(container([metadata, "Documents", "Library"]))).toBe(true);
+    expect(containerNeedsReinstall(container({ files: [metadata], dirs: ["Documents", "Library"] }))).toBe(true);
+  });
+
+  it("rejects a container with tmp but without metadata", () => {
+    expect(containerNeedsReinstall(container({ dirs: ["Documents", "Library", "tmp"] }))).toBe(true);
   });
 
   it("rejects a missing container", () => {

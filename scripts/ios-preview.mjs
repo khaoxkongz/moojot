@@ -40,6 +40,7 @@ const { positionals, values } = parseArgs({
   },
 });
 const [flow, outDir] = positionals;
+const appId = "com.anonymous.moojot";
 if (!flow || !outDir) throw new Error("usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark]");
 
 const root = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
@@ -109,23 +110,9 @@ if (values["first-start"]) firstStart();
 if (values.theme) execFileSync("xcrun", ["simctl", "ui", "booted", "appearance", values.theme]);
 if (!values["keep-app"]) {
   const metroUrl = encodeURIComponent(`http://127.0.0.1:${port}`);
-  try {
-    execFileSync("xcrun", ["simctl", "terminate", "booted", "com.anonymous.moojot"], { stdio: "ignore" });
-  } catch {
-    // not running yet
-  }
+  terminateApp();
   // Read by apps/native/app/_layout.tsx: hides the dev-only LogBox banner, which covers the tab bar.
-  execFileSync("xcrun", [
-    "simctl",
-    "spawn",
-    "booted",
-    "defaults",
-    "write",
-    "com.anonymous.moojot",
-    "moojotPreview",
-    "-bool",
-    "YES",
-  ]);
+  execFileSync("xcrun", ["simctl", "spawn", "booted", "defaults", "write", appId, "moojotPreview", "-bool", "YES"]);
   execFileSync("xcrun", ["simctl", "openurl", "booted", `exp+moojot://expo-development-client/?url=${metroUrl}`]);
   execFileSync("sleep", ["15"]);
 }
@@ -179,37 +166,52 @@ async function makeFixture() {
 
 // The session lives in the simulator keychain (expo-secure-store) and the remembered email in Documents.
 function firstStart() {
-  try {
-    execFileSync("xcrun", ["simctl", "terminate", "booted", "com.anonymous.moojot"], { stdio: "ignore" });
-  } catch {
-    // not running
-  }
+  terminateApp();
   execFileSync("xcrun", ["simctl", "keychain", "booted", "reset"]);
-  const data = execFileSync("xcrun", ["simctl", "get_app_container", "booted", "com.anonymous.moojot", "data"], {
-    encoding: "utf8",
-  }).trim();
-  rmSync(path.join(data, "Documents", "moojot-last-email-v1.txt"), { force: true });
+  rmSync(path.join(appContainer("data"), "Documents", "moojot-last-email-v1.txt"), { force: true });
 }
 
-// A data container without tmp/ breaks every asset download from Metro, so the icons vanish (issue 30).
-// Installing the same build again makes the container manager create a new, complete container.
+// Reinstalls the installed build when its data container is incomplete (see scripts/sim-container.mjs, issue 30).
 function repairContainer() {
-  const app = "com.anonymous.moojot";
-  const container = (kind) =>
-    execFileSync("xcrun", ["simctl", "get_app_container", "booted", app, kind], { encoding: "utf8" }).trim();
-  if (!containerNeedsReinstall(container("data"))) return;
-  const copy = path.join(mkdtempSync(path.join(tmpdir(), "ios-preview-app-")), "moojot.app");
-  cpSync(container("app"), copy, { recursive: true });
+  let installed;
   try {
-    execFileSync("xcrun", ["simctl", "terminate", "booted", app], { stdio: "ignore" });
+    installed = appContainer("app");
   } catch {
-    // not running
+    throw new Error(
+      `${appId} is not installed on the booted simulator: build the dev client first (see the ios-preview skill)`
+    );
   }
-  execFileSync("xcrun", ["simctl", "install", "booted", copy]);
-  rmSync(path.dirname(copy), { recursive: true, force: true });
-  if (containerNeedsReinstall(container("data")))
+  if (!containerNeedsReinstall(appContainer("data"))) return;
+  console.log(
+    "the app's data container is incomplete (issue 30): reinstalling, which can erase its data (such as the remembered email)"
+  );
+  const tempDir = mkdtempSync(path.join(tmpdir(), "ios-preview-app-"));
+  try {
+    const copy = path.join(tempDir, "moojot.app");
+    cpSync(installed, copy, { recursive: true });
+    terminateApp();
+    execFileSync("xcrun", ["simctl", "install", "booted", copy]);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+  if (containerNeedsReinstall(appContainer("data")))
     throw new Error("the app's data container is still incomplete after a reinstall; reinstall the dev build");
-  console.log("reinstalled the app: its data container had no tmp/ directory");
+}
+
+// kind is "app" (the installed .app bundle) or "data" (the data container).
+function appContainer(kind) {
+  return execFileSync("xcrun", ["simctl", "get_app_container", "booted", appId, kind], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
+}
+
+function terminateApp() {
+  try {
+    execFileSync("xcrun", ["simctl", "terminate", "booted", appId], { stdio: "ignore" });
+  } catch {
+    // simctl fails when the app is not running, which is the state we want.
+  }
 }
 
 // Names the step Maestro stopped on and the files that show it, so nobody has to dig through the run directory.

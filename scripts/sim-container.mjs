@@ -1,4 +1,5 @@
 // Checks the app's data container on the simulator before ios-preview launches the app.
+// Issue 30: .scratch/native-redesign-ios/issues/30-ios-icon-font-download.md
 import { existsSync } from "node:fs";
 import path from "node:path";
 

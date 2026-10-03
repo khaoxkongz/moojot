@@ -56,7 +56,11 @@ Evidence:
 
 **Fix:** Before each launch, `scripts/ios-preview.mjs` checks the data container. If `tmp/` or the metadata file is missing, the script installs the installed build again. `scripts/sim-container.test.mjs` tests this check. A new container shows the dev menu's intro sheet one time, so `sign-in.yaml` now closes it. The `ios-preview` skill has a new "Missing icons" item.
 
+**Scope of the fix:** Only `scripts/ios-preview.mjs` makes the container complete again. A launch from `expo run:ios`, from the Home screen, or from `vp dev` does not. The app cannot do it, because a process outside the app deleted the container. In these cases, delete the app and install it again.
+
 **Check on the simulator:** We ran `30-tab-icons.yaml` four times, two in light and two in dark. Each run showed the tab bar icons ([light](../notes/30-app-tab-icons.png), [dark](../notes/30-app-tab-icons-dark.png)). The simulator log had no failed download. `.preview-logs/metro.log` had no `UnableToDownloadAssetException`.
+
+`30-tab-icons.yaml` only makes the screenshots. It has no assertion that the icons show. In the UI hierarchy, each tab has only its label text, for example `หน้าแรก, tab, 1 of 2`. The hierarchy has no element and no text for the icon. Thus Maestro cannot check the icons with an `assertVisible` command. A person must look at the screenshots.
 
 **LogBox:** The `moojotPreview` change from commit 18d63ee stays. Other development warnings can also show the banner over the tab bar. App errors still go to `metro.log`.
 
