@@ -1,0 +1,13 @@
+# Ticket 05 Home after recovery, for ios-preview step 4. It runs on the load-failed card that 05-home-error.yaml left
+# open, after the API server answers again, and taps "ลองอีกครั้ง" (retry) one time.
+appId: com.anonymous.moojot
+---
+- tapOn: "ลองอีกครั้ง"
+- extendedWaitUntil:
+    notVisible: "โหลดรายการไม่สำเร็จ"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "ยอดใช้จ่าย [0-9].* บาท"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home-recovered

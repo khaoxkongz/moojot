@@ -1,0 +1,13 @@
+# Ticket 10 Plan after recovery, for ios-preview step 4. It runs on the load-failed card that 10-plan-error.yaml left
+# open, after the API server answers again, and taps "ลองอีกครั้ง" (retry) one time.
+appId: com.anonymous.moojot
+---
+- tapOn: "ลองอีกครั้ง"
+- extendedWaitUntil:
+    notVisible: "โหลดแผนไม่สำเร็จ"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "งบแยกหมวด"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-plan-recovered

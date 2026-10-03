@@ -21,11 +21,14 @@ The dev build (`com.anonymous.moojot`) is already installed on the booted iPhone
    node scripts/ios-preview.mjs apps/native/.maestro/<flow>.yaml <out-dir> --theme dark
    ```
    The script restarts the app against Metro, signs in from `.env.preview.local` when needed, runs the flow and copies each screenshot to `<out-dir>` (`-dark` suffix in dark). For a ticket, `<out-dir>` is the feature's `notes/` directory. A failure prints where Maestro left its screenshots and UI hierarchy.
-4. **Error and recovery states** (a screen's "ลองอีกครั้ง" card), once per theme, with the app already signed in from a normal run:
-   1. Stop the API server: stop its background command, or `lsof -ti tcp:3000 -sTCP:LISTEN | xargs kill`.
-   2. Run a flow that opens the screen and waits for the error card with a long `extendedWaitUntil` (the app retries before it shows the card), then screenshots `<NN>-app-<screen>-error`: `node scripts/ios-preview.mjs <error-flow> <out-dir> --theme light --offline`.
-   3. Start the server again as in step 1 and wait until `curl -sf localhost:3000/` answers.
-   4. Run a flow that taps "ลองอีกครั้ง" once and screenshots `<NN>-app-<screen>-recovered`, on the same screen: `node scripts/ios-preview.mjs <recovery-flow> <out-dir> --theme light --keep-app`.
+4. **Error and recovery states** (a screen's "ลองอีกครั้ง" load-failed card). Each screen with the card has a flow pair in `apps/native/.maestro/`: `<flow>-error.yaml` and `<flow>-recovered.yaml`, where `<flow>` is `05-home`, `08-summary`, `09-search` or `10-plan`. Run these five sub-steps once per screen and theme, with the same `--theme` in each run:
+   1. With the server up, open the app on Home: `node scripts/ios-preview.mjs apps/native/.maestro/sign-in.yaml <out-dir> --theme light`. The relaunch empties the app's cache, so the error flow opens a screen the app has not loaded.
+   2. Stop the API server: stop its background command, or `lsof -ti tcp:3000 -sTCP:LISTEN | xargs kill`.
+   3. `node scripts/ios-preview.mjs apps/native/.maestro/<flow>-error.yaml <out-dir> --theme light --offline` waits for the card and saves `<NN>-app-<screen>-error`. `--offline` keeps the app open, because a launch without the server stops at a startup error.
+   4. Start the server again as in step 1 and wait until `curl -sf localhost:3000/` answers.
+   5. `node scripts/ios-preview.mjs apps/native/.maestro/<flow>-recovered.yaml <out-dir> --theme light --keep-app` taps "ลองอีกครั้ง" once and saves `<NN>-app-<screen>-recovered`.
+
+   A recovered flow that stops on the card means the tap sent no request to the server ([issue 24](../../../.scratch/native-redesign-ios/issues/24-ios-first-retry-after-outage.md)): run the five sub-steps again. A new screen with the card gets its own flow pair, copied from these.
 5. **Done** when every state the change touches has a light and a dark screenshot, and you have looked at each one.
 
 ## Gotchas

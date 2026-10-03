@@ -1,0 +1,14 @@
+# Ticket 08 Summary load-failed card, for ios-preview step 4. It starts on Home after a normal run, with the API
+# server stopped, and opens Summary, which this app session has not loaded. 08-summary-recovered.yaml follows it.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- tapOn:
+    text: "ดูสรุป"
+    retryTapIfNoChange: true
+# The app repeats a failed load before it shows the card.
+- extendedWaitUntil:
+    visible: "โหลดสรุปไม่สำเร็จ"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-error

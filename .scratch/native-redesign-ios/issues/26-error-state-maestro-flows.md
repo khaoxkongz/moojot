@@ -16,3 +16,26 @@ The `ios-preview` skill (`.claude/skills/ios-preview/SKILL.md`, step 4) gives th
 - [ ] Each flow passes in light and dark on the iPhone 11 simulator. The screenshots match the error and recovered screenshots in `notes/`.
 
 ## Comments
+
+**Ticket 26 — agent, 2026-10-03:** The eight flows are in `apps/native/.maestro/`.
+They are `05-home`, `08-summary`, `09-search`, and `10-plan`, each with an `-error.yaml` and a `-recovered.yaml` file.
+Step 4 of the `ios-preview` skill names them and gives the run order.
+
+Findings for later runs:
+
+- When the app opens without the API server, it shows an error before Home. The error flows therefore run on the open app.
+  `scripts/ios-preview.mjs --offline` now keeps the app open, as `--keep-app` does.
+  Step 4 first opens the app with `sign-in.yaml` while the server runs. That relaunch empties the app's cache.
+- Each error flow opens a screen that the app did not load: the month before on Home, Summary, Search with “ค่าโทร” (phone bill), and Plan.
+  The Plan error flow opens `moojot://plan`, because the path through Summary needs the server.
+- In one Home run, the first “เดือนก่อน” (previous month) tap did nothing. The flow now taps with `retryTapIfNoChange`.
+- The Expo dev-tools button was on the right side of the screen in these runs, away from every retry link. Each flow taps the retry link by its name.
+
+Simulator check, iPhone 11, development build:
+
+- All four flow pairs passed in light and in dark. One retry tap recovered each screen.
+- One dark Search run failed one time. Two retry taps sent no request to the server, and the card stayed.
+  Three later dark Search runs passed at the first tap. That behavior is [issue 24](24-ios-first-retry-after-outage.md).
+  The failed run had no log in the retry handler, so the data does not show if the tap reached the button.
+- The error cards match the `notes/` screenshots of tickets 05, 08, 09, 10, and 25. Only the month and the dev-tools button position are different.
+- New screenshots in `notes/`: `05-app-home-{error,recovered}-dark`, `08-app-summary-{error,recovered}`, `09-app-search-{error,recovered}-dark`, and `10-app-plan-{error,recovered}-dark`.
