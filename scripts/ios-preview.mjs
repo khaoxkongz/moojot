@@ -2,7 +2,8 @@
 // Usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark] [--metro-port 8081] [--offline] [--keep-app]
 // Needs: API server on :3000 (`vp run dev:server`) and Metro for the dev build (`vp exec expo start --dev-client` in apps/native).
 // --offline: the API server is meant to be stopped (error-state flows), so skip its check.
-// --keep-app: run on the screen the last flow left open instead of relaunching the app (recovery flows).
+// --keep-app: run on the screen the last flow left open instead of relaunching the app (error and recovery flows).
+//   Error flows pass both flags: a launch without the server stops at the startup error, before any screen.
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";

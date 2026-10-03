@@ -1,0 +1,19 @@
+# Ticket 09 Search load-failed card, for ios-preview step 4. It starts on Home after a normal run, with the API server
+# stopped, opens Search and searches for "ค่าโทร" (phone bill). 09-search-recovered.yaml follows it.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+# A first tap after the run that opened the app can do nothing; tap again then.
+- tapOn:
+    text: "ค้นหารายการ"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: "หมูค้นให้ทุกเดือน"
+    timeout: 10000
+- inputText: "ค่าโทร"
+# The app repeats a failed load before it shows the card.
+- extendedWaitUntil:
+    visible: "ค้นหาไม่สำเร็จ"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-error

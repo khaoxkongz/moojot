@@ -1,0 +1,13 @@
+# Ticket 08 Summary after recovery, for ios-preview step 4. It runs on the load-failed card that
+# 08-summary-error.yaml left open, after the API server answers again, and taps "ลองอีกครั้ง" (retry) one time.
+appId: com.anonymous.moojot
+---
+- tapOn: "ลองอีกครั้ง"
+- extendedWaitUntil:
+    notVisible: "โหลดสรุปไม่สำเร็จ"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "ภาพรวม.*"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 08-app-summary-recovered

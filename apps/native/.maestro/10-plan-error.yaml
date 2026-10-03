@@ -1,0 +1,18 @@
+# Ticket 10 Plan load-failed card, for ios-preview step 4. It starts on Home after a normal run, with the API server
+# stopped, and opens Plan by its link: the way through Summary needs the server. 10-plan-recovered.yaml follows it.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- openLink: "moojot://plan"
+# iOS can ask to open the link in Moojot; accept its prompt when it shows.
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+# The app repeats a failed load before it shows the card.
+- extendedWaitUntil:
+    visible: "โหลดแผนไม่สำเร็จ"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 10-app-plan-error
