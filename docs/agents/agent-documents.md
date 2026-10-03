@@ -8,6 +8,7 @@ Read these skills before writing:
 
 - [asd-ste100](../../.agents/skills/asd-ste100/SKILL.md). Use Strict mode.
 - [writing-for-agents](../../.agents/skills/writing-for-agents/SKILL.md). Apply its hierarchy and completion criteria.
+- [domain-modeling](../../.agents/skills/domain-modeling/SKILL.md). Use it for the domain changes specified in step 2.
 
 ## Procedure
 
@@ -18,9 +19,12 @@ Read these skills before writing:
 2. **Terminology.** Read [GLOSSARY-MAP.md](../../GLOSSARY-MAP.md). Read the glossaries for the affected contexts.
    Use their canonical English terms and meanings. Retain exact Thai names when they identify UI text or source terminology.
 
-   Use [domain-modeling](../../.agents/skills/domain-modeling/SKILL.md) when resolving a new domain term.
-   Record the resolved term in its owning glossary.
-   This step ends when each domain concept has one consistent name and an identified meaning.
+   Apply `domain-modeling` when defining or changing domain terms, meanings, relationships, glossary entries, or ADRs.
+   Resolve terminology conflicts against the relevant glossary and code.
+   Record each resolved term immediately in its owning glossary.
+   For language-only edits, retain existing domain meanings.
+   This step ends when each domain concept has one consistent name and meaning.
+   Every resolved term must appear in its owning glossary.
 
 3. **Meaning.** Write English prose. Keep exact UI strings, commands, identifiers, and literal records.
    Add English explanations for Thai literals. Compare every requirement, condition, exception, number, unit, and uncertainty with its source.

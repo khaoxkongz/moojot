@@ -45,7 +45,8 @@ Issues and specs live as local markdown files under `.scratch/<feature-slug>/`. 
 ### Agent document workflow
 
 Before writing or reviewing `.scratch/**/*.md`, read [the document workflow](docs/agents/agent-documents.md).
-Apply both named skills and the relevant glossary. Complete the workflow reviews and run `vp run check` before reporting completion.
+Apply the skills as specified in the workflow. Use the relevant glossary.
+Complete the workflow reviews and run `vp run check` before reporting completion.
 
 ### Triage labels
 
