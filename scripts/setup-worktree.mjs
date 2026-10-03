@@ -18,10 +18,13 @@ for (const file of envFiles) {
 }
 execFileSync("vp", ["install"], { cwd: here, stdio: "inherit" });
 
-// `vp install` also writes this worktree's `.vite-hooks/_`. Without it git finds no hook and commits skip every check.
-if (!existsSync(path.join(here, ".vite-hooks", "_", "pre-commit"))) {
+// Without a pre-commit hook where git looks for one, commits here skip every check. `core.hooksPath` is shared by all
+// worktrees: an absolute path reaches the main checkout's `.vite-hooks/_`, a relative one this worktree's own copy.
+// `hooks:setup` is `vp config --no-agent`: plain `vp config` also rewrites AGENTS.md.
+const hooksDir = path.resolve(here, git("rev-parse", "--git-path", "hooks"));
+if (!existsSync(path.join(hooksDir, "pre-commit"))) {
   console.error(
-    "setup:worktree: .vite-hooks/_ is missing, so commits here would run no hooks; run `vp config` and check again"
+    `setup:worktree: ${hooksDir} has no pre-commit hook, so commits here would run no checks; run \`vp run hooks:setup\` and check again`
   );
   process.exit(1);
 }

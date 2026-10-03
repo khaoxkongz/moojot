@@ -1,6 +1,10 @@
-import { defineConfig } from "vite-plus";
+import { configDefaults, defineConfig } from "vite-plus";
 
 export default defineConfig({
+  test: {
+    // Agent worktrees hold full copies of the repo; without this, `vp test` in the main checkout runs them too.
+    exclude: [...configDefaults.exclude, ".claude/worktrees/**"],
+  },
   lint: {
     ignorePatterns: [
       "node_modules/**",
