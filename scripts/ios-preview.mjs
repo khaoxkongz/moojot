@@ -58,20 +58,36 @@ if (!values["keep-app"]) {
   execFileSync("sleep", ["15"]);
 }
 
+const walk = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]
+  );
 const runDir = mkdtempSync(path.join(tmpdir(), "ios-preview-"));
 try {
   execFileSync("maestro", ["test", "--test-output-dir", runDir, flow], { env, stdio: "inherit" });
 } catch {
   console.error(`maestro failed; its screenshots and UI hierarchy are in ${runDir}`);
+  reportFailedStep(runDir);
   process.exit(1);
+}
+
+// Names the step Maestro stopped on and the files that show it, so nobody has to dig through the run directory.
+function reportFailedStep(dir) {
+  const files = walk(dir);
+  for (const log of files.filter((f) => path.basename(f) === "commands.json")) {
+    const steps = JSON.parse(readFileSync(log, "utf8"));
+    const index = steps.findIndex((step) => step.metadata?.status === "FAILED");
+    if (index === -1) continue;
+    console.error(`failed step ${index + 1}: ${JSON.stringify(steps[index].command)}`);
+    console.error(`  ${steps[index].metadata.error?.message ?? "no error message"}`);
+  }
+  for (const file of files.filter((f) => /\/(screenshots|screen-hierarchy)\/step-/.test(f))) {
+    console.error(`  ${file}`);
+  }
 }
 
 mkdirSync(outDir, { recursive: true });
 const suffix = values.theme === "dark" ? "-dark" : "";
-const walk = (dir) =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]
-  );
 for (const file of walk(runDir).filter((f) => f.endsWith(".png") && !path.basename(f).startsWith("screenshot-"))) {
   const target = path.join(outDir, path.basename(file, ".png") + suffix + ".png");
   copyFileSync(file, target);

@@ -1,2 +1,4 @@
+# A fresh worktree has no node_modules until `vp run setup:worktree`, and `vp staged` then fails with a missing-package error.
+[ -d node_modules/vite-plus ] || { echo "pre-commit: no node_modules here; run vp run setup:worktree first"; exit 1; }
 vp staged || exit $?
 python3 scripts/check-agent-documents.py --staged

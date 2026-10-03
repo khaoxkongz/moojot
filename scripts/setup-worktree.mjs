@@ -17,3 +17,11 @@ for (const file of envFiles) {
   console.log(`copied ${file}`);
 }
 execFileSync("vp", ["install"], { cwd: here, stdio: "inherit" });
+
+// `vp install` also writes this worktree's `.vite-hooks/_`. Without it git finds no hook and commits skip every check.
+if (!existsSync(path.join(here, ".vite-hooks", "_", "pre-commit"))) {
+  console.error(
+    "setup:worktree: .vite-hooks/_ is missing, so commits here would run no hooks; run `vp config` and check again"
+  );
+  process.exit(1);
+}
