@@ -18,6 +18,7 @@ import {
   startAuthForm,
   submitAuthForm,
   switchAuthMode,
+  type AuthFieldName,
   type AuthForm,
 } from "../../native/features/auth/auth-form";
 import { appEntry } from "../../native/features/auth/app-entry";
@@ -73,11 +74,8 @@ async function entryOf({ rpc }: ReturnType<typeof device>) {
   });
 }
 
-const fill = (form: AuthForm, values: Partial<Record<"name" | "email" | "password", string>>) =>
-  Object.entries(values).reduce(
-    (next, [field, value]) => editAuthField(next, field as "name" | "email" | "password", value),
-    form
-  );
+const fill = (form: AuthForm, values: Partial<Record<AuthFieldName, string>>) =>
+  Object.entries(values).reduce((next, [field, value]) => editAuthField(next, field as AuthFieldName, value), form);
 
 const FIXTURE_PASSWORD = "fixture-password";
 
@@ -136,6 +134,24 @@ describe("sign-in", () => {
     expect(result.form.errors).toEqual({ password: "รหัสผ่านไม่ถูกต้อง ลองอีกครั้ง" });
     expect(result.form.notice).toBeNull();
     expect(result.form.password).toBe("not-the-password");
+  });
+
+  it("drops the wrong-password error when a changed email turns out to have no account", async () => {
+    await registerFixture("changed-email@example.test");
+    const phone = device();
+    const wrong = await submitAuthForm(
+      phone,
+      fill(startAuthForm({ rememberedEmail: "changed-email@example.test" }), { password: "not-the-password" })
+    );
+    expect(wrong.status).toBe("refused");
+    if (wrong.status !== "refused") return;
+
+    const result = await submitAuthForm(phone, fill(wrong.form, { email: "never-registered@example.test" }));
+
+    expect(result.status).toBe("refused");
+    if (result.status !== "refused") return;
+    expect(result.form.errors).toEqual({});
+    expect(result.form.notice?.text).toBe("ยังไม่มีบัญชีของอีเมลนี้");
   });
 });
 

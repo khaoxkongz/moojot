@@ -10,15 +10,19 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
 
-type OnboardingContextValue = {
+type AppEntryContextValue = {
   /** Where the root guard sends this device: auth, setup or Home. */
   entry: Extract<AppEntry, "auth" | "onboarding" | "app">;
   signOut: () => Promise<void>;
 };
 
-const OnboardingContext = createContext<OnboardingContextValue | null>(null);
+const AppEntryContext = createContext<AppEntryContextValue | null>(null);
 
-export function OnboardingProvider({ children }: { children: ReactNode }) {
+/**
+ * Decides where the root guard sends this device from the session and the setup check, and ends the session. Until
+ * the entry is known it shows the loading screen, or the retry screen when the setup check failed.
+ */
+export function AppEntryProvider({ children }: { children: ReactNode }) {
   const theme = useAppTheme();
   const { data: session, isPending: isSessionPending } = authClient.useSession();
 
@@ -73,7 +77,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <OnboardingContext.Provider
+    <AppEntryContext.Provider
       value={{
         entry,
         signOut: async () => {
@@ -86,12 +90,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </OnboardingContext.Provider>
+    </AppEntryContext.Provider>
   );
 }
 
-export function useOnboarding(): OnboardingContextValue {
-  const context = use(OnboardingContext);
-  if (!context) throw new Error("useOnboarding must be used inside OnboardingProvider");
+export function useAppEntry(): AppEntryContextValue {
+  const context = use(AppEntryContext);
+  if (!context) throw new Error("useAppEntry must be used inside AppEntryProvider");
   return context;
 }

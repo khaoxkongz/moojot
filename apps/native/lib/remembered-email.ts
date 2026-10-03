@@ -1,6 +1,6 @@
 /**
- * The email of the latest account signed in on this device. After sign-out the auth screen opens in sign-in mode with
- * it; without one, the app opens signup. Only the email is kept, never the password.
+ * The remembered email: the email of the latest account signed in on this device. After sign-out the auth screen
+ * opens in sign-in mode with it; without one, the app opens signup. Only the email is kept, never the password.
  */
 
 /** Raw text kept on this device, such as one small file. */
@@ -9,7 +9,7 @@ export interface RememberedEmailStorage {
   write(text: string): Promise<void>;
 }
 
-export type RememberedEmailSnapshot = { status: "loading" | "ready"; email: string | null };
+type RememberedEmailSnapshot = { status: "loading" | "ready"; email: string | null };
 
 export function createRememberedEmail(storage: RememberedEmailStorage) {
   let snapshot: RememberedEmailSnapshot = { status: "loading", email: null };
@@ -46,5 +46,3 @@ export function createRememberedEmail(storage: RememberedEmailStorage) {
     },
   };
 }
-
-export type RememberedEmail = ReturnType<typeof createRememberedEmail>;

@@ -1,6 +1,6 @@
 # Signs in with MAESTRO_PREVIEW_EMAIL / MAESTRO_PREVIEW_PASSWORD when the app shows the auth screen; does nothing when already signed in.
 # Keys on the auth screen's test IDs (auth-mode-signin, auth-email, auth-password); update them here if the screen changes.
-# The screen may open in signup mode (first start) or with the latest email filled in (after sign-out), so it picks the
+# The screen may open in signup mode (first start) or with the remembered email filled in (after sign-out), so it picks the
 # sign-in tab and replaces the email.
 appId: com.anonymous.moojot
 ---

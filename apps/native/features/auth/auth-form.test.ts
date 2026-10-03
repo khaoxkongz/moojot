@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { applyAuthOutcome, editAuthField, startAuthForm, switchAuthMode, type AuthForm } from "./auth-form";
+import {
+  applyAuthOutcome,
+  editAuthField,
+  pendingAuthForm,
+  startAuthForm,
+  switchAuthMode,
+  type AuthForm,
+} from "./auth-form";
 
 const sent: AuthForm = { ...startAuthForm({ rememberedEmail: "moo@example.test" }), password: "wrong-password" };
 const refused: AuthForm = { ...sent, errors: { password: "รหัสผ่านไม่ถูกต้อง ลองอีกครั้ง" } };
 
 describe("startAuthForm", () => {
-  it("opens signup on a first start, and sign-in with the latest email and no password after sign-out", () => {
+  it("opens signup on a first start, and sign-in with the remembered email and no password after sign-out", () => {
     expect(startAuthForm({ rememberedEmail: null })).toMatchObject({ mode: "signup", email: "", password: "" });
     expect(startAuthForm({ rememberedEmail: "latest@example.test" })).toMatchObject({
       mode: "signin",
@@ -44,5 +51,20 @@ describe("applyAuthOutcome", () => {
 
     expect(applyAuthOutcome(typedOn, sent, notice).notice).toBeNull();
     expect(applyAuthOutcome(sent, sent, notice).notice).toEqual(notice.notice);
+  });
+});
+
+describe("pendingAuthForm", () => {
+  it("hides the old server answer while a new submit is pending", () => {
+    const changed = editAuthField(refused, "email", "other@example.test");
+
+    expect(changed.errors).toEqual(refused.errors);
+    expect(pendingAuthForm(changed)).toEqual({ ...changed, errors: {}, notice: null });
+  });
+
+  it("keeps the form as it is when the check refuses it, because nothing is sent", () => {
+    const short = editAuthField(refused, "email", "not-an-email");
+
+    expect(pendingAuthForm(short)).toEqual(short);
   });
 });

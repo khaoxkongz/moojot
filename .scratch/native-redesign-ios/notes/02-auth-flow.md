@@ -23,8 +23,14 @@ The plugin tells anyone whether an email has an account. The signup route alread
 - `editAuthField` clears only that field's error, and the notice.
 - `checkAuthForm` gives one error per incomplete field. The name counts only in signup.
 - `submitAuthForm(client, form)` checks first and sends nothing when a field is incomplete. Its result is `signed-up`, `signed-in`, `invalid`, or `refused`.
+- A form that passes the check goes to the server without its old errors and notice, as the handoff's `submitAuth` does. A refused result therefore holds only the server's answer about this submit.
+- `pendingAuthForm` gives the form for the pending time. It clears the old errors and notice when the check passes.
 - `authSubmitter(client)` returns the pending result for a second call, so a double tap sends one request.
 - `applyAuthOutcome(current, sent, answered)` keeps typing that occurred during the request. An error stays only on an unchanged field. The notice stays only when no value changed.
+
+`AUTH_MODES` holds each text and setting that differs between signup and sign-in. `PASSWORD_RULE` holds the password rule text. The rule text, the placeholder, and the error get the number 8 from one length constant.
+
+The type of a field name is `AuthFieldName`.
 
 Each server code maps to one message:
 
@@ -39,9 +45,11 @@ Each server code maps to one message:
 | No response                             | Notice “เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง” (cannot connect, check the network and try again)                  |
 | Other                                   | Notice “สมัครสมาชิกไม่สำเร็จ ลองอีกครั้ง” (signup failed) or “เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง” (sign-in failed), try again |
 
-## Latest email
+## Remembered email
 
-`lib/remembered-email.ts` is the tested store. `lib/device-remembered-email.ts` is the adapter, with the file `Documents/moojot-last-email-v1.txt` on the device. The root loads it before it hides the splash, like the theme choice.
+The remembered email is the email of the latest account that signed in on the device. `lib/remembered-email.ts` is the tested store. `lib/device-remembered-email.ts` is the adapter. The root loads the store before it hides the splash, like the theme choice.
+
+On the device, the adapter keeps the email in the file `Documents/moojot-last-email-v1.txt`. The web adapter uses the same key. The key keeps its first name, because a changed key loses the email that devices hold now.
 
 The root writes each signed-in session email to the store. After sign-out the auth screen opens in sign-in mode with that email. A device without the file makes a first start and opens signup.
 
@@ -51,28 +59,31 @@ A cold start after a sign-out also opens sign-in, because the file stays. The pr
 
 - `app/(auth)/index.tsx` is the splash. It opens `/auth` after two seconds or on a tap. Ticket 03 restyles it to the handoff.
 - `app/(auth)/auth.tsx` is one screen for both modes. The old `sign-in.tsx` and `sign-up.tsx` are gone.
-- `features/auth/app-entry.ts` exports `appEntry`. `OnboardingProvider` uses it, and `RootNavigation` reads `entry` from `useOnboarding()`.
+- `features/auth/app-entry.ts` exports `appEntry`. `AppEntryProvider` in `context/app-entry.tsx` uses it, and `RootNavigation` reads `entry` from `useAppEntry()`. The provider had the names `OnboardingProvider` and `useOnboarding`. The new names show that it also sends signed-out devices to auth.
 
 `appEntry` returns `retry` when the setup check fails for a signed-in account. Before this change, a failed check sent a completed account to setup. The retry screen keeps the old text and “ลองอีกครั้ง” (retry).
 
-Signup enters setup at `/onboarding/greeting`. The old landing screen is gone. `privacy` now continues to `birthday`, which continues to `personalization`. Ticket 03 sets the final step order.
+Signup enters setup at `/onboarding/greeting`. The old landing screen is gone. The greeting has no back button, because no screen is behind it.
+
+Setup keeps the old step order with the greeting moved first: greeting, birthday, terms, privacy, personalization. Only the greeting and birthday links changed. Ticket 03 owns the final step order.
 
 A successful sign-in shows the toast “ยินดีต้อนรับกลับ <name>” (welcome back). The toast host lives in `(app)`, so an account that enters setup does not see it.
 
-Sign-out still starts from the account sheet in `settings/account`. The sheet text now adds the handoff line about entries staying. Ticket 20 moves sign-out to the profile.
+Sign-out still starts from the account sheet in `settings/account`. The sheet has the handoff title “ออกจากระบบไหม?” (sign out?). Its text is the handoff line “รายการที่จดไว้ยังอยู่ครบ เข้าสู่ระบบด้วยอีเมลเดิมเพื่อดูอีกครั้ง” (your entries stay, sign in with the same email to see them again). It also has a “ยกเลิก” (cancel) button. Ticket 20 moves sign-out to the profile and owns the rest of the sheet.
 
 ## Shared control changes
 
 - `SegmentedControl` takes `labelSize`, `accessibilityLabel`, and `testID`. Each tab gets `<testID>-<value>`.
 - `PillButton` takes `testID`.
 - `utils/email-identity.ts` exports `isValidEmail`. `normalizeEmail` uses it.
-- `features/auth/components/auth-field.tsx` has `AuthField`, `ShowPasswordButton`, and `PasswordRule`.
+- `features/auth/components/auth-input.tsx` has `AuthInput`, `ShowPasswordButton`, and `PasswordRule`.
 
 ## Tests
 
 - `apps/server/test/auth-flow.test.ts` drives the native form through the real Better Auth routes into a test MongoDB. Each test makes its own fixture accounts.
 - It covers unknown email, wrong password, duplicate signup with recovery through the notice action, and incomplete fields with nothing sent.
 - It also covers signup into setup, Home after setup, one request for a double submit, connection failure with recovery, and the 128-character limit.
+- It also covers a wrong password, then a changed email without an account. The second answer shows only the notice, without the old password error.
 - `features/auth/{auth-form,app-entry}.test.ts` and `lib/remembered-email.test.ts` cover form state, the retry guard, and the latest email.
 
 ## Design comparison
@@ -95,29 +106,47 @@ Matched values:
 - The signup password field does not ask iOS for a new password. With that content type, the simulator covered the field with Automatic Strong Password. After “แสดง” (show) and “ซ่อน” (hide), iOS replaced the typed text. Sign-in keeps Keychain autofill.
 - The greeting, splash, and setup steps keep their old look until ticket 03.
 - The app adds the shared-code, rate-limit, connection, and password-length messages from the table above.
+- The ticket's `## Comments` records each kept difference with its reason.
 
 ## iOS evidence: iPhone 11 simulator, iOS 18.6, development build, 2026-10-03
 
-The flow `apps/native/.maestro/02-auth-flow.yaml` ran in light and dark. Captures are `02-app-<state>[-dark].png` beside this file.
+The flow `apps/native/.maestro/02-auth-flow.yaml` ran in light and dark. Captures are `02-app-<state>[-dark].png` beside this file. The review fix ran the flow again in light and dark and replaced the captures. The sign-out sheet captures show the new title, line, and cancel button.
 
 The flow signs up a new account, so it ran against a throwaway database, not the development database. Recipe:
 
 1. Start `MongoMemoryReplSet` on port 27999 from a script in the gitignored `.preview-logs/`.
 2. Run `prisma db push` against it.
 3. Start the API server with `DATABASE_URL` set to that replica set.
-4. Make the fixture `returning@example.test` through `/api/auth/sign-up/email`. Set `onboarding_complete_v1` through `/rpc/financePreferences/setSetting`.
+4. Make the fixture `returning@example.test` through `/api/auth/sign-up/email`. Set `onboarding_complete_v1` through `/rpc/financePreferences/setSetting`. Both requests need an `origin` header from `CORS_ORIGIN`. The RPC request also needs the header `x-csrf-token: orpc`.
 5. Before each run, delete `nobody@example.test`, every session, and the app's `Documents/moojot-last-email-v1.txt`.
 
-Checked states: first start in signup, incomplete-field errors, Enter from name to email to password, the live rule, show and hide, and duplicate signup. Also checked: the notice action into sign-in, wrong password, and Home with the welcome toast. The flow also checked the sign-out sheet, sign-in with the latest email after sign-out, unknown email, the notice action into signup, and the greeting.
+Checked states: first start in signup, incomplete-field errors, the live rule, show and hide, and duplicate signup. Also checked: the notice action into sign-in, wrong password, and Home with the welcome toast. The flow also checked the sign-out sheet, sign-in with the remembered email after sign-out, unknown email, the notice action into signup, and the greeting.
 
 The shared `apps/native/.maestro/sign-in.yaml` now picks the sign-in tab, replaces the email, and submits with Return. It signed in to the development server after this change. Maestro `hideKeyboard` fails on the auth screen, so flows submit with `pressKey: Enter`.
 
 iOS leaves secure-entry text out of simulator screenshots. Hidden passwords therefore look empty in the captures, although the fields hold text.
 
+### Return key
+
+Maestro `pressKey: Enter` sends a Return key event, as a hardware keyboard does. On the simulator, that event moved focus from the name to the email, and from the email to the password. From the password, it sent the form. The text typed after each event went into the next field.
+
+The simulator did not check the Return key of the on-screen keyboard. After the first Maestro key event, the simulator hid the on-screen keyboard, so a tap on its keys is not possible. Only a real iPhone keyboard can check that its Return key moves focus and sends the form.
+
+### Back navigation
+
+A Maestro edge swipe did not close a pushed settings screen in the signed-in app. Maestro swipes therefore cannot check the iOS back gesture on this simulator.
+
+A temporary log printed `router.canGoBack()` and the root navigation state on three screens. The commit does not contain the log. Results:
+
+- Auth at first start: `false`. The `(auth)` stack holds only `auth`, because the splash replaces itself.
+- Auth after sign-out: `false`. The `(auth)` stack holds only `auth`.
+- Greeting after signup: `false`. The root holds only `onboarding`, and its stack holds only the greeting.
+- Home after sign-in: `false` on the first render. The root holds only `(app)`.
+
+No screen is behind auth, the splash, or the greeting. The back gesture therefore has no screen to show. The greeting has no back button. The back button of the birthday step opened the greeting.
+
 Unverified on the simulator: the pending label (the local server answers too fast), Dynamic Type, VoiceOver, and the retry screen of the setup check.
 
 ## Left for a human on the iPhone
 
-- Password dots render in a hidden password field.
-- iOS Keychain autofill offers the saved password in sign-in, and no strong-password cover appears in signup.
-- The keyboard Return key moves from name to email to password, and submits from the password.
+The ticket's `## Comments` lists the checks for the iPhone 13 Pro.

@@ -9,7 +9,7 @@ import { StyleSheet } from "react-native";
 
 import { useAppFonts } from "@/constants/fonts";
 import { AppDataProvider } from "@/context/app-data";
-import { OnboardingProvider, useOnboarding } from "@/context/onboarding";
+import { AppEntryProvider, useAppEntry } from "@/context/app-entry";
 import { authClient } from "@/lib/auth-client";
 import { rememberedEmail, useRememberedEmail } from "@/lib/device-remembered-email";
 import { NAV_THEME, themes } from "@/constants/theme";
@@ -20,7 +20,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 void SplashScreen.preventAutoHideAsync();
 // The splash stays up until the saved theme is known, so the first screen never flashes the other palette.
 void themePreference.load();
-// The auth screen opens in sign-in mode with the latest email, so it must be known before the first screen.
+// The auth screen opens in sign-in mode with the remembered email, so it must be known before the first screen.
 void rememberedEmail.load();
 
 const LIGHT_THEME = {
@@ -59,19 +59,19 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
-      <OnboardingProvider>
+      <AppEntryProvider>
         <RootNavigation isDarkColorScheme={isDarkColorScheme} />
-      </OnboardingProvider>
+      </AppEntryProvider>
     </QueryClientProvider>
   );
 }
 
 function RootNavigation({ isDarkColorScheme }: { isDarkColorScheme: boolean }) {
-  const { entry } = useOnboarding();
+  const { entry } = useAppEntry();
   const { data: session } = authClient.useSession();
   const email = session?.user.email ?? null;
 
-  // Every signed-in account becomes the latest email, so sign-out reopens sign-in with it.
+  // Every signed-in account becomes the remembered email, so sign-out reopens sign-in with it.
   useEffect(() => {
     if (email) void rememberedEmail.remember(email);
   }, [email]);
