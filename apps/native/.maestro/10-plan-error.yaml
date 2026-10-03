@@ -4,6 +4,7 @@ appId: com.anonymous.moojot
 ---
 - runFlow: sign-in.yaml
 - openLink: "moojot://plan"
+# iOS can ask to open the link in Moojot; accept its prompt when it shows.
 - runFlow:
     when:
       visible: "Open"

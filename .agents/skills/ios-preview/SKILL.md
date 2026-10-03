@@ -21,11 +21,11 @@ The dev build (`com.anonymous.moojot`) is already installed on the booted iPhone
    node scripts/ios-preview.mjs apps/native/.maestro/<flow>.yaml <out-dir> --theme dark
    ```
    The script restarts the app against Metro, signs in from `.env.preview.local` when needed, runs the flow and copies each screenshot to `<out-dir>` (`-dark` suffix in dark). For a ticket, `<out-dir>` is the feature's `notes/` directory. A failure prints where Maestro left its screenshots and UI hierarchy.
-4. **Error and recovery states** (a screen's "ลองอีกครั้ง" load-failed card). Each screen with the card has a flow pair in `apps/native/.maestro/`: `<flow>-error.yaml` and `<flow>-recovered.yaml`, where `<flow>` is `05-home`, `08-summary`, `09-search` or `10-plan`. Run these five sub-steps once per screen and theme, with the same `--theme` in each run:
+4. **Error and recovery states** (a screen's "ลองอีกครั้ง" load-failed card). Home, Summary, Search and Plan each have a flow pair in `apps/native/.maestro/`: `<flow>-error.yaml` and `<flow>-recovered.yaml`, where `<flow>` is `05-home`, `08-summary`, `09-search` or `10-plan`. They cover only those four screens; another screen with the card, such as the pending-categories sheet or entry detail, has no flow pair yet. Run these five sub-steps once per screen and theme, with the same `--theme` in each run:
    1. With the server up, open the app on Home: `node scripts/ios-preview.mjs apps/native/.maestro/sign-in.yaml <out-dir> --theme light`. The relaunch empties the app's cache, so the error flow opens a screen the app has not loaded.
    2. Stop the API server: stop its background command, or `lsof -ti tcp:3000 -sTCP:LISTEN | xargs kill`.
-   3. `node scripts/ios-preview.mjs apps/native/.maestro/<flow>-error.yaml <out-dir> --theme light --offline` waits for the card and saves `<NN>-app-<screen>-error`. `--offline` keeps the app open, because a launch without the server stops at a startup error.
-   4. Start the server again as in step 1 and wait until `curl -sf localhost:3000/` answers.
+   3. `node scripts/ios-preview.mjs apps/native/.maestro/<flow>-error.yaml <out-dir> --theme light --offline --keep-app` waits for the card and saves `<NN>-app-<screen>-error`. `--offline` skips the server check; `--keep-app` keeps the app open, because a launch without the server stops at a startup error.
+   4. Start the API server again as in top-level step 1 (**Services up**) and wait until `curl -sf localhost:3000/` answers.
    5. `node scripts/ios-preview.mjs apps/native/.maestro/<flow>-recovered.yaml <out-dir> --theme light --keep-app` taps "ลองอีกครั้ง" once and saves `<NN>-app-<screen>-recovered`.
 
    A recovered flow that stops on the card means the tap sent no request to the server ([issue 24](../../../.scratch/native-redesign-ios/issues/24-ios-first-retry-after-outage.md)): run the five sub-steps again. A new screen with the card gets its own flow pair, copied from these.
@@ -34,7 +34,7 @@ The dev build (`com.anonymous.moojot`) is already installed on the booted iPhone
 ## Gotchas
 
 - `--theme` sets the simulator's appearance; a theme the user saved inside the app wins over it.
-- The floating gear on the right is Expo's dev-tools button. Ignore it in comparisons. It also takes taps meant for whatever sits under or beside it, so a button near it (often "ลองอีกครั้ง") seems dead on the first tap: tap the half of the button away from the gear with `tapOn: { point: "x,y" }`, read from the hierarchy.
+- The floating gear on the right is Expo's dev-tools button. Ignore it in comparisons; it can sit in a different place from one run to the next. It takes taps meant for whatever sits under or beside it. Tap by name, as the step 4 flows do; when the gear sits on a button and its first tap seems dead, tap the half of the button away from the gear with `tapOn: { point: "x,y" }`, read from the hierarchy.
 - Maestro needs Java. The script points `JAVA_HOME` at Homebrew's openjdk; set it the same way for raw `maestro` commands: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home`.
 - A `Pressable`'s accessible name is all its text joined ("อาหาร 120 ฿ 3 รายการ"), so match a row by regex (`"อาหาร.*"`), and give icon-only buttons an `accessibilityLabel` (icon glyphs otherwise land in the name). Before guessing a selector after a failed `tapOn`/`assertVisible`/`scrollUntilVisible`, read the real names in the UI hierarchy the failure points to, or run `maestro hierarchy`.
 - `.env.preview.local` (gitignored) holds `PREVIEW_EMAIL` / `PREVIEW_PASSWORD`; `vp run setup:worktree` copies it into a worktree. Keep the login out of commits, notes and command lines.
