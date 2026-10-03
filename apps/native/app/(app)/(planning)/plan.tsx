@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GroupedList, IconButton, MessageCard } from "@/components/ui/controls";
+import { GroupedList, IconButton, MessageCard, RetryLinkText } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
 import { radius, touch, type AppTheme } from "@/constants/theme";
 import { categoriesQueryOptions } from "@/features/categories/query-options";
@@ -243,7 +243,7 @@ export default function PlanScreen() {
         {refreshError ? (
           <Pressable accessibilityRole="button" onPress={retryAll} style={styles.refreshErrorRow}>
             <Text style={styles.refreshError}>
-              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.refreshRetry}>ลองอีกครั้ง</Text>
+              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <RetryLinkText />
             </Text>
           </Pressable>
         ) : null}
@@ -428,6 +428,5 @@ function createStyles(theme: AppTheme) {
     ruleAmount: { color: theme.text, fontSize: 15, fontWeight: "500", fontVariant: ["tabular-nums"] },
     refreshErrorRow: { paddingHorizontal: 4, paddingBottom: 10 },
     refreshError: { color: theme.muted, fontSize: 13, lineHeight: 19 },
-    refreshRetry: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
   });
 }

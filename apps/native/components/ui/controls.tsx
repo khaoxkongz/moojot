@@ -468,35 +468,90 @@ export function InfoBox({
   );
 }
 
-/**
- * A screen that could not load, or a record that is gone: a centered card with a title, a line of body and, when the
- * load can be tried again, a "ลองอีกครั้ง" link.
- */
-export function MessageCard({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
+/** The "ลองอีกครั้ง" (try again) link text: 14 on `accentText`. Inside a line of text it runs on in that line. */
+export function RetryLinkText() {
   const theme = useAppTheme();
+  return <Text style={{ color: theme.accentText, fontSize: 14, lineHeight: 20 }}>ลองอีกครั้ง</Text>;
+}
+
+/** Where a `RetryLink` sits in its parent. */
+type RetryLinkPlacement = Pick<ViewStyle, "alignSelf" | "paddingHorizontal">;
+
+/** A "ลองอีกครั้ง" (try again) link on its own line, at the minimum touch height. */
+export function RetryLink({
+  onPress,
+  accessibilityLabel,
+  placement,
+}: {
+  onPress: () => void;
+  /** Spoken name, when "ลองอีกครั้ง" alone does not say what it tries again. */
+  accessibilityLabel?: string;
+  placement?: RetryLinkPlacement;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={[{ minHeight: touch.min, justifyContent: "center" }, placement]}
+    >
+      <RetryLinkText />
+    </Pressable>
+  );
+}
+
+/** Outer margins of a `MessageCard`: where a screen places it among its own content. */
+export type MessageCardMargins = Pick<ViewStyle, "marginTop" | "marginBottom" | "marginHorizontal">;
+
+const messageCardLayouts = {
+  // On its own (Plan, the budget form).
+  center: {
+    card: { marginTop: 12, padding: 18, alignItems: "center" },
+    body: { lineHeight: 19, textAlign: "center" },
+    retry: { paddingHorizontal: 12 },
+  },
+  // Flush left among a screen's content (Home, Summary, Search). The screen sets the margins.
+  start: {
+    card: { padding: 20, alignItems: "stretch" },
+    body: { lineHeight: 20, textAlign: "auto" },
+    retry: { alignSelf: "flex-start" },
+  },
+} as const satisfies Record<string, { card: ViewStyle; body: TextStyle; retry: RetryLinkPlacement }>;
+
+/**
+ * A screen that could not load, a record that is gone, or an empty list: a card with a title, a line of body and, when
+ * the load can be tried again, a "ลองอีกครั้ง" link. Centered on its own by default; `align="start"` sets it flush
+ * left among a screen's content, and `margins` places it there.
+ */
+export function MessageCard({
+  title,
+  body,
+  onRetry,
+  retryLabel,
+  align = "center",
+  margins,
+}: {
+  title: string;
+  body: string;
+  onRetry?: () => void;
+  /** Spoken name of the retry link, when "ลองอีกครั้ง" alone does not say what it tries again. */
+  retryLabel?: string;
+  align?: keyof typeof messageCardLayouts;
+  margins?: MessageCardMargins;
+}) {
+  const theme = useAppTheme();
+  const layout = messageCardLayouts[align];
   return (
     <View
-      style={{
-        marginTop: 12,
-        padding: 18,
-        borderRadius: radius.card,
-        backgroundColor: theme.surface,
-        alignItems: "center",
-        gap: 4,
-        ...raisedRing(theme),
-      }}
+      style={[
+        { borderRadius: radius.card, backgroundColor: theme.surface, gap: 4, ...raisedRing(theme) },
+        layout.card,
+        margins,
+      ]}
     >
       <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
-      <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" }}>{body}</Text>
-      {onRetry ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onRetry}
-          style={{ minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 }}
-        >
-          <Text style={{ color: theme.accentText, fontSize: 14, lineHeight: 20 }}>ลองอีกครั้ง</Text>
-        </Pressable>
-      ) : null}
+      <Text style={[{ color: theme.muted, fontSize: 13 }, layout.body]}>{body}</Text>
+      {onRetry ? <RetryLink onPress={onRetry} accessibilityLabel={retryLabel} placement={layout.retry} /> : null}
     </View>
   );
 }

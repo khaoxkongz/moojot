@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { MessageCard, RetryLink, RetryLinkText } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text } from "@/components/ui/typography";
 import { accentRing, radius, raisedRing, shadow, touch, type AppTheme } from "@/constants/theme";
@@ -51,9 +52,7 @@ function InlineError({ message, onRetry }: Retry) {
   return (
     <View style={styles.inlineError}>
       <Text style={styles.inlineErrorText}>{message}</Text>
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retry}>
-        <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-      </Pressable>
+      <RetryLink onPress={onRetry} />
     </View>
   );
 }
@@ -176,8 +175,13 @@ export default function SummaryScreen() {
     ? planRowSubtitle(budgetsQuery.data, { walletFiltered: Boolean(appliedWalletFilter) })
     : "ดูงบของเดือนนี้";
 
-  const pageError = !summary && (startDayQuery.error ?? summaryQuery.error);
-  const refreshError = summary && summaryQuery.error;
+  // Not queryState(). Its pageError waits for a query with no data to fail, so a month that is still loading after a
+  // failed refresh of the month-start setting would show the spinner; Summary shows the card at once. The refresh line
+  // is for the month's totals only, and it stays up while a retry fetches (with its retries, several seconds of nothing
+  // on screen otherwise). Retry also reloads the bars, trend and budgets, which cannot join queryState: the breakdown
+  // that is switched off never has data.
+  const pageError = !summary && Boolean(startDayQuery.error ?? summaryQuery.error);
+  const refreshError = Boolean(summary && summaryQuery.error);
   const retryAll = () => {
     for (const query of [startDayQuery, summaryQuery, categoriesQuery, tagsQuery, trendQuery, budgetsQuery]) {
       if (query.isEnabled) void query.refetch();
@@ -279,19 +283,19 @@ export default function SummaryScreen() {
         {refreshError ? (
           <Pressable accessibilityRole="button" onPress={retryAll} style={styles.refreshErrorRow}>
             <Text style={styles.refreshError}>
-              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.retryText}>ลองอีกครั้ง</Text>
+              อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <RetryLinkText />
             </Text>
           </Pressable>
         ) : null}
 
         {pageError ? (
-          <View style={styles.messageCard}>
-            <Text style={styles.messageTitle}>โหลดสรุปไม่สำเร็จ</Text>
-            <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-            <Pressable accessibilityRole="button" onPress={retryAll} style={styles.retry}>
-              <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-            </Pressable>
-          </View>
+          <MessageCard
+            align="start"
+            title="โหลดสรุปไม่สำเร็จ"
+            body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
+            onRetry={retryAll}
+            margins={styles.messageCard}
+          />
         ) : !overview ? (
           <ActivityIndicator color={theme.accentText} style={styles.loading} />
         ) : (
@@ -487,17 +491,7 @@ function createStyles(theme: AppTheme) {
     refreshErrorRow: { minHeight: touch.min, paddingHorizontal: 4, justifyContent: "center" },
     refreshError: { color: theme.danger, fontSize: 12, lineHeight: 17 },
     loading: { marginTop: 40 },
-    messageCard: {
-      marginTop: 8,
-      padding: 20,
-      borderRadius: radius.card,
-      backgroundColor: theme.surface,
-      ...raisedRing(theme),
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 20 },
-    retry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center" },
-    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    messageCard: { marginTop: 8 },
     overview: {
       paddingTop: 16,
       paddingHorizontal: 18,

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { bahtFontSize } from "@/components/ui/controls";
+import { bahtFontSize, MessageCard, RetryLinkText } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
@@ -51,6 +51,7 @@ import { emptyWalletOptions, isAllWalletSources, selectAllWalletSources } from "
 import { walletsQueryOptions } from "@/features/wallets/query-options";
 import type { WalletFilterSelection } from "@/types/finance";
 import { amountLabel, formatBaht, isValidISODate, todayISO } from "@/utils/format";
+import { queryState } from "@/utils/query-state";
 
 const emptyRows: never[] = [];
 
@@ -223,9 +224,11 @@ export default function HomeScreen() {
     streakSettingsQuery,
     walletOptionsQuery,
   ];
-  const error = dataQueries.find((query) => query.data === undefined && query.error)?.error ?? null;
-  const loading = !error && dataQueries.some((query) => query.data === undefined);
-  const refreshError = dataQueries.find((query) => query.data !== undefined && query.error)?.error;
+  const { ready, pageError, retry: refetchHome } = queryState(dataQueries);
+  const loading = !ready && !pageError;
+  // Not queryState's refreshError: Home keeps the line up while a retry fetches (with its retries, several seconds of
+  // nothing on screen otherwise) and while another query still loads under the spinner.
+  const refreshError = !pageError && dataQueries.some((query) => query.data !== undefined && Boolean(query.error));
   const entries = periodQuery.data ?? emptyRows;
   const todayEntries = todayQuery.data ?? emptyRows;
   const categories = categoriesQuery.data ?? emptyRows;
@@ -309,9 +312,6 @@ export default function HomeScreen() {
     setFilterOpen(false);
   };
 
-  const refetchHome = () => {
-    for (const query of dataQueries) if (query.isEnabled) void query.refetch();
-  };
   // Only a released pull refreshes. iOS reports the refresh point while the finger is still down, so the drag events
   // tell a held pull from a released one there; Android reports it on release.
   const onRefresh = () => {
@@ -508,30 +508,30 @@ export default function HomeScreen() {
             <Text style={styles.latestText}>{latestJotLabel(latestQuery.data?.[0]?.createdAt ?? null, dayKey)}</Text>
           </View>
 
-          {refreshError && !error ? (
+          {refreshError ? (
             <Pressable accessibilityRole="button" onPress={refetchHome} style={styles.refreshErrorRow}>
               <Text style={styles.refreshError}>
-                อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.retryText}>ลองอีกครั้ง</Text>
+                อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <RetryLinkText />
               </Text>
             </Pressable>
           ) : null}
           {loading ? (
             <ActivityIndicator accessibilityLabel="กำลังโหลดรายการ" color={theme.accentText} style={styles.loading} />
-          ) : error ? (
-            <View style={styles.messageCard}>
-              <Text style={styles.messageTitle}>โหลดรายการไม่สำเร็จ</Text>
-              <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-              <Pressable accessibilityRole="button" onPress={refetchHome} style={styles.retry}>
-                <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-              </Pressable>
-            </View>
+          ) : pageError ? (
+            <MessageCard
+              align="start"
+              title="โหลดรายการไม่สำเร็จ"
+              body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
+              onRetry={refetchHome}
+              margins={styles.messageCard}
+            />
           ) : days.length === 0 ? (
-            <View style={styles.messageCard}>
-              <Text style={styles.messageTitle}>{emptyTitle}</Text>
-              <Text style={styles.messageBody}>
-                {appliedWalletFilter ? "ลองเลือกบัญชี บัตร หรือรายการอื่นเพิ่มเติม" : "แตะ “จดเพิ่ม” เพื่อเริ่มบันทึกรายรับรายจ่าย"}
-              </Text>
-            </View>
+            <MessageCard
+              align="start"
+              title={emptyTitle}
+              body={appliedWalletFilter ? "ลองเลือกบัญชี บัตร หรือรายการอื่นเพิ่มเติม" : "แตะ “จดเพิ่ม” เพื่อเริ่มบันทึกรายรับรายจ่าย"}
+              margins={styles.messageCard}
+            />
           ) : (
             days.map((day) => <DayGroup key={day.date} day={day} reading={slipScan.reading} />)
           )}
@@ -657,19 +657,7 @@ function createStyles(theme: AppTheme) {
     refreshErrorRow: { marginTop: 4, marginHorizontal: 20, minHeight: touch.min, justifyContent: "center" },
     refreshError: { color: theme.danger, fontSize: 12, lineHeight: 17 },
     loading: { marginTop: 40 },
-    messageCard: {
-      marginTop: 22,
-      marginHorizontal: 16,
-      padding: 20,
-      borderRadius: radius.card,
-      borderWidth: 1,
-      borderColor: theme.raised,
-      backgroundColor: theme.surface,
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 20 },
-    retry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center", marginTop: 4 },
-    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    messageCard: { marginTop: 22, marginHorizontal: 16 },
     dayHeader: {
       paddingTop: 22,
       paddingHorizontal: 20,
