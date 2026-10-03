@@ -34,7 +34,7 @@ import { useEntryActions } from "@/features/entries/use-entry-actions";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { FinanceTransaction } from "@/types/finance";
-import { amountLabel, todayISO } from "@/utils/format";
+import { amountLabel, todayISO, errorMessage } from "@/utils/format";
 import { queryClient } from "@/utils/orpc";
 
 /**
@@ -118,7 +118,7 @@ export default function PendingCategoriesSheet() {
       if (next && currentInQueue(next, (id) => stillPending.has(id))) setQueue(next);
       else close(queueDoneMessage(left.length));
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : String(cause));
+      setSaveError(errorMessage(cause));
     } finally {
       savingRef.current = false;
       setSaving(false);

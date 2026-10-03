@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Tag } from "@/types/finance";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
+import { errorMessage } from "@/utils/format";
 
 const tagColors = ["#4D99FF", "#FF8C83", "#FFC65A", "#A18AFF", "#66CBB0", "#ED83CE"];
 const suggestedTags = [
@@ -79,7 +80,7 @@ export default function TagsScreen() {
       else await createTagMutation.mutateAsync({ name: nextName, color });
       setEditorOpen(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -93,7 +94,7 @@ export default function TagsScreen() {
       await deleteTagMutation.mutateAsync({ id: deleting.id });
       setDeleting(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
       setDeleting(null);
     } finally {
       setBusy(false);

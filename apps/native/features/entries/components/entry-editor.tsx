@@ -50,7 +50,7 @@ import { walletsQueryOptions } from "@/features/wallets/query-options";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 import type { FinanceTransaction, TransactionKind } from "@/types/finance";
-import { kindLabel, todayISO, toSatang } from "@/utils/format";
+import { kindLabel, todayISO, toSatang, errorMessage } from "@/utils/format";
 
 const emptyRows: never[] = [];
 const kindOptions = (["expense", "income", "transfer"] as const).map((value) => ({ value, label: kindLabel(value) }));
@@ -203,7 +203,7 @@ export function EntryEditor(props: EntryEditorProps) {
       pendingExit.current ??= goBack;
       setAllowExit(true);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
       pendingExit.current = null;
     } finally {
       busyRef.current = false;
@@ -227,7 +227,7 @@ export function EntryEditor(props: EntryEditorProps) {
       pendingExit.current = goBack;
       setAllowExit(true);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       busyRef.current = false;
       setBusy(null);

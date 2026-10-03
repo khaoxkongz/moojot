@@ -24,6 +24,7 @@ import { settingsQueryOptions } from "@/features/settings/query-options";
 import { slipScanSession } from "@/features/slips/auto-import";
 import { authClient } from "@/lib/auth-client";
 import { clearLocalSlipImages } from "@/lib/local-slip-assets";
+import { errorMessage } from "@/utils/format";
 
 const months = [
   "มกราคม",
@@ -298,7 +299,7 @@ export default function AccountSettingsScreen() {
       await endSession();
       setSheet(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -318,7 +319,7 @@ export default function AccountSettingsScreen() {
       setSheet(null);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -331,7 +332,7 @@ export default function AccountSettingsScreen() {
       setSheet(null);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -366,7 +367,7 @@ export default function AccountSettingsScreen() {
       const created = await seedDemoDataMutation.mutateAsync();
       setNotice(created ? "เพิ่มข้อมูลตัวอย่างแล้ว" : "มีรายการอยู่แล้ว เพิ่มข้อมูลตัวอย่างได้เฉพาะเมื่อยังไม่มีรายการ");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -383,7 +384,7 @@ export default function AccountSettingsScreen() {
       if (activeEmail) await setSettingMutation.mutateAsync({ key: "profile_email", value: activeEmail });
       setNotice(`ล้างข้อมูลของ ${activeEmail ?? "บัญชีนี้"} บนเซิร์ฟเวอร์แล้ว`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setSaving(false);
     }

@@ -14,7 +14,7 @@ import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { getPeriodForDate, isoYear, shortBuddhistYear } from "@/utils/dates";
-import { isValidISODate } from "@/utils/format";
+import { isValidISODate, errorMessage } from "@/utils/format";
 
 type OpenPeriod = "month" | "fortnight" | "week";
 type Picker = "weekday" | "fortnight" | "monthday" | null;
@@ -331,7 +331,7 @@ export default function CalendarSettingsScreen() {
       setConfirmSave(false);
       setMessage("บันทึกการตั้งค่าปฏิทินแล้ว");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
       setConfirmSave(false);
     } finally {
       setBusy(false);

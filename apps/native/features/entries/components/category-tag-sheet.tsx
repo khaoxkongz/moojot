@@ -17,6 +17,7 @@ import { accentRing, radius, touch, type AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { Text, TextInput } from "@/components/ui/typography";
 import type { Category, Tag } from "@/types/finance";
+import { errorMessage } from "@/utils/format";
 
 const suggestions = [
   "❤️ เปย์ตัวเอง",
@@ -114,7 +115,7 @@ export function CategoryTagSheet({
       setScreen("category");
       setTagName("");
     } catch (cause) {
-      setTagError(cause instanceof Error ? cause.message : String(cause));
+      setTagError(errorMessage(cause));
     } finally {
       setSavingTag(false);
     }

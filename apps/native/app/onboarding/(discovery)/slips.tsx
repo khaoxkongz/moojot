@@ -18,6 +18,7 @@ import { FloatingBack, Footer, Page, PrimaryButton } from "@/features/onboarding
 import { SlipSourceCard } from "@/features/onboarding/components/slip-source-card";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { scanSlipAlbums, slipAlbumSources, type SlipAlbumScanResult } from "@/features/slips/library-scan";
+import { errorMessage } from "@/utils/format";
 
 export default function OnboardingSlipsRoute() {
   const theme = useAppTheme();
@@ -40,7 +41,7 @@ export default function OnboardingSlipsRoute() {
       console.error("[slip-album-scan]", cause);
       if (slipScanRun.current === run) {
         setSlipScan(null);
-        setSlipScanError(cause instanceof Error ? cause.message : String(cause));
+        setSlipScanError(errorMessage(cause));
       }
     } finally {
       if (slipScanRun.current === run) setSlipScanBusy(false);
@@ -186,7 +187,7 @@ export default function OnboardingSlipsRoute() {
               accessibilityRole="button"
               onPress={() => {
                 void Linking.openSettings().catch((cause: unknown) => {
-                  setSlipScanError(cause instanceof Error ? cause.message : String(cause));
+                  setSlipScanError(errorMessage(cause));
                 });
               }}
               style={{ padding: 9 }}

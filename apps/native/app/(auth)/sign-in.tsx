@@ -10,6 +10,7 @@ import { Footer, Page } from "@/features/onboarding/components/onboarding-contro
 import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { normalizeEmail } from "@/utils/email-identity";
+import { errorMessage } from "@/utils/format";
 
 const signInSchema = z.object({
   email: z.string().trim().min(1, "กรุณาใส่อีเมล").email("กรุณาใส่อีเมลให้ถูกต้อง"),
@@ -37,7 +38,7 @@ export default function SignInRoute() {
         });
         if (result.error) throw new Error(result.error.message || "เข้าสู่ระบบไม่สำเร็จ");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause));
       }
     },
   });

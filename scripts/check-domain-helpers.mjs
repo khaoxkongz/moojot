@@ -1,6 +1,6 @@
-// Native code formats years and money through the helpers in apps/native/utils (CODING_STANDARDS.md,
+// Native code formats years, money and error text through the helpers in apps/native/utils (CODING_STANDARDS.md,
 // "One helper per domain value"). Reviews kept finding hand-written copies (ticket 09 added a fourth
-// amountLabel and left two `+ 543` behind), so the shapes a copy takes are checked here.
+// amountLabel and left two `+ 543` behind; ticket 10 inlined errorMessage twice), so the shapes a copy takes are checked here.
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -10,6 +10,10 @@ const skipDirs = new Set(["node_modules", "ios", "android", ".expo", "dist", "we
 const shapes = [
   { pattern: /\+\s*543\b/, helper: "buddhistYear / shortBuddhistYear in utils/dates.ts" },
   { pattern: /%\s*100\s*===\s*0\s*\?\s*0\s*:\s*2/, helper: "amountLabel in utils/format.ts" },
+  {
+    pattern: /(\w+)\s+instanceof\s+Error\s*\?\s*\1\.message\s*:\s*String\(\1\)/,
+    helper: "errorMessage in utils/format.ts",
+  },
 ];
 
 const files = (dir) =>

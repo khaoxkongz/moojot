@@ -11,6 +11,7 @@ import { CarrotIcon } from "@/features/streak/components/carrot-icon";
 import { streakMutationOptions } from "@/features/streak/mutation-options";
 import { streakQueryOptions } from "@/features/streak/query-options";
 import type { StreakCountMode } from "@/features/streak/types";
+import { errorMessage } from "@/utils/format";
 
 function goBack() {
   if (router.canGoBack()) router.back();
@@ -170,7 +171,7 @@ export default function StreakSettingsScreen() {
       await setStreakCountModeMutation.mutateAsync({ mode });
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -184,7 +185,7 @@ export default function StreakSettingsScreen() {
       await setStreakEnabledMutation.mutateAsync({ enabled });
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -198,7 +199,7 @@ export default function StreakSettingsScreen() {
       setConfirmReset(false);
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setBusy(false);
     }

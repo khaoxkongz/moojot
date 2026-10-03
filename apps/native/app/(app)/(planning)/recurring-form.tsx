@@ -12,7 +12,7 @@ import { categoriesQueryOptions } from "@/features/categories/query-options";
 import { planningMutationOptions } from "@/features/planning/mutation-options";
 import { planningQueryOptions } from "@/features/planning/query-options";
 import type { TransactionKind } from "@/types/finance";
-import { formatBaht, isValidISODate, toSatang, todayISO } from "@/utils/format";
+import { formatBaht, isValidISODate, toSatang, todayISO, errorMessage } from "@/utils/format";
 
 const emptyRows: never[] = [];
 
@@ -147,7 +147,7 @@ export default function RecurringFormScreen() {
         await generateDueRecurringTransactionsMutation.mutateAsync(undefined);
         router.back();
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause));
       } finally {
         setSaving(false);
       }
@@ -272,7 +272,7 @@ export default function RecurringFormScreen() {
         await deleteRecurringRuleMutation.mutateAsync({ id: existing.id });
         router.back();
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause));
       } finally {
         setSaving(false);
       }

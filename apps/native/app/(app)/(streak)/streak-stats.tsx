@@ -14,7 +14,7 @@ import { streakQueryOptions } from "@/features/streak/query-options";
 import { computeStreakStats, isRecordedDay } from "@/features/streak/streak";
 import { computeStreakHighlights, type StreakRun } from "@/features/streak/streak-highlights";
 import type { DailyActivity, StreakCountMode } from "@/features/streak/types";
-import { thaiDate, todayISO } from "@/utils/format";
+import { thaiDate, todayISO, errorMessage } from "@/utils/format";
 
 const emptyRows: never[] = [];
 
@@ -271,7 +271,7 @@ export default function StreakStatsScreen() {
       setFeedError(null);
       await feedCarrotForDateMutation.mutateAsync({ date: today });
     } catch (cause) {
-      setFeedError(cause instanceof Error ? cause.message : String(cause));
+      setFeedError(errorMessage(cause));
     } finally {
       setFeeding(false);
     }

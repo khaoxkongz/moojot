@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Category } from "@/types/finance";
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
+import { errorMessage } from "@/utils/format";
 
 type Kind = "expense" | "income";
 type Editor = { id: string | null; name: string; icon: string; color: string };
@@ -89,7 +90,7 @@ export default function CategoriesScreen() {
         });
       setEditor(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -104,7 +105,7 @@ export default function CategoriesScreen() {
         await deleteCategoryMutation.mutateAsync({ id });
         setEditor(null);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause));
       } finally {
         setBusy(false);
       }

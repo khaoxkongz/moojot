@@ -11,6 +11,7 @@ import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 import { Text } from "@/components/ui/typography";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { entriesMutationOptions } from "@/features/entries/mutation-options";
+import { errorMessage } from "@/utils/format";
 
 type IconName =
   | "account"
@@ -338,7 +339,7 @@ export default function SettingsScreen() {
       }
       setNotice("ส่งออกข้อมูลเรียบร้อย");
     } catch (cause) {
-      setNotice(cause instanceof Error ? cause.message : String(cause));
+      setNotice(errorMessage(cause));
     } finally {
       setBusy(false);
     }

@@ -10,6 +10,7 @@ import { Footer, Page } from "@/features/onboarding/components/onboarding-contro
 import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { normalizeEmail } from "@/utils/email-identity";
+import { errorMessage } from "@/utils/format";
 
 const signUpSchema = z.object({
   name: z.string().trim().min(2, "กรุณาใส่ชื่ออย่างน้อย 2 ตัวอักษร"),
@@ -47,7 +48,7 @@ export default function SignUpRoute() {
         setNotice("สมัครสมาชิกแล้ว หากแอปยังไม่เปิดต่อ กรุณาเข้าสู่ระบบ");
         setRegistered(true);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(errorMessage(cause));
       }
     },
   });
