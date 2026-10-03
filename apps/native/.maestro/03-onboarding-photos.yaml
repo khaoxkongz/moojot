@@ -1,0 +1,88 @@
+# Ticket 03 photo access: the real system prompt, a refusal, full access given in Settings, and the recap with the
+# albums counted. It signs up an account in the development database, so run it with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-onboarding-photos.yaml <out-dir> --fixture --first-start --photos reset
+# The simulator has no bank albums, so the count is 0.
+appId: com.anonymous.moojot
+---
+- runFlow: signup-to-greeting.yaml
+- tapOn: "สวัสดี หมูจด!"
+- tapOn:
+    id: "onboarding-terms-accept"
+- tapOn:
+    id: "onboarding-next"
+- tapOn: "อนุญาตและค้นหาสลิป"
+# The system prompt, not the app's.
+- extendedWaitUntil:
+    visible: "Don.t Allow"
+    timeout: 10000
+- takeScreenshot: 03-app-slips-prompt
+- tapOn: "Don.t Allow"
+- extendedWaitUntil:
+    visible: "ยังไม่ได้รับสิทธิ์เข้าถึงรูปภาพทั้งหมด"
+    timeout: 10000
+# The note's link sits under the footer; Maestro counts it as visible there, so scroll by hand.
+- swipe:
+    start: "50%, 70%"
+    end: "50%, 30%"
+    duration: 600
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-slips-denied
+# Settings opens on the app's page; full access there, then back to setup, which reads the permission again.
+- tapOn: "เปิดการตั้งค่ารูปภาพ"
+# "Apps" is the list's title, or the back button on the app's page.
+- extendedWaitUntil:
+    visible: "Apps"
+    timeout: 10000
+- waitForAnimationToEnd
+# The iOS 18.6 simulator opens Settings on its Apps list rather than on the app's page.
+- runFlow:
+    when:
+      notVisible: "ALLOW MOOJOT TO ACCESS"
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Messages"
+          direction: DOWN
+      - tapOn:
+          text: "moojot"
+          below: "Maps"
+- extendedWaitUntil:
+    visible: "ALLOW MOOJOT TO ACCESS"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    text: "Photos.*"
+    below: "ALLOW MOOJOT TO ACCESS"
+- extendedWaitUntil:
+    visible: "Full Access"
+    timeout: 10000
+- tapOn: "Full Access"
+- runFlow:
+    when:
+      visible: "Allow Full Access"
+    commands:
+      - tapOn: "Allow Full Access"
+- launchApp:
+    appId: com.anonymous.moojot
+    stopApp: false
+- extendedWaitUntil:
+    visible: "เจอ 0 รูปในอัลบั้มสลิป"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-slips-counted
+- tapOn:
+    id: "onboarding-next"
+- tapOn: "ปลดหนี้"
+- tapOn:
+    id: "onboarding-next"
+- tapOn:
+    id: "onboarding-next"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-ready-counted
+- tapOn:
+    id: "onboarding-finish"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-home-photos

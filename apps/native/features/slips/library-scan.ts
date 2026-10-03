@@ -8,20 +8,8 @@ import {
   type PermissionResponse,
 } from "expo-media-library";
 
-import { countSlipPhotos, type PhotoLibrary, type SlipAlbumCounts } from "./auto-import/discovery";
+import type { PhotoLibrary } from "./auto-import/discovery";
 import type { PhotoAccess } from "./auto-import/photo-access";
-
-export { slipAlbumSources, type SlipAlbumSourceId } from "./auto-import/albums";
-export type { SlipAlbumCounts } from "./auto-import/discovery";
-
-export type SlipAlbumScanResult =
-  | {
-      status: "complete";
-      counts: SlipAlbumCounts;
-      total: number;
-      matchedAlbums: number;
-    }
-  | { status: Exclude<PhotoAccess, "all"> };
 
 const hasPhotoLibrary = () => process.env.EXPO_OS === "ios" || process.env.EXPO_OS === "android";
 
@@ -65,20 +53,3 @@ export const nativePhotoLibrary: PhotoLibrary = {
     }));
   },
 };
-
-/**
- * Onboarding's count of image metadata in supported albums. Nothing is read, sent to AI or saved: Home does that.
- */
-export async function scanSlipAlbums(requestPermission = false): Promise<SlipAlbumScanResult> {
-  const status = requestPermission ? await requestPhotoAccess() : await readPhotoAccess();
-  if (status !== "all") {
-    console.info("[slip-album-scan]", { status });
-    return { status };
-  }
-  const result: SlipAlbumScanResult = {
-    status: "complete",
-    ...(await countSlipPhotos(nativePhotoLibrary, Date.now())),
-  };
-  console.info("[slip-album-scan]", result);
-  return result;
-}

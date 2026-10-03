@@ -40,7 +40,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           gap: 16,
         }}
       >
-        <OnboardingIllustration variant="logo" size={155} />
+        <OnboardingIllustration variant="logo" width={155} height={155} />
         <Text style={{ color: theme.text, fontSize: 30, fontWeight: "900" }}>หมูจด</Text>
         {error ? (
           <>
