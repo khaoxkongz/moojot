@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — [iOS typography and theme foundation](01-ios-theme-foundation.md)
 
-**Status:** ready-for-human
+**Status:** done
 
 **Done in:** d65c91c feat(native): signup and sign-in from the design, with factual account errors; 3f47764 fix(native): address ticket 02 review findings
 
@@ -47,3 +47,13 @@ Check these items on the iPhone 13 Pro. Then set `Status: done`:
 6. Sign in on a slow network. Check the busy labels “กำลังสมัคร…” (signing up) and “กำลังเข้าสู่ระบบ…” (signing in), and that a second tap sends nothing.
 
 Nobody checked Dynamic Type, VoiceOver, or the retry screen of the setup check. The retry screen appears only when the setup check fails for a signed-in account.
+
+**2026-10-03 — user checked iOS:** Passed. The user did checks 1–6 above on the iPhone 13 Pro. Each result agreed with the expected result.
+
+- Hidden passwords show dots.
+- Keychain autofill fills the sign-in password.
+- Signup shows no Automatic Strong Password cover. The field keeps the typed password after show and hide.
+- The on-screen Return key moves from the name to the email, then to the password. From the password, it sends the form.
+- A swipe from the left edge on the auth screen, the greeting, and Home keeps the app on the same screen.
+- On a slow network, the busy label appears, and a second tap sends no request.
+- The user did not check Dynamic Type, VoiceOver, or the retry screen of the setup check. The user decided that these checks are unnecessary for this ticket.
