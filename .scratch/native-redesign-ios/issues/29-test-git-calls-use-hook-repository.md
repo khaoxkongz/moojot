@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** 59e5ef7 fix(scripts): keep hook Git variables out of the agent document test
+**Done in:** 59e5ef7 fix(scripts): keep hook Git variables out of the agent document test; bc04979 fix(scripts): reproduce the linked-worktree GIT_DIR in the agent document test
 
 **Source:** Found on 2026-10-03, when the user pushed `feat/native-redesign-ios`.
 
@@ -31,4 +31,17 @@ Remove `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE` from the environment of 
 
 ## Comments
 
-- 2026-10-03: A push of 59e5ef7 to a temporary bare repository ran `.vite-hooks/pre-push`. The hook printed `pre-push: tests, types, tickets and helpers pass`. After the push, `git config core.bare` gave `false` for the main checkout.
+**Ticket 29 — agent, 2026-10-03:** A push of 59e5ef7 to a temporary bare repository ran `.vite-hooks/pre-push`.
+The hook printed `pre-push: tests, types, tickets and helpers pass`. After the push, `git config core.bare` gave `false` for the main checkout.
+
+Review fix: a push of bc04979 from a linked worktree to a temporary bare repository ran the same hook.
+A push from a linked worktree is the setup that makes Git set `GIT_DIR` for the hook.
+The hook printed the same pass line. After the push, `git config core.bare` gave `false` for the main checkout.
+
+Correction to the premise of this ticket: Git sets `GIT_DIR` for a pre-push hook only when the push comes from a linked worktree.
+The value is `<main>/.git/worktrees/<name>`. A push from the main checkout sets no `GIT_DIR`.
+Git does not set `GIT_WORK_TREE` or `GIT_INDEX_FILE` for this hook.
+Step 1 of the observed behavior is therefore true only for a push from a linked worktree.
+
+The test now adds a linked worktree to a temporary repository and sets `GIT_DIR` to its `.git/worktrees/<name>` directory.
+Without the isolated environment, the `core.bare` check and the index check of that test both fail.
