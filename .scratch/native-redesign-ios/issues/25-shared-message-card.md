@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Done in:** c3d1b88 refactor(native): Home, Summary and Search use the shared message card
+**Done in:** c3d1b88 refactor(native): Home, Summary and Search use the shared message card; c60485a fix(native): Summary keeps its own page error, and one retry link for every card
 
 **Source:** Found in the ticket 10 code review. Ticket 10 added `MessageCard` in `apps/native/components/ui/controls.tsx` and `queryState()` in `apps/native/utils/query-state.ts`. The plan screen and the budget form use them.
 
@@ -24,7 +24,7 @@ Each screen has its own copy of the card styles: `messageCard`, `retryText`, and
 
 **Ticket 25 — agent, 2026-10-03:** Home, Summary, and Search now show their cards through `MessageCard`.
 The new `align="start"` option keeps those cards flush left, as before. Plan and the budget form keep the centered default.
-The `style` prop sets the outer margins of each screen.
+The `style` prop sets the margins of the card on each screen.
 
 Search keeps its spoken retry name “ลองค้นหาอีกครั้ง” (search again) through `retryLabel`.
 Home also shows its empty-list card through `MessageCard`.
@@ -37,8 +37,9 @@ Load states:
   TanStack Query repeats a failed fetch three times. The line would then disappear for several seconds without a spinner.
   Second, Home shows the line while another query loads under the spinner. `queryState()` shows it only after every query has data.
 - Summary reads `pageError` from `queryState()` for the month-start setting and the month totals.
-  One edge case changes. Before, a failed refresh of the month-start setting showed the error card while a new month loaded.
-  Now Summary shows the spinner, and it shows the card only when the month itself fails.
+  This changes one state, so it does not meet the rule of this ticket. The review fix (c60485a) restores Summary's own `pageError`.
+  The changed state: the month-start setting has data and a failed refresh, and a new month loads.
+  The old code shows the error card at once. `queryState()` shows the spinner until the month itself fails.
 - Summary keeps its own refresh error and retry. The refresh line reports the month totals only, and it stays visible during a retry, as on Home.
   The retry also loads the bars, the trend, and the budgets again. These queries cannot go into `queryState()`.
   The breakdown that is off never has data, so `ready` would stay false.
@@ -48,7 +49,8 @@ Visible differences, from the screenshots:
 - The Summary card has its “ลองอีกครั้ง” (retry) link 4 points lower. It now uses the same gap as Home and Search.
 - The Home card has a 1-point inset ring in place of a 1-point border, in the same color. Its text moves up 1 point.
 
-Tests: `apps/native/utils/query-state.test.ts` records the `queryState()` states that Home and Summary read.
+Tests: `apps/native/utils/query-state.test.ts` records the `queryState()` states `ready`, `pageError`, and `refreshError`, and its `retry`.
+Home reads `ready`, `pageError`, and `retry`. Neither screen reads `refreshError`.
 These tests passed at their first run, because the helper existed before this ticket. The app has no component render tests.
 
 Simulator check, iPhone 11, development build:
@@ -61,3 +63,24 @@ Simulator check, iPhone 11, development build:
 - Search loaded after one retry in both themes. Summary loaded after one retry in light, and in the second dark outage.
   Home needed two taps. In the first dark outage, two Summary taps sent no request to the server.
   [Issue 24](24-ios-first-retry-after-outage.md) records this behavior. The retry code did not change in this ticket.
+
+**Ticket 25 review fix — agent, 2026-10-03:** c60485a applies the code review findings.
+
+- Summary computes its own `pageError` again, as before this ticket: no month totals, and an error on the month-start setting or on the month totals.
+  `queryState()` waits until a query without data fails. The test "keeps loading while queries without data have not failed" records that state.
+  The reason is in a comment in `summary.tsx`.
+- `RetryLinkText` in `controls.tsx` is the one source of the “ลองอีกครั้ง” (try again) link text.
+  `RetryLink` puts that text in a button at the minimum touch height.
+  `MessageCard` and the Summary bar and trend errors use `RetryLink`. The refresh lines on Home, Summary, and Plan use `RetryLinkText`.
+  The screen copies `retryText`, `refreshRetry`, and `inlineRetry` are gone.
+- `MessageCard` reads its padding, alignment, body line, and retry placement from one layout map keyed by `align`.
+- `MessageCard` takes `margins` (top, bottom, horizontal) in place of `style`. The `center` layout keeps its top margin of 12.
+  The `start` layout has no default margin, because each screen sets its own.
+
+Simulator check, iPhone 11, development build, after c60485a:
+
+- Flows 05, 08, 09, and 10 passed in light and in dark, each at the first run.
+- The agent stopped the API server and took screenshots outside the repository.
+  The Home, Summary, and Search error cards in both themes, the Summary refresh line (dark), and the Plan error card (light) match `notes/25-app-*` and `notes/10-app-plan-error.png`.
+  A pixel compare found no difference in the card areas, apart from the Expo dev-tools button.
+- The changed state is back. Summary showed the refresh line, and then one tap on “เดือนก่อน” (previous month) showed the error card at once.
