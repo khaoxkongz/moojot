@@ -7,6 +7,12 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 const project = path.resolve(import.meta.dirname, "..");
 const checker = path.join(project, "scripts/check-agent-documents.py");
 const roots = [];
+const hookGit = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);
+
+// A Git hook exports these variables, and they would point every git command below at the hook's repository.
+function isolated() {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !hookGit.has(key)));
+}
 
 function write(root, name, text) {
   const target = path.join(root, name);
@@ -23,12 +29,12 @@ function fixture(documents, exceptions = []) {
 }
 
 function check(root, ...args) {
-  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8" });
+  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8", env: isolated() });
 }
 
 function stage(root) {
-  execFileSync("git", ["init", "--quiet", root]);
-  execFileSync("git", ["-C", root, "add", "."]);
+  execFileSync("git", ["init", "--quiet", root], { env: isolated() });
+  execFileSync("git", ["-C", root, "add", "."], { env: isolated() });
 }
 
 afterEach(() => {
@@ -289,11 +295,34 @@ describe("Agent document gate", () => {
     expect(check(root, "--staged").stderr).toContain("missing-link");
   });
 
+  it("leaves the hook's repository unchanged when GIT_DIR points at it", () => {
+    const other = fixture({ "kept.txt": "kept\n" });
+    execFileSync("git", ["init", "--quiet", other], { env: isolated() });
+    execFileSync("git", ["-C", other, "add", "kept.txt"], { env: isolated() });
+    const gitDir = path.join(other, ".git");
+    const index = readFileSync(path.join(gitDir, "index"));
+    const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nThe app stopped; data remains.\n" });
+    const saved = process.env.GIT_DIR;
+    process.env.GIT_DIR = gitDir;
+    let result;
+    try {
+      stage(root);
+      result = check(root, "--staged");
+    } finally {
+      if (saved === undefined) delete process.env.GIT_DIR;
+      else process.env.GIT_DIR = saved;
+    }
+    const bare = execFileSync("git", ["-C", other, "config", "core.bare"], { env: isolated(), encoding: "utf8" });
+    expect(bare.trim()).toBe("false");
+    expect(readFileSync(path.join(gitDir, "index"))).toEqual(index);
+    expect(result.stderr).toContain("spec.md:3 semicolon");
+  });
+
   it("fails explicitly when the required skill is unavailable", () => {
     const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nRead the document.\n" });
     const localChecker = path.join(root, "scripts/check-agent-documents.py");
     write(root, "scripts/check-agent-documents.py", readFileSync(checker, "utf8"));
-    const result = spawnSync("python3", [localChecker], { encoding: "utf8" });
+    const result = spawnSync("python3", [localChecker], { encoding: "utf8", env: isolated() });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Restore the repository's asd-ste100 skill");
     expect(result.stdout).not.toContain("Agent documents:");
