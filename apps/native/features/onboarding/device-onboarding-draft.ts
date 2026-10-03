@@ -2,29 +2,30 @@ import { File, Paths } from "expo-file-system";
 
 import { createOnboardingDrafts, type OnboardingDraftStorage } from "./onboarding-draft";
 
-const DRAFT_KEY = "moojot-onboarding-draft-v1";
-const draftFile = () => new File(Paths.document, `${DRAFT_KEY}.json`);
+/** One key per account: `moojot-onboarding-draft-v1-<user id>`, with any character unsafe in a file name replaced. */
+const draftKey = (userId: string) => `moojot-onboarding-draft-v1-${userId.replace(/[^A-Za-z0-9_-]/g, "_")}`;
+const draftFile = (userId: string) => new File(Paths.document, `${draftKey(userId)}.json`);
 
-/** One small file per device, like the remembered email. */
+/** One small file per account on the device, like the remembered email. */
 const deviceStorage: OnboardingDraftStorage =
   process.env.EXPO_OS === "web"
     ? {
-        read: async () => globalThis.localStorage?.getItem(DRAFT_KEY) ?? null,
-        write: async (text) => globalThis.localStorage?.setItem(DRAFT_KEY, text),
-        remove: async () => globalThis.localStorage?.removeItem(DRAFT_KEY),
+        read: async (userId) => globalThis.localStorage?.getItem(draftKey(userId)) ?? null,
+        write: async (userId, text) => globalThis.localStorage?.setItem(draftKey(userId), text),
+        remove: async (userId) => globalThis.localStorage?.removeItem(draftKey(userId)),
       }
     : {
-        async read() {
-          const file = draftFile();
+        async read(userId) {
+          const file = draftFile(userId);
           return file.exists ? file.text() : null;
         },
-        async write(text) {
-          const file = draftFile();
+        async write(userId, text) {
+          const file = draftFile(userId);
           if (!file.exists) file.create();
           file.write(text);
         },
-        async remove() {
-          const file = draftFile();
+        async remove(userId) {
+          const file = draftFile(userId);
           if (file.exists) file.delete();
         },
       };

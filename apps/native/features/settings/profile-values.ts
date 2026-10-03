@@ -1,17 +1,7 @@
 /**
- * Settings that setup saves and the profile shows and changes. Both use these keys, so a choice made in setup is the
- * one the profile shows. The consent keys keep their `onboarding_` names because accounts already hold them.
+ * The two consent choices that setup saves and the profile shows and changes. Their keys are in
+ * `SETUP_SETTING_KEYS` (`@moojot/api/shared/finance/setup-keys`), so a choice made in setup is the one the profile shows.
  */
-export const PROFILE_SETTING_KEYS = {
-  email: "profile_email",
-  /** YYYY-MM-DD, or "" when the person gave no birthday. */
-  birthDate: "profile_birth_date",
-  /** "1".."12", or "". */
-  birthMonth: "profile_birth_month",
-  personalization: "onboarding_personalization",
-  updates: "onboarding_updates",
-} as const;
-
 export type ConsentSetting = "personalization" | "updates";
 export type ConsentChoice = "yes" | "no";
 
@@ -19,3 +9,6 @@ export type ConsentChoice = "yes" | "no";
 export function consentChoice(value: string | null | undefined): ConsentChoice | null {
   return value === "yes" || value === "no" ? value : null;
 }
+
+/** The value a consent switch saves. */
+export const consentValue = (on: boolean): ConsentChoice => (on ? "yes" : "no");

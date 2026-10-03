@@ -18,8 +18,18 @@ export function assertPeriodKey(value: string): asserts value is PeriodKey {
 }
 
 export function todayISO(): ISODate {
-  const now = new Date();
-  return isoFromParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  return isoFromDate(new Date());
+}
+
+/** The parts of a date: { year: 2000, month: 2, day: 29 } for "2000-02-29". */
+export function isoDateParts(iso: ISODate) {
+  const [year = 0, month = 0, day = 0] = iso.split("-").map(Number);
+  return { year, month, day };
+}
+
+/** The device-calendar day of a `Date`: "2000-02-29". */
+export function isoFromDate(date: Date): ISODate {
+  return isoFromParts(date.getFullYear(), date.getMonth() + 1, date.getDate());
 }
 
 export function isoFromParts(year: number, month: number, day: number): ISODate {

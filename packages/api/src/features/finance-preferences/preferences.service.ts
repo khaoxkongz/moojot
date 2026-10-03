@@ -5,6 +5,7 @@ import { PrismaProvider } from "../../providers/prisma.provider";
 import { FinanceSettings, getSettingRaw, setSettingRaw } from "../../shared/finance/settings.service";
 import { preferencesInputs } from "./preferences.schema";
 import { financeOperation } from "../../shared/finance/error";
+import { SETUP_SETTING_KEYS } from "../../shared/finance/setup-keys";
 
 const RECENT_SEARCHES_KEY = "recent_search_terms";
 const MAX_RECENT_SEARCHES = 8;
@@ -50,7 +51,7 @@ function makePreferencesOperations(db: Database, settings: FinanceSettings["Serv
   return {
     hasCompletedOnboarding: Effect.fn("FinancePreferencesService.hasCompletedOnboarding")(function* (userId: string) {
       return yield* financeOperation("hasCompletedOnboarding", async () => {
-        const value = await getSettingRaw(db, userId, "onboarding_complete_v1");
+        const value = await getSettingRaw(db, userId, SETUP_SETTING_KEYS.complete);
         return value === "true" || value === "1";
       });
     }),

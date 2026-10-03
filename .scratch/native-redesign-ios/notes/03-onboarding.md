@@ -4,7 +4,7 @@
 
 Setup is one route, `app/onboarding/index.tsx`. It shows the greeting, the four steps, and the recap from one state, so the step header stays in place.
 
-The step order is terms, photo access (`slips`), goals, and optional information (`extras`). The recap (`ready`) follows. The old ten routes are gone. The motivation screen is gone too, because the handoff does not have it.
+The step order is terms, photo access (`photos`), goals, and optional information (`extras`). The recap (`ready`) follows. The old ten routes are gone. The motivation screen is gone too, because the handoff does not have it.
 
 `features/onboarding/onboarding-flow.ts` owns the state. It has no React code, so `apps/server/test/onboarding.test.ts` imports it by path.
 
@@ -12,18 +12,21 @@ The step order is terms, photo access (`slips`), goals, and optional information
 - `goBack` moves from the recap to the last step, from each step to the step before it, and from the terms step to the greeting.
 - A screen change clears both errors, as the handoff's `obGo` does.
 - `onboardingProgress` gives “N/4” and the spoken label “ขั้นที่ N จาก 4: <name>” (step N of 4).
+- `stepAnswerError` is the one rule for required answers. The terms must be accepted, and at least one goal must be picked. `goNext`, `missingAnswer`, and the dim buttons all use it.
 - `missingAnswer` gives the step with a missing required answer, with its error.
 
 The “ต่อไป” (next) buttons on the terms and goals steps stay tappable while dim. A tap shows the error, as the spec requires.
 
-Android's back button walks the steps like the header's back button. On the greeting, it leaves the app.
+The identifiers follow the glossary. The step key is `photos` and its component is `PhotoAccessStep`. The goals picture is the `goals` variant. The stored key strings did not change.
+
+Android's back button walks the steps like the header's back button. On the greeting, it leaves the app. While the recap's save is pending, both back buttons do nothing.
 
 ## Saving setup
 
 `features/onboarding/save-onboarding.ts` saves setup through the existing `financePreferences.setSetting` route. The API did not change.
 
 1. `saveOnboarding` checks the required answers. A missing answer sends nothing and returns the step that needs it.
-2. It writes these keys and waits until every write ends:
+2. It writes these keys and waits until every write ends. `SETUP_SETTING_KEYS` in `packages/api/src/shared/finance/setup-keys.ts` names each key. The server's setup check and the app both use that map:
    - `profile_email`, from the session.
    - `profile_birth_date` (YYYY-MM-DD or "") and `profile_birth_month` ("1" to "12" or "").
    - `onboarding_personalization` and `onboarding_updates` (`yes` or `no`).
@@ -32,13 +35,26 @@ Android's back button walks the steps like the header's back button. On the gree
 
 A failed write stops before step 3, so setup stays incomplete and Home stays closed. The recap shows “บันทึกไม่สำเร็จ ลองอีกครั้ง” (save failed, try again). The next tap sends every key again, and each write replaces the value from the failed try. The dead key `onboarding_in_progress_v1` is gone.
 
-`features/settings/profile-values.ts` holds the keys that setup and the profile share. `settings/account.tsx` now reads and writes the same keys through it. The profile keeps its old look until ticket 20.
+`createSetupSave` in the same file holds the recap's save in the setup provider, above the recap screen:
+
+- A tap while a save is pending gets that save's result and sends nothing more.
+- While the save is pending, the button shows “กำลังบันทึก…” (saving) and both back buttons do nothing.
+- After a successful save, it deletes the device draft and asks the setup check again. The answer `true` makes the root guard open Home.
+- When that check fails or does not answer `true`, the recap shows “บันทึกแล้ว แต่ยังเปิดหน้าแรกไม่ได้ ลองอีกครั้ง” (saved, but Home cannot open yet, try again). It never says that a completed save failed. The next tap only asks the check again.
+- The error stays with the save, so it is still there after the person leaves the recap and comes back.
+
+`settings/account.tsx` reads and writes the same keys through `SETUP_SETTING_KEYS`. `features/settings/profile-values.ts` holds the consent types and helpers. The profile keeps its old look until ticket 20. It now uses the shared date helpers (`isoFromDate`, `thaiDate`, `longThaiMonth`), and its birthday text did not change.
 
 ### The setup draft on the device
 
 iOS stops the app when the person changes its photo access in Settings. The simulator showed this: after a change in Settings, the app started again at the greeting and lost the answers.
 
-`features/onboarding/onboarding-draft.ts` therefore keeps the answers and the current screen in `Documents/moojot-onboarding-draft-v1.json`. Each change writes the file. A draft belongs to one account, so another account starts at the greeting. The recap deletes the file after a successful save. An unreadable file starts setup at the greeting.
+`features/onboarding/onboarding-draft.ts` therefore keeps the answers and the current screen on the device. Each change writes the draft.
+
+- Each account has its own draft. Another account starts at the greeting, and its setup leaves the first account's draft in place.
+- `features/onboarding/device-onboarding-draft.ts` writes one file per account: `Documents/moojot-onboarding-draft-v1-<user id>.json`. The web build uses `localStorage` with the same name.
+- A successful save deletes the account's draft.
+- An unreadable draft starts setup at the greeting.
 
 ## Photo step
 
@@ -75,7 +91,8 @@ The recap's “สลิป” (slips) row comes from `photoRecap`. It describes
   - The prompt and the count. Limited and denied answers, and a change in Settings.
   - A failed count, and an earlier read that ends last.
   - The album rows and the recap text.
-- `features/onboarding/onboarding-draft.test.ts`: resume after a restart, no errors on resume, one draft per account, removal after the save, and an unreadable draft.
+- `features/onboarding/onboarding-draft.test.ts`: resume after a restart, no errors on resume, and one draft per account. Also a second account's draft beside the first, removal after the save, and an unreadable draft.
+- `features/onboarding/save-onboarding.test.ts`: one save for a double tap, a failed write that keeps the draft, and a failed setup check after a completed save.
 - `features/settings/birthday.test.ts`: valid and invalid days, the columns, the Thai name, and the start value.
 - `apps/server/test/onboarding.test.ts` runs against the real preference routes and a test MongoDB:
   - A full save opens Home, and the profile keys hold the setup values.
@@ -132,11 +149,14 @@ Run each with `node scripts/ios-preview.mjs apps/native/.maestro/<flow> <out-dir
 
 On the iOS 18.6 simulator, “เปิดการตั้งค่ารูปภาพ” opens the Settings Apps list, not the app's page. The flow taps through to the app's page. A real iPhone can open the app's page directly.
 
+After the review fixes on 2026-10-04, `03-onboarding.yaml`, `03-onboarding-photos.yaml`, and the three save flows ran again in light. All of them passed. The screens did not change, so the captures stayed.
+
 Unverified on the simulator:
 
 - Counts above 0. The simulator has no Krungthai NEXT, K PLUS, Paotang, or TrueMoney album, so every album shows “ไม่พบรูป” (no photos).
 - Limited access. Only the system prompt's “Limit Access…” picker can give it, and Maestro does not drive that picker here.
 - The busy labels “กำลังนับรูป…” and “กำลังบันทึก…”. The count and the local server end too fast.
+- Back while a save is pending, and the message for a failed setup check after a completed save. The unit tests cover both. The local server answers too fast to show them.
 - A partial save on the device. The server test covers one failed key. On the simulator, every write failed together with the server stopped.
 - Dynamic Type and VoiceOver.
 

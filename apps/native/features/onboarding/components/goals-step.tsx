@@ -6,7 +6,7 @@ import { Text } from "@/components/ui/typography";
 import { touch } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 
-import { ONBOARDING_GOALS, goNext, toggleGoal } from "../onboarding-flow";
+import { ONBOARDING_GOALS, goNext, stepAnswerError, toggleGoal } from "../onboarding-flow";
 import { useOnboarding } from "../onboarding-context";
 import { StepBody, StepButton, StepError, StepFooter, StepTitle } from "./step-parts";
 
@@ -17,7 +17,7 @@ export function GoalsStep() {
   return (
     <>
       <StepBody>
-        <OnboardingIllustration variant="reasons" height={190} />
+        <OnboardingIllustration variant="goals" height={190} />
         <StepTitle center title={"พี่มนุษย์อยากจดรายจ่าย\nเพราะอะไรเหรอ?"} sub="เลือกได้หลายคำตอบ" />
         <View
           role="group"
@@ -60,7 +60,7 @@ export function GoalsStep() {
         <StepError text={flow.goalsError} style={{ marginBottom: 8, alignItems: "center" }} />
         <StepButton
           label="ต่อไป"
-          dimmed={flow.goals.length === 0}
+          dimmed={stepAnswerError(flow, "goals") !== null}
           onPress={() => update(goNext)}
           testID="onboarding-next"
         />

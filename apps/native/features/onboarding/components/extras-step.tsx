@@ -12,7 +12,7 @@ import { useAppTheme } from "@/lib/use-app-theme";
 
 import { goNext, setBirthDate, toggleConsent } from "../onboarding-flow";
 import { useOnboarding } from "../onboarding-context";
-import { StepBody, StepButton, StepFooter, StepTitle } from "./step-parts";
+import { StepBody, StepButton, StepFooter, StepTitle, RowDivider } from "./step-parts";
 
 const CONSENTS: { setting: ConsentSetting; title: string; sub: string }[] = [
   {
@@ -121,18 +121,7 @@ export function ExtrasStep() {
                   backgroundColor: pressed ? theme.raised : "transparent",
                 })}
               >
-                {index > 0 ? (
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 14,
-                      right: 0,
-                      height: 1,
-                      backgroundColor: theme.raised,
-                    }}
-                  />
-                ) : null}
+                {index > 0 ? <RowDivider left={14} /> : null}
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                   <Text style={{ color: theme.text, fontSize: 15, lineHeight: 22 }}>{consent.title}</Text>
                   <Text style={{ color: theme.muted, fontSize: 12, lineHeight: 17 }}>{consent.sub}</Text>

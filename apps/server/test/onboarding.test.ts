@@ -21,7 +21,7 @@ import {
   type OnboardingFlow,
 } from "../../native/features/onboarding/onboarding-flow";
 import { saveOnboarding } from "../../native/features/onboarding/save-onboarding";
-import { PROFILE_SETTING_KEYS } from "../../native/features/settings/profile-values";
+import { SETUP_SETTING_KEYS } from "@moojot/api/shared/finance/setup-keys";
 
 // Setup's last step against the real preference routes and MongoDB: what it saves, and what a failed save leaves.
 
@@ -111,15 +111,15 @@ describe("finishing setup", () => {
       status: "saved",
     });
     expect(await phone.entry()).toBe("app");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.personalization)).toBe("yes");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.updates)).toBe("no");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.birthDate)).toBe("2000-02-29");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.birthMonth)).toBe("2");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.email)).toBe("finish@example.test");
+    expect(await phone.setting(SETUP_SETTING_KEYS.personalization)).toBe("yes");
+    expect(await phone.setting(SETUP_SETTING_KEYS.updates)).toBe("no");
+    expect(await phone.setting(SETUP_SETTING_KEYS.birthDate)).toBe("2000-02-29");
+    expect(await phone.setting(SETUP_SETTING_KEYS.birthMonth)).toBe("2");
+    expect(await phone.setting(SETUP_SETTING_KEYS.email)).toBe("finish@example.test");
   });
 
   it("leaves setup incomplete when one answer is not saved, and completes when the same answers are sent again", async () => {
-    const phone = await newAccount("partial@example.test", { dropsSetting: PROFILE_SETTING_KEYS.updates });
+    const phone = await newAccount("partial@example.test", { dropsSetting: SETUP_SETTING_KEYS.updates });
     const flow = answeredSetup((extras) => toggleConsent(extras, "updates"));
 
     expect(await saveOnboarding(phone.rpc.financePreferences, flow, { email: phone.email, now })).toEqual({
@@ -133,7 +133,7 @@ describe("finishing setup", () => {
       status: "saved",
     });
     expect(await phone.entry()).toBe("app");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.updates)).toBe("yes");
+    expect(await phone.setting(SETUP_SETTING_KEYS.updates)).toBe("yes");
   });
 
   it("saves nothing without accepted terms or a goal, and returns to the step that needs them", async () => {
@@ -153,6 +153,6 @@ describe("finishing setup", () => {
     ]);
 
     expect(await phone.entry()).toBe("onboarding");
-    expect(await phone.setting(PROFILE_SETTING_KEYS.personalization)).toBeNull();
+    expect(await phone.setting(SETUP_SETTING_KEYS.personalization)).toBeNull();
   });
 });
