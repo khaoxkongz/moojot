@@ -38,7 +38,7 @@ export default function OnboardingPrivacyRoute() {
         </Text>
         <OnboardingIllustration variant="privacy" size={Math.min(width * 0.62, 245)} />
       </ScrollView>
-      <Footer label="ต่อไป" onPress={() => router.push("/onboarding/personalization")} />
+      <Footer label="ต่อไป" onPress={() => router.push("/onboarding/birthday")} />
     </Page>
   );
 }

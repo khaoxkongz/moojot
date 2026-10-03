@@ -4,13 +4,15 @@ import { createContext, use } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
+import { appEntry, type AppEntry } from "@/features/auth/app-entry";
 import { slipScanSession } from "@/features/slips/auto-import";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
 
 type OnboardingContextValue = {
-  isComplete: boolean;
+  /** Where the root guard sends this device: auth, setup or Home. */
+  entry: Extract<AppEntry, "auth" | "onboarding" | "app">;
   signOut: () => Promise<void>;
 };
 
@@ -22,15 +24,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const userId = session?.user.id ?? null;
 
-  const {
-    data,
-    isError,
-    error,
-    refetch,
-    isPending: isOnboardingPending,
-  } = useQuery(orpc.financePreferences.hasCompletedOnboarding.queryOptions({ enabled: Boolean(userId) }));
+  const { data, isError, error, refetch } = useQuery(
+    orpc.financePreferences.hasCompletedOnboarding.queryOptions({ enabled: Boolean(userId) })
+  );
+  const entry = appEntry({
+    session: isSessionPending ? "pending" : userId ? "signed-in" : "signed-out",
+    onboarding:
+      data !== undefined ? { status: "ready", complete: data } : isError ? { status: "failed" } : { status: "pending" },
+  });
 
-  if (isSessionPending || (Boolean(userId) && isOnboardingPending)) {
+  if (entry === "loading" || entry === "retry") {
     return (
       <View
         style={{
@@ -43,10 +46,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }}
       >
         <Text style={{ color: theme.text, fontSize: 36, fontWeight: "900" }}>หมูจด</Text>
-        {isError ? (
+        {entry === "retry" ? (
           <>
             <Text accessibilityRole="alert" selectable style={{ color: theme.text, textAlign: "center", fontSize: 16 }}>
-              โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error.message}
+              โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error?.message}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -72,7 +75,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   return (
     <OnboardingContext.Provider
       value={{
-        isComplete: Boolean(data),
+        entry,
         signOut: async () => {
           const result = await authClient.signOut();
           if (result.error) throw new Error(result.error.message);
