@@ -4,7 +4,9 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-human
+**Status:** done
+
+**Done in:** e65985a fix(native): reinstall the dev build when its simulator data container has no tmp/; 6534324 refactor(native): tidy the ios-preview container repair after review
 
 **Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md). Found on 2026-10-03, after ticket 02, during the `ios-preview` changes in commit 18d63ee.
 
@@ -38,7 +40,7 @@ Commit 18d63ee hides the LogBox banner during `scripts/ios-preview.mjs` runs onl
 
 - [x] Find the cause. Compare the installed `expo-asset`, `@expo/vector-icons`, and `expo` versions with `bun.lock`. Clear the Metro cache (`expo start --clear`). Check the request from the simulator with the network log of the app.
 - [x] The tab bar and the other icons show after a launch, and the app logs no `UnableToDownloadAssetException`.
-- [ ] Check the development build on the physical iPhone 13 Pro.
+- [x] Check the development build on the physical iPhone 13 Pro.
 
 ## Comments
 
@@ -71,3 +73,5 @@ Evidence:
 3. Make sure that no `UnableToDownloadAssetException` LogBox banner shows.
 4. Close the app fully and open it again. Do steps 2 and 3 again.
 5. If the icons are missing, delete the app and install it again with `vp exec expo run:ios --device`. Then do steps 2 to 4 again.
+
+**Result on the physical iPhone 13 Pro (2026-10-04):** The user did the check above. All steps passed.
