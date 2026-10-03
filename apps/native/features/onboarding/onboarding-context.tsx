@@ -1,14 +1,16 @@
-import { createContext, use, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, use, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AppState, View } from "react-native";
 
 import { countSlipPhotos } from "@/features/slips/auto-import/discovery";
 import { nativePhotoLibrary, readPhotoAccess, requestPhotoAccess } from "@/features/slips/library-scan";
 import { authClient } from "@/lib/auth-client";
 import { useAppTheme } from "@/lib/use-app-theme";
+import { client, orpc, queryClient } from "@/utils/orpc";
 
 import { onboardingDrafts } from "./device-onboarding-draft";
 import { startOnboarding, type OnboardingFlow } from "./onboarding-flow";
 import { createPhotoStep, type PhotoStep, type PhotoStepPorts, type PhotoStepState } from "./photo-step";
+import { createSetupSave, type SetupSave, type SetupSaveState } from "./save-onboarding";
 
 /** This device's photo permission and bank albums. Setup only counts image metadata; Home reads the photos. */
 const devicePhotos: PhotoStepPorts = {
@@ -20,8 +22,9 @@ const devicePhotos: PhotoStepPorts = {
 type OnboardingContextValue = {
   flow: OnboardingFlow;
   update: (change: (flow: OnboardingFlow) => OnboardingFlow) => void;
-  /** Drops the device's copy of the answers once the server holds them. */
-  forgetDraft: () => Promise<void>;
+  /** The recap's save. It outlives the recap screen, so a pending save blocks back and a second save. */
+  setupSave: SetupSave;
+  saveState: SetupSaveState;
   photoStep: PhotoStep;
   photo: PhotoStepState;
 };
@@ -40,6 +43,18 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [flow, setFlow] = useState<OnboardingFlow | null>(null);
   const [photoStep] = useState(() => createPhotoStep(devicePhotos));
   const photo = useSyncExternalStore(photoStep.subscribe, photoStep.getState);
+  const setupSave = useMemo(
+    () =>
+      createSetupSave({
+        settings: client.financePreferences,
+        // A fresh setup check also updates the root guard's answer, which swaps setup for Home.
+        isComplete: () =>
+          queryClient.fetchQuery({ ...orpc.financePreferences.hasCompletedOnboarding.queryOptions(), staleTime: 0 }),
+        forgetDraft: () => (userId ? onboardingDrafts.forget(userId) : Promise.resolve()),
+      }),
+    [userId]
+  );
+  const saveState = useSyncExternalStore(setupSave.subscribe, setupSave.getState);
 
   useEffect(() => {
     if (!userId) return;
@@ -72,7 +87,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       value={{
         flow,
         update: (change) => setFlow((current) => (current ? change(current) : current)),
-        forgetDraft: onboardingDrafts.forget,
+        setupSave,
+        saveState,
         photoStep,
         photo,
       }}

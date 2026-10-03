@@ -8,7 +8,7 @@ import { radius, raisedRing } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
 
 import { TERM_POINTS, TERMS_FULL } from "../onboarding-copy";
-import { goNext, toggleTerms } from "../onboarding-flow";
+import { goNext, stepAnswerError, toggleTerms } from "../onboarding-flow";
 import { useOnboarding } from "../onboarding-context";
 import { InfoSheet } from "./info-sheet";
 import { IconLineRow, InfoLink, StepBody, StepButton, StepError, StepFooter, StepTitle } from "./step-parts";
@@ -81,7 +81,12 @@ export function TermsStep() {
         </Pressable>
         <StepError text={flow.termsError} style={{ marginLeft: 38, marginBottom: 4 }} />
         <View style={{ marginTop: 6 }}>
-          <StepButton label="ต่อไป" dimmed={!accepted} onPress={() => update(goNext)} testID="onboarding-next" />
+          <StepButton
+            label="ต่อไป"
+            dimmed={stepAnswerError(flow, "terms") !== null}
+            onPress={() => update(goNext)}
+            testID="onboarding-next"
+          />
         </View>
       </StepFooter>
       <InfoSheet title="ข้อตกลงฉบับเต็ม" sections={TERMS_FULL} visible={sheetOpen} onClose={() => setSheetOpen(false)} />

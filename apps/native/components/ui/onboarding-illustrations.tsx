@@ -1,14 +1,14 @@
 import { Image } from "expo-image";
 import type { DimensionValue } from "react-native";
 
-export type OnboardingIllustrationVariant = "logo" | "welcome" | "privacy" | "slips" | "reasons" | "final";
+export type OnboardingIllustrationVariant = "logo" | "welcome" | "privacy" | "photos" | "goals" | "final";
 
 const illustrations = {
   logo: require("../../assets/generated/brand-mascot.png"),
   welcome: require("../../assets/generated/onboarding-welcome.png"),
   privacy: require("../../assets/generated/onboarding-privacy.png"),
-  slips: require("../../assets/generated/onboarding-slips.png"),
-  reasons: require("../../assets/generated/onboarding-reasons.png"),
+  photos: require("../../assets/generated/onboarding-slips.png"),
+  goals: require("../../assets/generated/onboarding-reasons.png"),
   final: require("../../assets/generated/onboarding-final.png"),
 };
 
@@ -17,8 +17,8 @@ const labels: Record<OnboardingIllustrationVariant, string> = {
   logo: "มาสคอตหมูจด",
   welcome: "น้องหมูโบกมือทักทาย",
   privacy: "น้องหมูดูแลข้อมูลของพี่มนุษย์",
-  slips: "น้องหมูกับรูปสลิป",
-  reasons: "น้องหมูคิดถึงเป้าหมายการเงิน",
+  photos: "น้องหมูกับรูปสลิป",
+  goals: "น้องหมูคิดถึงเป้าหมายการเงิน",
   final: "น้องหมูพร้อมจดรายจ่าย",
 };
 

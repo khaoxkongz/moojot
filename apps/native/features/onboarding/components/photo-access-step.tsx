@@ -12,9 +12,9 @@ import { goNext } from "../onboarding-flow";
 import { useOnboarding } from "../onboarding-context";
 import { slipAlbumRows, type PhotoStepState } from "../photo-step";
 import { InfoSheet } from "./info-sheet";
-import { IconLineRow, InfoLink, StepBody, StepButton, StepFooter, StepTitle } from "./step-parts";
+import { IconLineRow, InfoLink, StepBody, StepButton, StepFooter, StepTitle, RowDivider } from "./step-parts";
 
-function slipTitle(photo: PhotoStepState) {
+function photoStepTitle(photo: PhotoStepState) {
   if (photo.status === "counted") return `เจอ ${photo.total} รูปในอัลบั้มสลิป`;
   if (photo.status === "counting") return "กำลังนับรูปในอัลบั้ม…";
   return "หมูจดช่วยอ่านสลิปได้";
@@ -40,7 +40,7 @@ function photoNote(photo: PhotoStepState): { title: string; action: "settings" |
  * Step 2: what slip reading does, before any system prompt. "อนุญาตและค้นหาสลิป" shows the prompt and counts the
  * bank albums; "ข้ามไปก่อน" goes on without photos. Nothing here reads a photo: Home does, after setup.
  */
-export function SlipsStep() {
+export function PhotoAccessStep() {
   const theme = useAppTheme();
   const { update, photoStep, photo } = useOnboarding();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -58,7 +58,7 @@ export function SlipsStep() {
     <>
       <StepBody>
         <View style={{ height: 140 }}>
-          <OnboardingIllustration variant="slips" height={140} />
+          <OnboardingIllustration variant="photos" height={140} />
           {photo.status === "counted" ? (
             <View
               style={{
@@ -89,7 +89,7 @@ export function SlipsStep() {
             </View>
           ) : null}
         </View>
-        <StepTitle title={slipTitle(photo)} />
+        <StepTitle title={photoStepTitle(photo)} />
         <View style={{ marginTop: 12, gap: 10 }}>
           {SLIP_HOW.map((line) => (
             <IconLineRow key={line.key} line={line} />
@@ -116,18 +116,7 @@ export function SlipsStep() {
                 gap: 12,
               }}
             >
-              {index > 0 ? (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 50,
-                    right: 0,
-                    height: 1,
-                    backgroundColor: theme.raised,
-                  }}
-                />
-              ) : null}
+              {index > 0 ? <RowDivider left={50} /> : null}
               <View style={{ width: 24, alignItems: "center" }}>
                 <MaterialCommunityIcons name={album.icon} size={20} color={theme.muted} />
               </View>

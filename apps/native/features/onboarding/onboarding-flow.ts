@@ -2,7 +2,7 @@ import type { ISODate } from "../../types/finance";
 import type { ConsentSetting } from "../settings/profile-values";
 
 /** The four setup steps, in order, after the greeting. The recap ("ready") follows the last one. */
-export const ONBOARDING_STEPS = ["terms", "slips", "goals", "extras"] as const;
+export const ONBOARDING_STEPS = ["terms", "photos", "goals", "extras"] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 export type OnboardingScreen = "greeting" | OnboardingStep | "ready";
 
@@ -53,28 +53,42 @@ const show = (flow: OnboardingFlow, screen: OnboardingScreen): OnboardingFlow =>
   goalsError: null,
 });
 
+/**
+ * The one rule for required answers: the error a step shows while its answer is missing, or null. Only the terms
+ * (accepted) and the goals (at least one) require an answer.
+ */
+export function stepAnswerError(flow: OnboardingFlow, step: OnboardingScreen): string | null {
+  if (step === "terms") return flow.termsAccepted ? null : TERMS_REQUIRED;
+  if (step === "goals") return flow.goals.length > 0 ? null : GOAL_REQUIRED;
+  return null;
+}
+
+/** The step on screen, showing the error of its missing answer. */
+const withError = (flow: OnboardingFlow, error: string): OnboardingFlow =>
+  flow.screen === "terms" ? { ...flow, termsError: error } : { ...flow, goalsError: error };
+
+const NEXT: Record<OnboardingScreen, OnboardingScreen> = {
+  greeting: "terms",
+  terms: "photos",
+  photos: "goals",
+  goals: "extras",
+  extras: "ready",
+  ready: "ready",
+};
+
 /** "ต่อไป" on the current screen: it moves on, or stays and says what is missing. */
 export function goNext(flow: OnboardingFlow): OnboardingFlow {
-  switch (flow.screen) {
-    case "greeting":
-      return show(flow, "terms");
-    case "terms":
-      return flow.termsAccepted ? show(flow, "slips") : { ...flow, termsError: TERMS_REQUIRED };
-    case "slips":
-      return show(flow, "goals");
-    case "goals":
-      return flow.goals.length > 0 ? show(flow, "extras") : { ...flow, goalsError: GOAL_REQUIRED };
-    case "extras":
-      return show(flow, "ready");
-    case "ready":
-      return flow;
-  }
+  const error = stepAnswerError(flow, flow.screen);
+  if (error) return withError(flow, error);
+  return flow.screen === "ready" ? flow : show(flow, NEXT[flow.screen]);
 }
 
 /** The step whose required answer is missing, showing its error, or null when setup can be saved. */
 export function missingAnswer(flow: OnboardingFlow): OnboardingFlow | null {
-  if (!flow.termsAccepted) return { ...show(flow, "terms"), termsError: TERMS_REQUIRED };
-  if (flow.goals.length === 0) return { ...show(flow, "goals"), goalsError: GOAL_REQUIRED };
+  for (const step of ONBOARDING_STEPS) {
+    const error = stepAnswerError(flow, step);
+    if (error) return withError(show(flow, step), error);
+  }
   return null;
 }
 
@@ -88,7 +102,7 @@ export function goBack(flow: OnboardingFlow): OnboardingFlow {
 
 const STEP_NAMES: Record<OnboardingStep, string> = {
   terms: "ข้อตกลง",
-  slips: "อ่านสลิป",
+  photos: "อ่านสลิป",
   goals: "เป้าหมาย",
   extras: "ข้อมูลเพิ่มเติม",
 };

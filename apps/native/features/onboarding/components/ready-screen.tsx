@@ -1,4 +1,3 @@
-import { useRef, useState } from "react";
 import { View } from "react-native";
 
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
@@ -6,12 +5,10 @@ import { Text } from "@/components/ui/typography";
 import { radius, raisedRing } from "@/constants/theme";
 import { authClient } from "@/lib/auth-client";
 import { useAppTheme } from "@/lib/use-app-theme";
-import { client, orpc, queryClient } from "@/utils/orpc";
 
 import { ONBOARDING_GOALS } from "../onboarding-flow";
 import { useOnboarding } from "../onboarding-context";
 import { photoRecap } from "../photo-step";
-import { SAVE_FAILED, saveOnboarding } from "../save-onboarding";
 import { IconDot, StepBody, StepButton, StepError, StepFooter } from "./step-parts";
 
 function RecapRow({
@@ -40,36 +37,19 @@ function RecapRow({
 /**
  * The recap before Home: the goals picked and the photo access the device has now. "เริ่มใช้งานหมูจดเลย!" saves
  * setup; Home opens only after the setup check sees it complete. A failed save keeps every answer for another try.
+ * A save that worked is never called a failure when only the setup check after it fails.
  */
 export function ReadyScreen() {
   const theme = useAppTheme();
-  const { flow, update, forgetDraft, photo } = useOnboarding();
+  const { flow, update, photo, setupSave, saveState } = useOnboarding();
   const { data: session } = authClient.useSession();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const sending = useRef(false);
   const goals = ONBOARDING_GOALS.filter((goal) => flow.goals.includes(goal.key));
+  const error = saveState.status === "failed" || saveState.status === "unconfirmed" ? saveState.message : null;
 
   async function finish() {
-    if (sending.current) return;
-    sending.current = true;
-    setSaving(true);
-    setError(null);
-    const result = await saveOnboarding(client.financePreferences, flow, {
-      email: session?.user.email ?? "",
-      now: new Date(),
-    });
-    if (result.status === "saved") {
-      await forgetDraft();
-      // The setup check now answers "complete", and the root guard swaps setup for Home.
-      const setupCheck = orpc.financePreferences.hasCompletedOnboarding.queryKey();
-      await queryClient.invalidateQueries({ queryKey: setupCheck });
-      if (queryClient.getQueryData(setupCheck) === true) return;
-    }
-    sending.current = false;
-    setSaving(false);
+    // A tap while a save is pending gets that save's result. On success the root guard swaps setup for Home.
+    const result = await setupSave.save(flow, { email: session?.user.email ?? "", now: new Date() });
     if (result.status === "incomplete") update(() => result.flow);
-    else setError(result.status === "failed" ? result.message : SAVE_FAILED);
   }
 
   return (
@@ -122,7 +102,7 @@ export function ReadyScreen() {
         <StepError text={error} style={{ marginBottom: 8, alignItems: "center" }} />
         <StepButton
           label="เริ่มใช้งานหมูจดเลย!"
-          busy={saving}
+          busy={saveState.status === "saving"}
           busyLabel="กำลังบันทึก…"
           onPress={() => void finish()}
           testID="onboarding-finish"

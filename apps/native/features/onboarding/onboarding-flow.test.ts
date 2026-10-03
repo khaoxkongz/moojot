@@ -12,7 +12,7 @@ describe("onboarding flow", () => {
 
     const accepted = toggleTerms(refused);
     expect(accepted.termsError).toBeNull();
-    expect(goNext(accepted).screen).toBe("slips");
+    expect(goNext(accepted).screen).toBe("photos");
   });
 
   it("asks for at least one goal, and lets the person pick several", () => {
@@ -39,7 +39,7 @@ describe("onboarding flow", () => {
       flow = goBack(flow);
       visited.push(flow.screen);
     }
-    expect(visited).toEqual(["extras", "goals", "slips", "terms", "greeting"]);
+    expect(visited).toEqual(["extras", "goals", "photos", "terms", "greeting"]);
     expect(flow.goals).toEqual(["budget"]);
     expect(flow.termsAccepted).toBe(true);
 
@@ -49,8 +49,8 @@ describe("onboarding flow", () => {
   });
 
   it("shows which of the four steps the person is on", () => {
-    const onSlips = goNext(toggleTerms(onTerms()));
-    expect(onboardingProgress(onSlips.screen)).toEqual({ number: 2, total: 4, label: "ขั้นที่ 2 จาก 4: อ่านสลิป" });
+    const onPhotoStep = goNext(toggleTerms(onTerms()));
+    expect(onboardingProgress(onPhotoStep.screen)).toEqual({ number: 2, total: 4, label: "ขั้นที่ 2 จาก 4: อ่านสลิป" });
     expect(onboardingProgress("greeting")).toBeNull();
     expect(onboardingProgress("ready")).toBeNull();
   });

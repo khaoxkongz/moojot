@@ -1,6 +1,6 @@
 import type { ISODate } from "../../types/finance";
-import { buddhistYear, daysInMonth, isoFromParts } from "../../utils/dates";
-import { longThaiMonth } from "../../utils/format";
+import { buddhistYear, daysInMonth, isoDateParts, isoFromParts, isoYear } from "../../utils/dates";
+import { isValidISODate, longThaiMonth } from "../../utils/format";
 
 /** A birthday being picked in the three-column sheet. `year` is the Gregorian year; the sheet shows it in พ.ศ. */
 export type BirthdayDraft = { day: number; month: number; year: number };
@@ -19,7 +19,7 @@ export function checkBirthday({ day, month, year }: BirthdayDraft, today: ISODat
 
 /** Day, month and Buddhist-year columns. Years run from this year back to 1900. */
 export function birthdayColumns(today: ISODate) {
-  const thisYear = Number(today.slice(0, 4));
+  const thisYear = isoYear(today);
   return [
     { key: "day", label: "วัน", options: range(1, 31).map((value) => ({ value, label: String(value) })) },
     { key: "month", label: "เดือน", options: range(1, 12).map((value) => ({ value, label: longThaiMonth(value) })) },
@@ -33,10 +33,7 @@ export function birthdayColumns(today: ISODate) {
 
 /** A valid saved birthday's parts, or null. */
 export function birthdayParts(iso: string | null | undefined): BirthdayDraft | null {
-  const match = iso ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso) : null;
-  if (!match) return null;
-  const draft = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
-  return checkBirthday(draft, "9999-12-31") ? draft : null;
+  return iso && isValidISODate(iso) ? isoDateParts(iso) : null;
 }
 
 /** "12 มีนาคม 2543" for 2000-03-12. */

@@ -220,6 +220,12 @@ export function InfoLink({ icon, label, onPress }: { icon: IconName; label: stri
   );
 }
 
+/** The 1px `raised` line on top of a grouped row after the first, starting `left` from the row's edge. */
+export function RowDivider({ left }: { left: number }) {
+  const theme = useAppTheme();
+  return <View style={{ position: "absolute", top: 0, left, right: 0, height: 1, backgroundColor: theme.raised }} />;
+}
+
 /** A field error under a control, announced when it appears. */
 export function StepError({ text, style }: { text: string | null; style?: StyleProp<ViewStyle> }) {
   const theme = useAppTheme();
