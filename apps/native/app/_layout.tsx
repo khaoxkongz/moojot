@@ -9,8 +9,9 @@ import { StyleSheet } from "react-native";
 
 import { useAppFonts } from "@/constants/fonts";
 import { AppDataProvider } from "@/context/app-data";
-import { OnboardingProvider, useOnboarding } from "@/context/onboarding";
+import { AppEntryProvider, useAppEntry } from "@/context/app-entry";
 import { authClient } from "@/lib/auth-client";
+import { rememberedEmail, useRememberedEmail } from "@/lib/device-remembered-email";
 import { NAV_THEME, themes } from "@/constants/theme";
 import { themePreference, useColorScheme, useThemePreference } from "@/lib/use-color-scheme";
 import { queryClient } from "@/utils/orpc";
@@ -19,6 +20,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 void SplashScreen.preventAutoHideAsync();
 // The splash stays up until the saved theme is known, so the first screen never flashes the other palette.
 void themePreference.load();
+// The auth screen opens in sign-in mode with the remembered email, so it must be known before the first screen.
+void rememberedEmail.load();
 
 const LIGHT_THEME = {
   ...DefaultTheme,
@@ -39,7 +42,8 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { isDarkColorScheme } = useColorScheme();
   const themeReady = useThemePreference().status === "ready";
-  const ready = (fontsLoaded || Boolean(fontError)) && themeReady;
+  const emailReady = useRememberedEmail().status === "ready";
+  const ready = (fontsLoaded || Boolean(fontError)) && themeReady && emailReady;
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
@@ -55,37 +59,41 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <StatusBar style={isDarkColorScheme ? "light" : "dark"} />
-      <OnboardingProvider>
+      <AppEntryProvider>
         <RootNavigation isDarkColorScheme={isDarkColorScheme} />
-      </OnboardingProvider>
+      </AppEntryProvider>
     </QueryClientProvider>
   );
 }
 
 function RootNavigation({ isDarkColorScheme }: { isDarkColorScheme: boolean }) {
-  const { isComplete } = useOnboarding();
+  const { entry } = useAppEntry();
   const { data: session } = authClient.useSession();
-  const userId = session?.user.id ?? null;
-  const hasAccount = isComplete && Boolean(userId);
+  const email = session?.user.email ?? null;
+
+  // Every signed-in account becomes the remembered email, so sign-out reopens sign-in with it.
+  useEffect(() => {
+    if (email) void rememberedEmail.remember(email);
+  }, [email]);
 
   return (
     <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
       <AppDataProvider>
         <GestureHandlerRootView style={styles.container}>
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Protected guard={!userId}>
+            <Stack.Protected guard={entry === "auth"}>
               <Stack.Screen
                 name="(auth)"
                 options={{ contentStyle: { backgroundColor: themes[isDarkColorScheme ? "dark" : "light"].background } }}
               />
             </Stack.Protected>
-            <Stack.Protected guard={Boolean(userId) && !isComplete}>
+            <Stack.Protected guard={entry === "onboarding"}>
               <Stack.Screen
                 name="onboarding"
                 options={{ contentStyle: { backgroundColor: themes[isDarkColorScheme ? "dark" : "light"].background } }}
               />
             </Stack.Protected>
-            <Stack.Protected guard={hasAccount}>
+            <Stack.Protected guard={entry === "app"}>
               <Stack.Screen name="(app)" />
             </Stack.Protected>
           </Stack>

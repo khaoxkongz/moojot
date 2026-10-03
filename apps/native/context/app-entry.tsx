@@ -4,33 +4,40 @@ import { createContext, use } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { Text } from "@/components/ui/typography";
+import { appEntry, type AppEntry } from "@/features/auth/app-entry";
 import { slipScanSession } from "@/features/slips/auto-import";
 import { useAppTheme } from "@/lib/use-app-theme";
 import { authClient } from "@/lib/auth-client";
 import { orpc, queryClient } from "@/utils/orpc";
 
-type OnboardingContextValue = {
-  isComplete: boolean;
+type AppEntryContextValue = {
+  /** Where the root guard sends this device: auth, setup or Home. */
+  entry: Extract<AppEntry, "auth" | "onboarding" | "app">;
   signOut: () => Promise<void>;
 };
 
-const OnboardingContext = createContext<OnboardingContextValue | null>(null);
+const AppEntryContext = createContext<AppEntryContextValue | null>(null);
 
-export function OnboardingProvider({ children }: { children: ReactNode }) {
+/**
+ * Decides where the root guard sends this device from the session and the setup check, and ends the session. Until
+ * the entry is known it shows the loading screen, or the retry screen when the setup check failed.
+ */
+export function AppEntryProvider({ children }: { children: ReactNode }) {
   const theme = useAppTheme();
   const { data: session, isPending: isSessionPending } = authClient.useSession();
 
   const userId = session?.user.id ?? null;
 
-  const {
-    data,
-    isError,
-    error,
-    refetch,
-    isPending: isOnboardingPending,
-  } = useQuery(orpc.financePreferences.hasCompletedOnboarding.queryOptions({ enabled: Boolean(userId) }));
+  const { data, isError, error, refetch } = useQuery(
+    orpc.financePreferences.hasCompletedOnboarding.queryOptions({ enabled: Boolean(userId) })
+  );
+  const entry = appEntry({
+    session: isSessionPending ? "pending" : userId ? "signed-in" : "signed-out",
+    onboarding:
+      data !== undefined ? { status: "ready", complete: data } : isError ? { status: "failed" } : { status: "pending" },
+  });
 
-  if (isSessionPending || (Boolean(userId) && isOnboardingPending)) {
+  if (entry === "loading" || entry === "retry") {
     return (
       <View
         style={{
@@ -43,10 +50,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         }}
       >
         <Text style={{ color: theme.text, fontSize: 36, fontWeight: "900" }}>หมูจด</Text>
-        {isError ? (
+        {entry === "retry" ? (
           <>
             <Text accessibilityRole="alert" selectable style={{ color: theme.text, textAlign: "center", fontSize: 16 }}>
-              โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error.message}
+              โหลดข้อมูลเริ่มต้นไม่สำเร็จ: {error?.message}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -70,9 +77,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <OnboardingContext.Provider
+    <AppEntryContext.Provider
       value={{
-        isComplete: Boolean(data),
+        entry,
         signOut: async () => {
           const result = await authClient.signOut();
           if (result.error) throw new Error(result.error.message);
@@ -83,12 +90,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </OnboardingContext.Provider>
+    </AppEntryContext.Provider>
   );
 }
 
-export function useOnboarding(): OnboardingContextValue {
-  const context = use(OnboardingContext);
-  if (!context) throw new Error("useOnboarding must be used inside OnboardingProvider");
+export function useAppEntry(): AppEntryContextValue {
+  const context = use(AppEntryContext);
+  if (!context) throw new Error("useAppEntry must be used inside AppEntryProvider");
   return context;
 }

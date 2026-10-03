@@ -16,8 +16,9 @@ import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
 
 import type { AppTheme } from "@/constants/theme";
 import { useAppTheme } from "@/lib/use-app-theme";
+import { PillButton } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
-import { useOnboarding } from "@/context/onboarding";
+import { useAppEntry } from "@/context/app-entry";
 import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
 import { settingsQueryOptions } from "@/features/settings/query-options";
@@ -246,7 +247,7 @@ export default function AccountSettingsScreen() {
   const theme = useAppTheme();
   const isFocused = useIsFocused();
 
-  const { signOut: endSession } = useOnboarding();
+  const { signOut: endSession } = useAppEntry();
 
   const { data: session } = authClient.useSession();
   const activeEmail = session?.user.email ?? null;
@@ -504,11 +505,11 @@ export default function AccountSettingsScreen() {
         </ScrollView>
 
         {sheet === "email" ? (
-          <SheetFrame title="บัญชี" onClose={closeEmailSheet}>
+          <SheetFrame title="ออกจากระบบไหม?" onClose={closeEmailSheet}>
             <Text selectable style={styles.dialogCopy}>
               กำลังใช้งานบัญชี {activeEmail}
             </Text>
-            <Text style={styles.dialogCopy}>หากต้องการใช้บัญชีอื่น ให้ออกจากระบบแล้วเข้าสู่ระบบด้วยบัญชีนั้น</Text>
+            <Text style={styles.dialogCopy}>รายการที่จดไว้ยังอยู่ครบ เข้าสู่ระบบด้วยอีเมลเดิมเพื่อดูอีกครั้ง</Text>
             {error ? (
               <Text accessibilityRole="alert" style={styles.dialogError}>
                 {error}
@@ -524,6 +525,7 @@ export default function AccountSettingsScreen() {
             >
               <Text style={styles.saveText}>{saving ? "กำลังออกจากระบบ…" : "ออกจากระบบ"}</Text>
             </Pressable>
+            <PillButton label="ยกเลิก" variant="secondary" onPress={closeEmailSheet} />
           </SheetFrame>
         ) : null}
 

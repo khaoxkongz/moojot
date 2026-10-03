@@ -3,7 +3,7 @@ import { View, useWindowDimensions } from "react-native";
 
 import { OnboardingIllustration } from "@/components/ui/onboarding-illustrations";
 import { Text } from "@/components/ui/typography";
-import { Footer, Header, Page } from "@/features/onboarding/components/onboarding-controls";
+import { Footer, Page } from "@/features/onboarding/components/onboarding-controls";
 import { useAppTheme } from "@/lib/use-app-theme";
 
 export default function OnboardingGreetingRoute() {
@@ -14,7 +14,6 @@ export default function OnboardingGreetingRoute() {
 
   return (
     <Page>
-      <Header title="" onBack={() => router.back()} />
       <View
         style={{
           flex: 1,
@@ -28,7 +27,7 @@ export default function OnboardingGreetingRoute() {
         <Text style={{ color: theme.text, fontSize: 23, textAlign: "center" }}>ยินดีที่ได้รู้จักกันนะ</Text>
         <OnboardingIllustration variant="welcome" size={illustrationSize} />
       </View>
-      <Footer label="สวัสดี หมูจด!" onPress={() => router.push("/onboarding/terms")} />
+      <Footer label="สวัสดี หมูจด!" onPress={() => router.push("/onboarding/birthday")} />
     </Page>
   );
 }
