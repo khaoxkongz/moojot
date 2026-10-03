@@ -1,17 +1,31 @@
-# Signs in with MAESTRO_PREVIEW_EMAIL / MAESTRO_PREVIEW_PASSWORD when the app shows the sign-in screen; does nothing when already signed in.
-# Keys on the sign-in screen's accessibility labels; update them here if the auth screens change.
+# Signs in with MAESTRO_PREVIEW_EMAIL / MAESTRO_PREVIEW_PASSWORD when the app shows the auth screen; does nothing when already signed in.
+# Keys on the auth screen's test IDs (auth-mode-signin, auth-email, auth-password); update them here if the screen changes.
+# The screen may open in signup mode (first start) or with the latest email filled in (after sign-out), so it picks the
+# sign-in tab and replaces the email.
 appId: com.anonymous.moojot
 ---
 - runFlow:
     when:
-      visible: "อีเมล"
+      visible: "เข้าสู่หมูจด"
     commands:
-      - tapOn: "อีเมล"
+      - tapOn: "เข้าสู่หมูจด"
+- runFlow:
+    when:
+      visible:
+        id: "auth-email"
+    commands:
+      - tapOn:
+          id: "auth-mode-signin"
+      - tapOn:
+          id: "auth-email"
+      - eraseText: 80
       - inputText: ${MAESTRO_PREVIEW_EMAIL}
-      - tapOn: "รหัสผ่าน"
+      - tapOn:
+          id: "auth-password"
+      - eraseText: 80
       - inputText: ${MAESTRO_PREVIEW_PASSWORD}
-      - hideKeyboard
-      - tapOn: "เข้าสู่ระบบ"
+      # Return on the password submits; Maestro's hideKeyboard fails on this screen.
+      - pressKey: Enter
 - extendedWaitUntil:
     visible: "จดเพิ่ม"
     timeout: 30000

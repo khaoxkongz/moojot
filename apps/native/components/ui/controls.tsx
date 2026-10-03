@@ -112,6 +112,7 @@ export function PillButton({
   variant = "primary",
   icon,
   style,
+  testID,
 }: {
   label: string;
   busyLabel?: string;
@@ -120,12 +121,14 @@ export function PillButton({
   variant?: "primary" | "secondary";
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }) {
   const theme = useAppTheme();
   const color = variant === "primary" ? theme.onAccent : theme.text;
   const text = busy && busyLabel ? busyLabel : label;
   return (
     <Pressable
+      testID={testID}
       accessibilityRole="button"
       accessibilityLabel={text}
       accessibilityState={{ busy }}
@@ -187,16 +190,24 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   height = 40,
+  labelSize = 14,
+  accessibilityLabel,
+  testID,
 }: {
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
   height?: number;
+  labelSize?: number;
+  accessibilityLabel?: string;
+  /** Each tab gets `<testID>-<value>`, for Maestro when a tab shares its text with another button. */
+  testID?: string;
 }) {
   const theme = useAppTheme();
   return (
     <View
       accessibilityRole="tablist"
+      accessibilityLabel={accessibilityLabel}
       style={{ flexDirection: "row", gap: 3, padding: 3, borderRadius: 12, backgroundColor: theme.raised }}
     >
       {options.map((option) => {
@@ -204,6 +215,7 @@ export function SegmentedControl<T extends string>({
         return (
           <Pressable
             key={option.value}
+            testID={testID ? `${testID}-${option.value}` : undefined}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
             onPress={() => onChange(option.value)}
@@ -220,7 +232,12 @@ export function SegmentedControl<T extends string>({
             ]}
           >
             <Text
-              style={{ color: selected ? theme.text : theme.muted, fontSize: 14, lineHeight: 20, textAlign: "center" }}
+              style={{
+                color: selected ? theme.text : theme.muted,
+                fontSize: labelSize,
+                lineHeight: Math.round(labelSize * 1.4),
+                textAlign: "center",
+              }}
             >
               {option.label}
             </Text>

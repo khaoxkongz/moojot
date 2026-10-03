@@ -1,0 +1,99 @@
+# Ticket 02 signup / sign-in states, named <NN>-app-<state>. Runs against a throwaway API server, never the
+# development database: it signs up a new account. Setup (recipe in .scratch/native-redesign-ios/notes/02-auth-flow.md):
+#   - fixture account returning@example.test / returning-pass, name หมูกลับมา, onboarding complete;
+#   - no account for nobody@example.test;
+#   - the app's remembered email file deleted and nobody signed in, so the app makes a first start.
+appId: com.anonymous.moojot
+---
+- extendedWaitUntil:
+    visible:
+      id: "auth-email"
+    timeout: 15000
+- takeScreenshot: 02-app-signup
+# Incomplete submit: one error beside each field.
+- tapOn:
+    id: "auth-submit"
+- waitForAnimationToEnd
+- takeScreenshot: 02-app-signup-errors
+# Typing clears only that field's error; Enter moves to the next field.
+- tapOn:
+    id: "auth-name"
+- inputText: "หมูกลับมา"
+- pressKey: Enter
+- inputText: "returning@example.test"
+- pressKey: Enter
+# Show the password first: in a hidden new-password field the simulator's Automatic Strong Password cover takes the typing.
+- tapOn: "แสดงรหัสผ่าน"
+- tapOn:
+    id: "auth-password"
+- inputText: "wrong-p"
+- takeScreenshot: 02-app-signup-typing
+- inputText: "a"
+- takeScreenshot: 02-app-password-shown
+- tapOn: "ซ่อนรหัสผ่าน"
+# The email already has an account.
+- tapOn:
+    id: "auth-submit"
+- extendedWaitUntil:
+    visible: "อีเมลนี้มีบัญชีอยู่แล้ว"
+    timeout: 10000
+- takeScreenshot: 02-app-signup-duplicate
+- tapOn: "เข้าสู่ระบบด้วยอีเมลนี้"
+- waitForAnimationToEnd
+- takeScreenshot: 02-app-signin-from-notice
+- tapOn:
+    id: "auth-submit"
+- extendedWaitUntil:
+    visible: "รหัสผ่านไม่ถูกต้อง ลองอีกครั้ง"
+    timeout: 10000
+- takeScreenshot: 02-app-signin-wrong-password
+- tapOn:
+    id: "auth-password"
+- eraseText: 20
+- inputText: "returning-pass"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "ยินดีต้อนรับกลับ หมูกลับมา"
+    timeout: 15000
+- takeScreenshot: 02-app-home-welcome
+# Sign out from the account sheet; the app reopens sign-in with this email and no password.
+- tapOn: "พี่มนุษย์, tab.*"
+- tapOn: "ข้อมูลในแอป.*"
+- extendedWaitUntil:
+    visible: "อีเมล.*"
+    timeout: 15000
+- tapOn: "อีเมล.*returning@example.test.*"
+- waitForAnimationToEnd
+- takeScreenshot: 02-app-signout-sheet
+- tapOn: "ออกจากระบบ"
+- extendedWaitUntil:
+    visible:
+      id: "auth-email"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 02-app-signin-after-signout
+# An email without an account: the notice offers signup with it, keeping the email.
+- tapOn:
+    id: "auth-email"
+- eraseText: 40
+- inputText: "nobody@example.test"
+- tapOn:
+    id: "auth-password"
+- inputText: "new-password"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "ยังไม่มีบัญชีของอีเมลนี้"
+    timeout: 10000
+- takeScreenshot: 02-app-signin-unknown
+- tapOn: "สมัครสมาชิกด้วยอีเมลนี้"
+- tapOn:
+    id: "auth-name"
+- inputText: "หมูใหม่"
+- takeScreenshot: 02-app-signup-from-notice
+- tapOn:
+    id: "auth-submit"
+- extendedWaitUntil:
+    visible: "สวัสดีพี่มนุษย์!"
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: 02-app-greeting

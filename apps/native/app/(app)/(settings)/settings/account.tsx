@@ -508,7 +508,9 @@ export default function AccountSettingsScreen() {
             <Text selectable style={styles.dialogCopy}>
               กำลังใช้งานบัญชี {activeEmail}
             </Text>
-            <Text style={styles.dialogCopy}>หากต้องการใช้บัญชีอื่น ให้ออกจากระบบแล้วเข้าสู่ระบบด้วยบัญชีนั้น</Text>
+            <Text style={styles.dialogCopy}>
+              ออกจากระบบแล้ว รายการที่จดไว้ยังอยู่ครบ เข้าสู่ระบบด้วยอีเมลเดิมเพื่อดูอีกครั้ง หรือเข้าสู่ระบบด้วยบัญชีอื่น
+            </Text>
             {error ? (
               <Text accessibilityRole="alert" style={styles.dialogError}>
                 {error}
