@@ -2,11 +2,21 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 const project = path.resolve(import.meta.dirname, "..");
 const checker = path.join(project, "scripts/check-agent-documents.py");
 const roots = [];
+const hookGitVariables = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);
+
+// A Git hook can export these variables, and they would point every git command below at the hook's repository.
+function isolatedEnv() {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !hookGitVariables.has(key)));
+}
+
+function git(...args) {
+  return execFileSync("git", args, { encoding: "utf8", env: isolatedEnv() });
+}
 
 function write(root, name, text) {
   const target = path.join(root, name);
@@ -23,15 +33,16 @@ function fixture(documents, exceptions = []) {
 }
 
 function check(root, ...args) {
-  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8" });
+  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8", env: isolatedEnv() });
 }
 
 function stage(root) {
-  execFileSync("git", ["init", "--quiet", root]);
-  execFileSync("git", ["-C", root, "add", "."]);
+  git("init", "--quiet", root);
+  git("-C", root, "add", ".");
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
@@ -289,11 +300,32 @@ describe("Agent document gate", () => {
     expect(check(root, "--staged").stderr).toContain("missing-link");
   });
 
+  // Git sets GIT_DIR for a pre-push hook only when the push comes from a linked worktree.
+  it("leaves the hook's repository unchanged when GIT_DIR points at a linked worktree", () => {
+    const other = fixture({ "kept.txt": "kept\n" });
+    git("init", "--quiet", other);
+    git("-C", other, "add", "kept.txt");
+    const identity = ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false"];
+    git("-C", other, ...identity, "commit", "--quiet", "--no-verify", "-m", "Keep");
+    const linked = path.join(fixture({}), "linked");
+    git("-C", other, "worktree", "add", "--quiet", linked);
+    const gitDir = path.join(other, ".git/worktrees/linked");
+    const index = readFileSync(path.join(gitDir, "index"));
+    const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nThe app stopped; data remains.\n" });
+    vi.stubEnv("GIT_DIR", gitDir);
+    stage(root);
+    const result = check(root, "--staged");
+    vi.unstubAllEnvs();
+    expect(git("-C", other, "config", "core.bare").trim()).toBe("false");
+    expect(readFileSync(path.join(gitDir, "index"))).toEqual(index);
+    expect(result.stderr).toContain("spec.md:3 semicolon");
+  });
+
   it("fails explicitly when the required skill is unavailable", () => {
     const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nRead the document.\n" });
     const localChecker = path.join(root, "scripts/check-agent-documents.py");
     write(root, "scripts/check-agent-documents.py", readFileSync(checker, "utf8"));
-    const result = spawnSync("python3", [localChecker], { encoding: "utf8" });
+    const result = spawnSync("python3", [localChecker], { encoding: "utf8", env: isolatedEnv() });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Restore the repository's asd-ste100 skill");
     expect(result.stdout).not.toContain("Agent documents:");
