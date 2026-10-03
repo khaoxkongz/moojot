@@ -1,0 +1,15 @@
+# Ticket 05 Home load-failed card, for ios-preview step 4. It starts on Home after a normal run, with the API server
+# stopped, and opens the month before, which this app session has not loaded. 05-home-recovered.yaml follows it.
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+# A first tap after the run that opened the app can do nothing; tap again then.
+- tapOn:
+    text: "เดือนก่อน"
+    retryTapIfNoChange: true
+# The app repeats a failed load before it shows the card.
+- extendedWaitUntil:
+    visible: "โหลดรายการไม่สำเร็จ"
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: 05-app-home-error

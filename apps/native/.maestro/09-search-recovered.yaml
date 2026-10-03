@@ -1,0 +1,15 @@
+# Ticket 09 Search after recovery, for ios-preview step 4. It runs on the load-failed card that 09-search-error.yaml
+# left open, after the API server answers again, and taps "ลองอีกครั้ง" (retry) one time. The search term stays.
+appId: com.anonymous.moojot
+---
+# The spoken name of this retry link is "ลองค้นหาอีกครั้ง" (search again).
+- tapOn: "ลองค้นหาอีกครั้ง"
+- extendedWaitUntil:
+    notVisible: "ค้นหาไม่สำเร็จ"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "(พบ|ไม่พบ) .*"
+    timeout: 30000
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: 09-app-search-recovered
