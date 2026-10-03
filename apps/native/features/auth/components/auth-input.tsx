@@ -4,16 +4,17 @@ import { Pressable, View, type TextInput as NativeTextInput, type TextInputProps
 
 import { Text, TextInput } from "@/components/ui/typography";
 import { radius, touch } from "@/constants/theme";
+import { PASSWORD_RULE } from "@/features/auth/auth-form";
 import { useAppTheme } from "@/lib/use-app-theme";
 
 /**
  * One labelled auth field from the handoff: 13 `muted` label, 52-tall `surface` input with radius 14 and a 1px `border`
  * ring, 2px `accent` while focused, 1.5px `danger` with its error under it. `below` holds extra lines such as the rule.
  */
-export const AuthField = forwardRef<
+export const AuthInput = forwardRef<
   NativeTextInput,
   Omit<TextInputProps, "style"> & { label: string; error?: string; trailing?: ReactNode; below?: ReactNode }
->(function AuthField({ label, error, trailing, below, onFocus, onBlur, ...input }, ref) {
+>(function AuthInput({ label, error, trailing, below, onFocus, onBlur, ...input }, ref) {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const ring = focused
@@ -98,11 +99,11 @@ export function PasswordRule({ met }: { met: boolean }) {
   return (
     <View
       accessible
-      accessibilityLabel={`อย่างน้อย 8 ตัวอักษร ${met ? "ครบแล้ว" : "ยังไม่ครบ"}`}
+      accessibilityLabel={`${PASSWORD_RULE} ${met ? "ครบแล้ว" : "ยังไม่ครบ"}`}
       style={{ paddingHorizontal: 4, flexDirection: "row", alignItems: "center", gap: 6 }}
     >
       <MaterialCommunityIcons name={met ? "check-circle" : "circle-outline"} size={16} color={color} />
-      <Text style={{ color, fontSize: 13, lineHeight: 19 }}>อย่างน้อย 8 ตัวอักษร</Text>
+      <Text style={{ color, fontSize: 13, lineHeight: 19 }}>{PASSWORD_RULE}</Text>
     </View>
   );
 }

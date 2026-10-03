@@ -27,7 +27,7 @@ export default function OnboardingGreetingRoute() {
         <Text style={{ color: theme.text, fontSize: 23, textAlign: "center" }}>ยินดีที่ได้รู้จักกันนะ</Text>
         <OnboardingIllustration variant="welcome" size={illustrationSize} />
       </View>
-      <Footer label="สวัสดี หมูจด!" onPress={() => router.push("/onboarding/terms")} />
+      <Footer label="สวัสดี หมูจด!" onPress={() => router.push("/onboarding/birthday")} />
     </Page>
   );
 }

@@ -3,10 +3,47 @@
  * it to Better Auth. Screens keep one `AuthForm` in state and replace it with what these functions return.
  */
 
-import { isValidEmail } from "../../utils/email-identity";
+import { isValidEmail, normalizeEmail } from "../../utils/email-identity";
 
 export type AuthMode = "signup" | "signin";
-export type AuthField = "name" | "email" | "password";
+
+const AUTH_FIELDS = ["name", "email", "password"] as const;
+export type AuthFieldName = (typeof AUTH_FIELDS)[number];
+
+const PASSWORD_MIN_LENGTH = 8;
+
+/** The password rule as the handoff words it, under the signup password and as its placeholder. */
+export const PASSWORD_RULE = `อย่างน้อย ${PASSWORD_MIN_LENGTH} ตัวอักษร`;
+
+/**
+ * Everything that differs between the two modes. Signup does not ask iOS for a new password: with that content type,
+ * Automatic Strong Password covered the field and, after แสดง / ซ่อน (show / hide), replaced what the user typed.
+ * Sign-in keeps Keychain autofill.
+ */
+export const AUTH_MODES = {
+  signup: {
+    label: "สมัครสมาชิก",
+    subtitle: "สมัครด้วยอีเมล แล้วตั้งค่าอีก 4 ขั้นสั้น ๆ",
+    busyLabel: "กำลังสมัคร…",
+    failed: "สมัครสมาชิกไม่สำเร็จ ลองอีกครั้ง",
+    success: "signed-up",
+    asksName: true,
+    showsPasswordRule: true,
+    passwordAutoComplete: "off",
+    passwordContentType: "none",
+  },
+  signin: {
+    label: "เข้าสู่ระบบ",
+    subtitle: "เข้าสู่ระบบด้วยอีเมลที่เคยสมัครไว้",
+    busyLabel: "กำลังเข้าสู่ระบบ…",
+    failed: "เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง",
+    success: "signed-in",
+    asksName: false,
+    showsPasswordRule: false,
+    passwordAutoComplete: "current-password",
+    passwordContentType: "password",
+  },
+} as const satisfies Record<AuthMode, Record<string, string | boolean>>;
 
 /** An account fact from the server, with the mode that resolves it when there is one. */
 export type AuthNotice = { text: string; action: { label: string; mode: AuthMode } | null };
@@ -16,13 +53,13 @@ export type AuthForm = {
   name: string;
   email: string;
   password: string;
-  errors: Partial<Record<AuthField, string>>;
+  errors: Partial<Record<AuthFieldName, string>>;
   notice: AuthNotice | null;
 };
 
 /** What the server said about one submit. */
 export type AuthResult =
-  | { status: "signed-up" | "signed-in"; name: string; email: string }
+  | { status: (typeof AUTH_MODES)[AuthMode]["success"]; name: string; email: string }
   | { status: "invalid" | "refused"; form: AuthForm };
 
 type AuthResponse = {
@@ -48,7 +85,7 @@ export function startAuthForm({ rememberedEmail }: { rememberedEmail: string | n
 }
 
 /** A new value clears only that field's error, and the account notice, which was about the old values. */
-export function editAuthField(form: AuthForm, field: AuthField, value: string): AuthForm {
+export function editAuthField(form: AuthForm, field: AuthFieldName, value: string): AuthForm {
   const { [field]: _cleared, ...errors } = form.errors;
   return { ...form, [field]: value, errors, notice: null };
 }
@@ -68,33 +105,36 @@ export function followAuthNotice(form: AuthForm): AuthForm {
  * only on a field still holding the value that was sent, and the notice only when nothing changed.
  */
 export function applyAuthOutcome(current: AuthForm, sent: AuthForm, answered: AuthForm): AuthForm {
-  const unchanged = (field: AuthField) => current[field] === sent[field];
+  const unchanged = (field: AuthFieldName) => current[field] === sent[field];
   const errors = Object.fromEntries(
-    Object.entries(answered.errors).filter(([field]) => unchanged(field as AuthField))
+    Object.entries(answered.errors).filter(([field]) => unchanged(field as AuthFieldName))
   ) as AuthForm["errors"];
-  const same = current.mode === sent.mode && (["name", "email", "password"] as const).every(unchanged);
+  const same = current.mode === sent.mode && AUTH_FIELDS.every(unchanged);
   return { ...current, errors, notice: same ? answered.notice : null };
 }
 
-export const PASSWORD_MIN_LENGTH = 8;
-
-/** The live rule under the signup password: met once it has eight characters. */
+/** The live rule under the signup password. */
 export const passwordRuleMet = (password: string) => password.length >= PASSWORD_MIN_LENGTH;
 
 /** Every incomplete field gets its own error; the name counts only in signup. */
 export function checkAuthForm(form: AuthForm): AuthForm["errors"] {
   const errors: AuthForm["errors"] = {};
-  if (form.mode === "signup" && form.name.trim().length < 2) errors.name = "กรุณาใส่ชื่ออย่างน้อย 2 ตัวอักษร";
+  if (AUTH_MODES[form.mode].asksName && form.name.trim().length < 2) errors.name = "กรุณาใส่ชื่ออย่างน้อย 2 ตัวอักษร";
   if (!form.email.trim()) errors.email = "กรุณาใส่อีเมล";
   else if (!isValidEmail(form.email)) errors.email = "กรุณาใส่อีเมลให้ถูกต้อง";
-  if (!passwordRuleMet(form.password)) errors.password = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+  if (!passwordRuleMet(form.password)) errors.password = `รหัสผ่านต้องมี${PASSWORD_RULE}`;
   return errors;
 }
 
+/**
+ * Checks the form, then sends it. A form that passes the check goes out without its old errors and notice, as the
+ * handoff's `submitAuth` clears them, so the answer holds only what the server said about this submit.
+ */
 export async function submitAuthForm(client: AuthClient, form: AuthForm): Promise<AuthResult> {
   const errors = checkAuthForm(form);
   if (Object.keys(errors).length) return { status: "invalid", form: { ...form, errors, notice: null } };
-  const email = form.email.trim().toLowerCase();
+  const sent = clearAuthMessages(form);
+  const email = normalizeEmail(form.email);
   let response: AuthResponse;
   try {
     response =
@@ -102,14 +142,24 @@ export async function submitAuthForm(client: AuthClient, form: AuthForm): Promis
         ? await client.signUp.email({ name: form.name.trim(), email, password: form.password })
         : await client.signIn.email({ email, password: form.password });
   } catch {
-    return { status: "refused", form: { ...form, notice: generalNotice(CONNECTION_FAILED) } };
+    return { status: "refused", form: { ...sent, notice: generalNotice(CONNECTION_FAILED) } };
   }
   if (response.data) {
     const { name, email: accountEmail } = response.data.user;
-    return { status: form.mode === "signup" ? "signed-up" : "signed-in", name, email: accountEmail };
+    return { status: AUTH_MODES[form.mode].success, name, email: accountEmail };
   }
-  return { status: "refused", form: refusedForm(form, response.error) };
+  return { status: "refused", form: refusedForm(sent, response.error) };
 }
+
+/**
+ * The form while a submit that passed the check is pending: no old errors and no notice, as in the handoff. A form
+ * that fails the check keeps them, because the check answers at once.
+ */
+export function pendingAuthForm(form: AuthForm): AuthForm {
+  return Object.keys(checkAuthForm(form)).length ? form : clearAuthMessages(form);
+}
+
+const clearAuthMessages = (form: AuthForm): AuthForm => ({ ...form, errors: {}, notice: null });
 
 const CONNECTION_FAILED = "เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง";
 const generalNotice = (text: string): AuthNotice => ({ text, action: null });
@@ -154,8 +204,5 @@ function refusedForm(form: AuthForm, error: AuthResponse["error"]): AuthForm {
   }
   if (error?.status === 429) return { ...form, notice: generalNotice("ลองหลายครั้งเกินไป รอสักครู่แล้วลองอีกครั้ง") };
   if (!error?.status) return { ...form, notice: generalNotice(CONNECTION_FAILED) };
-  return {
-    ...form,
-    notice: generalNotice(form.mode === "signup" ? "สมัครสมาชิกไม่สำเร็จ ลองอีกครั้ง" : "เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้ง"),
-  };
+  return { ...form, notice: generalNotice(AUTH_MODES[form.mode].failed) };
 }

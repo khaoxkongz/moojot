@@ -4,7 +4,7 @@
  */
 export type AppEntry = "loading" | "auth" | "onboarding" | "app" | "retry";
 
-export type AppEntryInput = {
+type AppEntryInput = {
   session: "pending" | "signed-out" | "signed-in";
   /** Known once the check answered; a later failed refetch keeps the known answer. */
   onboarding: { status: "pending" } | { status: "failed" } | { status: "ready"; complete: boolean };

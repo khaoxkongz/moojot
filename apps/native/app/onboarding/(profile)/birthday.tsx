@@ -23,7 +23,7 @@ export default function OnboardingBirthdayRoute() {
 
   function confirmBirthdayOrContinue() {
     if (birthDate) setBirthdayConfirmationOpen(true);
-    else router.push("/onboarding/personalization");
+    else router.push("/onboarding/terms");
   }
 
   function saveWebBirthDraft() {
@@ -98,7 +98,7 @@ export default function OnboardingBirthdayRoute() {
           !birthDate ? (
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/onboarding/personalization")}
+              onPress={() => router.push("/onboarding/terms")}
               style={{ alignItems: "center", padding: 5 }}
             >
               <Text style={{ color: theme.muted, fontSize: 15 }}>ข้ามก่อน</Text>
@@ -182,7 +182,7 @@ export default function OnboardingBirthdayRoute() {
                   accessibilityRole="button"
                   onPress={() => {
                     setBirthdayConfirmationOpen(false);
-                    router.push("/onboarding/personalization");
+                    router.push("/onboarding/terms");
                   }}
                   style={{
                     flex: 1,

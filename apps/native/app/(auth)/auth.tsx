@@ -8,33 +8,32 @@ import { PillButton, SegmentedControl } from "@/components/ui/controls";
 import { Text } from "@/components/ui/typography";
 import { radius } from "@/constants/theme";
 import {
+  AUTH_MODES,
+  PASSWORD_RULE,
   applyAuthOutcome,
   authSubmitter,
   editAuthField,
   followAuthNotice,
   passwordRuleMet,
+  pendingAuthForm,
   startAuthForm,
   switchAuthMode,
-  type AuthField as AuthFieldName,
+  type AuthFieldName,
   type AuthForm,
-  type AuthMode,
 } from "@/features/auth/auth-form";
-import { AuthField, PasswordRule, ShowPasswordButton } from "@/features/auth/components/auth-field";
+import { AuthInput, PasswordRule, ShowPasswordButton } from "@/features/auth/components/auth-input";
 import { authClient } from "@/lib/auth-client";
 import { rememberedEmail } from "@/lib/device-remembered-email";
 import { toast } from "@/lib/toast";
 import { useAppTheme } from "@/lib/use-app-theme";
 
-const MODES = [
-  { value: "signin", label: "เข้าสู่ระบบ" },
-  { value: "signup", label: "สมัครสมาชิก" },
-] as const satisfies readonly { value: AuthMode; label: string }[];
+const MODE_TABS = (["signin", "signup"] as const).map((value) => ({ value, label: AUTH_MODES[value].label }));
 
 const brandMascot = require("../../assets/generated/brand-mascot.png");
 
 /**
  * Signup and sign-in on one screen (handoff “00 เข้าสู่ระบบ / สมัครสมาชิก”). A first start opens signup; after
- * sign-out it opens sign-in with the latest email. Success needs no navigation: the root guard opens setup or Home.
+ * sign-out it opens sign-in with the remembered email. Success needs no navigation: the root guard opens setup or Home.
  */
 export default function AuthRoute() {
   const theme = useAppTheme();
@@ -47,12 +46,13 @@ export default function AuthRoute() {
   const [submit] = useState(() => authSubmitter(authClient));
   const emailRef = useRef<NativeTextInput>(null);
   const passwordRef = useRef<NativeTextInput>(null);
-  const signup = form.mode === "signup";
+  const mode = AUTH_MODES[form.mode];
 
   const edit = (field: AuthFieldName) => (value: string) => setForm((current) => editAuthField(current, field, value));
 
   async function send() {
     const sent = form;
+    setForm(pendingAuthForm);
     setBusy(true);
     const result = await submit(sent);
     setBusy(false);
@@ -81,13 +81,13 @@ export default function AuthRoute() {
               หมูจด
             </Text>
             <Text style={{ marginTop: 2, color: theme.muted, fontSize: 14, lineHeight: 21, textAlign: "center" }}>
-              {signup ? "สมัครด้วยอีเมล แล้วตั้งค่าอีก 4 ขั้นสั้น ๆ" : "เข้าสู่ระบบด้วยอีเมลที่เคยสมัครไว้"}
+              {mode.subtitle}
             </Text>
           </View>
 
           <View style={{ marginTop: 18 }}>
             <SegmentedControl
-              options={MODES}
+              options={MODE_TABS}
               value={form.mode}
               onChange={(mode) => setForm((current) => switchAuthMode(current, mode))}
               height={42}
@@ -97,9 +97,9 @@ export default function AuthRoute() {
             />
           </View>
 
-          {signup ? (
+          {mode.asksName ? (
             <View style={{ marginTop: 16 }}>
-              <AuthField
+              <AuthInput
                 testID="auth-name"
                 label="ชื่อ"
                 value={form.name}
@@ -117,7 +117,7 @@ export default function AuthRoute() {
           ) : null}
 
           <View style={{ marginTop: 14 }}>
-            <AuthField
+            <AuthInput
               ref={emailRef}
               testID="auth-email"
               label="อีเมล"
@@ -138,26 +138,28 @@ export default function AuthRoute() {
           </View>
 
           <View style={{ marginTop: 14 }}>
-            <AuthField
+            <AuthInput
               ref={passwordRef}
               testID="auth-password"
               label="รหัสผ่าน"
               value={form.password}
               onChangeText={edit("password")}
               error={form.errors.password}
-              placeholder="อย่างน้อย 8 ตัวอักษร"
+              placeholder={PASSWORD_RULE}
               secureTextEntry={!showPassword}
-              // Not "newPassword" in signup: iOS Automatic Strong Password then covers the field and, after
-              // แสดง / ซ่อน, replaces what the user typed. Sign-in keeps Keychain autofill.
-              autoComplete={signup ? "off" : "current-password"}
-              textContentType={signup ? "none" : "password"}
+              autoComplete={mode.passwordAutoComplete}
+              textContentType={mode.passwordContentType}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="go"
               submitBehavior="blurAndSubmit"
               onSubmitEditing={() => void send()}
               trailing={<ShowPasswordButton shown={showPassword} onPress={() => setShowPassword((shown) => !shown)} />}
-              below={signup && !form.errors.password ? <PasswordRule met={passwordRuleMet(form.password)} /> : null}
+              below={
+                mode.showsPasswordRule && !form.errors.password ? (
+                  <PasswordRule met={passwordRuleMet(form.password)} />
+                ) : null
+              }
             />
           </View>
 
@@ -214,8 +216,8 @@ export default function AuthRoute() {
         >
           <PillButton
             testID="auth-submit"
-            label={signup ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-            busyLabel={signup ? "กำลังสมัคร…" : "กำลังเข้าสู่ระบบ…"}
+            label={mode.label}
+            busyLabel={mode.busyLabel}
             busy={busy}
             onPress={() => void send()}
           />
