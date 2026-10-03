@@ -1,180 +1,190 @@
-# Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน
+# Spec: Redesign Moojot with iOS acceptance first
 
 Status: ready-for-agent
-Source: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../native-redesign-wayfinding/map.md)
+Source: [Plan the Moojot redesign](../native-redesign-wayfinding/map.md)
 
 ## Problem Statement
 
-ผู้ใช้พอใจกับดีไซน์ใหม่จาก Claude Design ซึ่งแก้ตัวอักษรใหญ่และหนาเกินไป พร้อมทำคำอธิบายและการกดใช้งานให้เข้าใจง่ายขึ้น แต่แอปเดิมยังใช้หน้าตาและพฤติกรรมที่ต่างจากต้นแบบ การเปลี่ยนเฉพาะสีหรือจัดหน้าไม่พอ เพราะงานสลิปค้าง การเอากลับคืน การค้นหาทุกเดือน และกฎจดซ้ำต้องใช้ข้อมูลและสัญญาการทำงานที่ระบบเดิมยังรองรับไม่ครบ
+The user likes the new Claude Design prototype. It corrects oversized/heavy typography and clarifies explanations and interactions. The existing app still differs in appearance and behavior. Color/layout changes alone are insufficient. Pending slips, undo, all-month search, and recurring rules need data/contracts that the existing system does not fully support.
 
-แอปอยู่ในช่วงทดลอง ผู้ใช้เริ่มข้อมูลการเงินใหม่ได้ แต่ต้องรักษาบัญชีเข้าสู่ระบบเดิม ต้องการให้การจดรายการและอ่านสลิปที่ใช้อยู่มาก่อน แล้วทำส่วนอื่นจนครบดีไซน์ รอบนี้ตรวจและรับงานเฉพาะ iOS ส่วน Android ทำภายหลัง
+The app is experimental. The user can start fresh financial data, but existing authentication accounts must remain. Prioritize familiar entry and slip reading, then complete the remaining design. This round checks and accepts iOS. Android follows later.
 
 ## Solution
 
-ปรับแอป Expo / React Native เดิมให้ตรง handoff ทั้งสี ฟอนต์ ขนาด ระยะ รูปประกอบ copy และ interactions ใน light/dark โดยใช้ฐาน component, navigation, queries/forms และ API เดิมที่ยังทำงานตามข้อกำหนดได้ เพิ่มหรือปรับข้อมูลและสัญญาเฉพาะช่องว่างที่ตรวจพบ ทุก flow ต้องทำงานกับข้อมูลที่อ่านและบันทึกจริง มีสถานะรอ ผิดพลาด และกลับมาทำสำเร็จได้
+Adapt the existing Expo / React Native app to the handoff in light/dark themes. Match colors, fonts, sizes, spacing, illustrations, text, and interactions. Reuse existing components, navigation, queries/forms, and APIs where they meet requirements. Extend data/contracts only for identified gaps. Every flow uses actual persisted data and supports pending, error, and recovery states.
 
-ข้อตกลงใน spec นี้มีลำดับความสำคัญเหนือข้อมูลจำลองและพฤติกรรมเก่าที่ขัดกัน: รวมรายการตามธนาคาร, บัตรแยกชื่อและเลขท้ายสี่หลัก, จดเองเลือกวันที่อย่างเดียว, เวลาไม่ทราบเว้นว่างใน CSV, ลบหมวด/แท็กแล้วลบงบที่ผูกและเอากลับคืนได้ครบ, คงงานต้องช่วยหมูข้ามรอบ, และเปิดจดซ้ำกลับมาแล้วข้ามช่วงที่กดหยุด
+These decisions override conflicting mock data and old behavior:
 
-ส่งงานเป็นสี่ช่วงที่มีสิ่งให้ลองบน iPhone ได้:
+- Group transactions by bank.
+- Identify cards by name and last four digits.
+- Manual entry selects a date only.
+- Unknown transaction time remains blank in CSV.
+- Category/tag deletion cascades to linked budgets, with complete undo.
+- Retain slips needing help across rounds.
+- Resumed recurring rules skip intentional pause intervals.
 
-| ช่วง                    | ผลที่ต้องได้                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| เตรียมฐานร่วม           | Typography/theme/components/navigation และสัญญาข้อมูลสำคัญพร้อม พร้อม fixture และทางรัน iOS |
-| ทำการใช้งานหลัก         | Auth/onboarding → Home → จด/แก้/เลือกหมวด → อ่านสลิป/ช่วยจดงานค้าง ทำงานครบกับ API          |
-| ทำสรุปและการวางแผน      | Summary, Search ทุกเดือน, งบ, จดซ้ำ, หมวด/แท็ก และปฏิทิน ใช้ข้อมูลสอดคล้องกัน               |
-| เก็บส่วนเสริมและตรวจครบ | Profile, แครอต/tutorial/help, บัตรเครดิต, CSV และ flow ทั้งชุดผ่านการตรวจ iOS               |
+Deliver four stages that the user can try on iPhone:
+
+| Stage                           | Required result                                                                                           |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Shared foundation               | Typography, theme, controls, navigation, and key data contracts, with fixtures and a working iOS startup. |
+| Core use                        | Auth/onboarding → Home → entry/edit/category → slip reading/pending help works with the API.              |
+| Summary and planning            | Summary, all-month Search, budgets, recurring rules, categories/tags, and calendar use consistent data.   |
+| Supporting flows and acceptance | Profile, carrots/tutorial/help, cards, CSV, and all flows pass iOS checks.                                |
 
 ## User Stories
 
-### หน้าตาและการใช้งานร่วม
+### Shared appearance and interactions
 
-1. As a user, I want ข้อความไทยใช้ LINE Seed Sans TH Regular, so that ตัวอักษรอ่านง่ายและไม่หนาเกินไป
-2. As a user, I want ยอดเงินใช้ตัวเลขระบบที่จัดแนวได้, so that เปรียบเทียบจำนวนเงินได้ง่าย
-3. As a user, I want สี ระยะ รูปประกอบ และข้อความตรงดีไซน์ที่เลือก, so that แอปจริงให้ประสบการณ์ที่คาดไว้
-4. As a user, I want เลือกธีมสว่างหรือมืดแล้วทุกหน้าใช้ธีมเดียวกัน, so that อ่านแอปได้สบายตา
-5. As a user, I want ปุ่มและแถวกดง่ายบน iPhone, so that ไม่ต้องแตะซ้ำหรือเล็งจุดเล็ก
-6. As a user, I want ปุ่มหลักอธิบายสิ่งที่ต้องแก้เมื่อข้อมูลยังไม่ครบ, so that รู้ว่าจะทำต่ออย่างไร
-7. As a user, I want ข้อความสถานะมีคำและไอคอน, so that เข้าใจได้โดยไม่ต้องตีความจากสีอย่างเดียว
-8. As a user, I want เห็นสถานะกำลังโหลด ผิดพลาด ว่าง และมีข้อมูลอย่างถูกต้อง, so that ไม่เข้าใจผิดว่ารายการหาย
-9. As a user, I want ข้อมูลที่กรอกยังอยู่เมื่อบันทึกไม่สำเร็จ, so that ลองอีกครั้งได้โดยไม่กรอกใหม่
-10. As a user, I want ปุ่มสำคัญยังเข้าถึงได้เมื่อเปิดคีย์บอร์ดหรือเพิ่มขนาดตัวอักษร, so that ทำงานหลักได้ครบ
+1. As a user, I want Thai text in LINE Seed Sans TH Regular. It should remain readable without excessive weight.
+2. As a user, I want aligned system-font amount digits. This makes amounts easy to compare.
+3. As a user, I want colors, spacing, illustrations, and text to match the selected design. The actual app should deliver the expected experience.
+4. As a user, I want one selected light/dark theme across every screen. This makes the app comfortable to read.
+5. As a user, I want easily tappable iPhone buttons and rows. I should not need repeated taps or precise aiming.
+6. As a user, I want primary actions to explain missing data. I can then continue correctly.
+7. As a user, I want status words and icons. Meaning should remain clear without color alone.
+8. As a user, I want accurate loading, error, empty, and data states. I should not mistake a load failure for missing transactions.
+9. As a user, I want input preserved after a failed save. Retry should not require reentry.
+10. As a user, I want key actions accessible with the keyboard or larger text. I can then complete core tasks.
 
-### บัญชีและเริ่มใช้งาน
+### Account and onboarding
 
-11. As a new user, I want เห็นหน้าสมัครสมาชิกหลัง splash, so that เริ่มสร้างบัญชีได้ตรงทาง
-12. As a returning user, I want เข้าสู่ระบบด้วยอีเมลและรหัสผ่านเดิม, so that กลับมาใช้แอปได้
-13. As a user, I want สลับเข้าสู่ระบบและสมัครโดยคงข้อมูลที่เกี่ยวข้อง, so that ไม่ต้องพิมพ์อีเมลซ้ำ
-14. As a user, I want ดูหรือซ่อนรหัสผ่านและเห็นกฎอย่างน้อยแปดตัวอักษร, so that ตรวจสิ่งที่พิมพ์ได้
-15. As a user, I want ข้อผิดพลาดแสดงตรง field และหายเมื่อแก้ field นั้น, so that แก้ข้อมูลได้ถูกจุด
-16. As a user, I want ข้อผิดพลาดบัญชีแยกอีเมลที่ยังไม่สมัคร รหัสผ่านผิด และอีเมลที่สมัครแล้วตามข้อมูลจริง, so that เลือกเข้าสู่ระบบหรือสมัครต่อได้ถูกต้อง
-17. As a user, I want กด Enter ไป field ถัดไปและส่งแบบฟอร์มจาก field สุดท้ายได้, so that กรอกข้อมูลต่อเนื่องได้
-18. As a new user, I want สมัครสำเร็จแล้วเข้าสู่ greeting และขั้นตอนตั้งค่า, so that ไม่ติดข้อความให้คาดเดาว่าต้องทำอะไรต่อ
-19. As a returning user, I want เข้าหน้า Home เมื่อเริ่มใช้งานครบแล้ว และกลับไปตั้งค่าเมื่อยังไม่ครบ, so that ใช้งานต่อจากสถานะที่ถูกต้อง
-20. As a new user, I want ตั้งค่าเพียงสี่ขั้นพร้อมความคืบหน้าและย้อนกลับได้, so that เข้าใจว่าเหลืออะไรต้องทำ
-21. As a new user, I want อ่านสรุปข้อตกลงและเปิดฉบับเต็มก่อนยอมรับ, so that รู้เงื่อนไขก่อนเริ่มใช้
-22. As a new user, I want เข้าใจการอ่านสลิปก่อนขอสิทธิ์รูปและเลือกข้ามได้, so that ตัดสินใจการเข้าถึงรูปได้
-23. As a user, I want เห็นผลสิทธิ์ all/limited/denied และกลับจาก Settings แล้วตรวจใหม่, so that รู้วิธีเปิดการอ่านสลิป
-24. As a new user, I want เห็นจำนวนรูปต่ออัลบั้มโดยยังไม่อ่าน AI จนเข้า Home, so that เข้าใจขั้นค้นรูปแยกจากขั้นจดให้
-25. As a new user, I want เลือกเป้าหมายได้หลายข้อและเห็นคำแนะนำเมื่อยังไม่เลือก, so that ตั้งค่าได้โดยแตะตัวเลือก
-26. As a new user, I want ใส่วันเกิดเป็นตัวเลือกและตั้ง consent สองข้อ, so that เลือกข้อมูลเพิ่มเติมเท่าที่ต้องการ
-27. As a new user, I want เห็น recap เป้าหมายและสิทธิ์รูปก่อนเริ่มใช้, so that รู้ว่าแอปพร้อมทำอะไรให้
+11. As a new user, I want signup after splash. This provides a direct account-creation path.
+12. As a returning user, I want existing email/password sign-in. I can then resume app use.
+13. As a user, I want relevant input preserved when switching signup/sign-in modes. I should not need to retype email.
+14. As a user, I want password show/hide and a visible eight-character minimum. I can then check my input.
+15. As a user, I want errors beside their fields. Correcting a field should clear its error.
+16. As a user, I want factual distinctions between unknown email, wrong password, and registered email. This guides signup/sign-in choices.
+17. As a user, I want Enter to advance fields and submit from the last field. This supports continuous input.
+18. As a new user, I want successful signup to reach greeting/setup. I should not need to guess the next action.
+19. As a returning user, I want Home after completed onboarding and setup otherwise. This resumes the correct state.
+20. As a new user, I want four setup steps with progress and back navigation. I can see what remains.
+21. As a new user, I want a terms summary and the full terms before acceptance. I can then understand the conditions.
+22. As a new user, I want slip-reading explanations before photo permission, with a skip option. I can then decide access.
+23. As a user, I want actual all/limited/denied status and a recheck after Settings. This explains how to enable reading.
+24. As a new user, I want album photo counts before AI starts at Home. This separates discovery from recording.
+25. As a new user, I want multiple goal selections and guidance when I select no goal. Setup should use tappable options.
+26. As a new user, I want optional birthday input and two consent choices. I can choose additional information.
+27. As a new user, I want a goal/permission recap before starting. I can see what the app is ready to do.
 
-### หน้าแรกและจดรายการ
+### Home and entries
 
-28. As a user, I want Home แสดงยอดใช้จ่ายกับรายการแบ่งรายวัน, so that เห็นการใช้เงินในช่วงที่เลือก
-29. As a user, I want เลื่อนดูรอบเดือน สัปดาห์ หรือสองสัปดาห์ตามปฏิทินที่ตั้ง, so that ดูข้อมูลตามรอบที่ใช้จริง
-30. As a user, I want ดูสรุปจากช่วงที่กำลังดู, so that ตรวจรายละเอียดได้ต่อเนื่อง
-31. As a user, I want กรองตามธนาคาร บัตร หรือไม่ระบุแล้วล้างได้, so that เห็นรายการเฉพาะกลุ่มที่ต้องการ
-32. As a user, I want รายการของธนาคารเดียวกันรวมอยู่กลุ่มเดียว, so that ใช้งานได้โดยไม่ต้องตั้งบัญชีธนาคารรายบัญชี
-33. As a user, I want รายการจดเองที่เลือกธนาคารอยู่ในกลุ่มธนาคารนั้น, so that ตัวกรองไม่จัดรายการผิดกลุ่ม
-34. As a user, I want เห็นจำนวนรายการรอเลือกหมวดและเลือกต่อกันเป็นคิว, so that จัดรายการได้โดยไม่เปิดทีละหลายหน้า
-35. As a user, I want ข้ามหรือแก้รายการระหว่างเลือกหมวดได้, so that จัดการรายการที่ยังตัดสินใจไม่ได้
-36. As a user, I want กดจดเพิ่มแล้วเข้าหน้าจดทันที, so that เริ่มจดได้เร็ว
-37. As a user, I want เลือกรายจ่าย รายรับ หรือย้ายเงินด้วยคำไทย, so that เข้าใจชนิดรายการ
-38. As a user, I want ใช้ keypad คำนวณและวางจำนวนเงินได้, so that รวมยอดก่อนจดได้
-39. As a user, I want เลือกหมวดต่อหลังใส่ยอดของรายการใหม่, so that จดตามลำดับที่เข้าใจง่าย
-40. As a user, I want เลือกวันที่จากปฏิทินและจดย้อนหลังได้โดยไม่ต้องกรอกเวลา, so that จดรายการที่จำเพียงวันได้
-41. As a user, I want กรอกชื่อ โน้ต หมวด และแท็ก พร้อมรู้ชื่อที่ใช้เมื่อเว้นชื่อไว้, so that จำรายการบน Home ได้
-42. As a user, I want เลือกธนาคาร บัตร หรือไม่ระบุในรายการจดเอง, so that กรองและดูยอดจากแหล่งที่ใช้ได้
-43. As a user, I want ดูรูปสลิปและรายละเอียดที่อ่านได้ของรายการจากสลิป, so that ตรวจหลักฐานก่อนแก้รายการ
-44. As a user, I want ได้รับคำถามบันทึกหรือทิ้งเมื่อปิด draft ที่เปลี่ยนแล้ว, so that ไม่เสียสิ่งที่กรอกโดยไม่ตั้งใจ
-45. As a user, I want ลบรายการแล้วกดเอากลับคืนได้, so that แก้การลบผิดได้ทันที
-46. As a user, I want ย้ายเงินไม่ถูกนับเป็นรายรับหรือรายจ่าย, so that ยอดสรุปไม่เพิ่มจากการย้ายเงิน
+28. As a user, I want Home spending totals and daily groups. These show spending within the selected period.
+29. As a user, I want calendar-based month/week/fortnight navigation. I can view my actual periods.
+30. As a user, I want Summary for the period I am viewing. I can continue checking its details.
+31. As a user, I want bank/card/unspecified filters with clearing. I can view the groups I need.
+32. As a user, I want one group per bank. I should not need to configure individual accounts at that bank.
+33. As a user, I want manual entries with a bank included in that bank's group. Filters should classify them correctly.
+34. As a user, I want a pending-category count and sequential category queue. This avoids opening several screens per transaction.
+35. As a user, I want skip/edit actions during categorization. I can handle transactions whose category remains undecided.
+36. As a user, I want Add entry to open the editor directly. I can start quickly.
+37. As a user, I want “รายจ่าย” (expense), “รายรับ” (income), and “ย้ายเงิน” (transfer) labels. I can understand transaction kinds.
+38. As a user, I want keypad calculation and amount paste. I can total an amount before recording.
+39. As a user, I want category selection after entering a new amount. This follows a clear sequence.
+40. As a user, I want calendar dates and past entries without time input. I can record transactions with only a known day.
+41. As a user, I want title, note, category, tags, and an explained blank-title fallback. I can recognize the entry on Home.
+42. As a user, I want bank/card/unspecified selection for manual entries. I can filter and total the source I used.
+43. As a user, I want slip images and extracted details. I can check evidence before editing.
+44. As a user, I want save/discard confirmation for a changed draft. This prevents accidental input loss.
+45. As a user, I want deletion with undo. I can reverse an accidental deletion immediately.
+46. As a user, I want totals to exclude transfers from income/expense. Moving money should not increase those totals.
 
-### การอ่านสลิปและงานค้าง
+### Slip reading and pending work
 
-47. As a user, I want อ่านรูปใหม่จากอัลบั้มที่รองรับเมื่อแอปพร้อมทำงาน, so that หมูจดรายการให้โดยไม่เลือกรูปเองทีละรูป
-48. As a user, I want ไปหน้าอื่นในแอปได้ขณะอ่านสลิป, so that จดหรือดูข้อมูลต่อได้
-49. As a user, I want แอปพักการส่งรูปใหม่เมื่อสลับแอปหรือล็อกเครื่องและทำต่อเมื่อกลับมา, so that งานอ่านมีพฤติกรรมที่คาดได้
-50. As a user, I want เห็นผลสามกลุ่มต้องช่วยหมู จดให้แล้ว และข้ามไป, so that รู้ว่ารูปใดต้องทำอะไรต่อ
-51. As a user, I want งานต้องช่วยหมูยังอยู่เมื่อมีรอบอ่านใหม่หรือกลับมาเปิดแอป, so that ไม่ลืมงานที่ยังไม่จด
-52. As a user, I want สลิปที่ข้อมูลไม่ครบคงรอจดเองโดยไม่ส่ง GenAI ซ้ำอัตโนมัติสำหรับรูปเดิมที่จำผลไว้, so that งานค้างไม่ถูกอ่านวนโดยไม่มีข้อมูลใหม่
-53. As a user, I want ข้อผิดพลาดชั่วคราวลองใหม่ได้ตามเวลาที่เหมาะสม, so that จดสลิปได้เมื่อบริการกลับมาพร้อม
-54. As a user, I want จดเองจากสลิปค้างแล้วมีวันที่รูปเติมให้, so that กรอกข้อมูลที่ขาดได้สะดวก
-55. As a user, I want สลิปที่ช่วยจดสำเร็จเชื่อมกับรายการและแสดงว่าจัดการแล้ว, so that ไม่กลับมาเป็นงานค้าง
-56. As a user, I want รูปเดียวกันไม่สร้างรายการซ้ำแม้ลองอ่านหรือจดเองพร้อมกัน, so that ยอดการเงินไม่ซ้ำ
-57. As a user, I want รูปซ้ำหรือไม่ใช่สลิปแสดงว่าข้ามได้โดยไม่ต้องทำอะไร, so that ไม่ถูกขอให้ช่วยจดรูปที่ไม่จำเป็น
-58. As a user, I want รู้ข้อจำกัดเมื่อรูปหายหรือสิทธิ์เข้าถึงเปลี่ยน, so that ไม่เข้าใจว่าจัดการงานสำเร็จแล้วทั้งที่ยังไม่ได้จด
-59. As a user, I want ผลอ่านและรูปที่ผูกกับรายการแยกตามบัญชีเข้าสู่ระบบ, so that การสลับบัญชีไม่ปนข้อมูล
+47. As a user, I want new supported-album images read when the app is eligible. Moo records them without individual image selection.
+48. As a user, I want other app screens available during slip reading. I can continue entering/viewing data.
+49. As a user, I want new uploads paused when switching apps or locking, then resumed on return. Reading should remain predictable.
+50. As a user, I want “ต้องช่วยหมู” (needs help), “จดให้แล้ว” (recorded), and “ข้ามไป” (skipped) groups. I can see each image's next action.
+51. As a user, I want needs-help work retained across rounds and app starts. Pending work should remain visible.
+52. As a user, I want incomplete slips to await manual entry without automatic GenAI resend for remembered images. Pending work should not repeat reading without new data.
+53. As a user, I want temporary failures retried at appropriate times. Slips can be recorded when service returns.
+54. As a user, I want the photo date prefilled when manually resolving a pending slip. This helps enter missing data.
+55. As a user, I want manually resolved slips linked to the transaction and marked handled. They should stay outside pending work.
+56. As a user, I want one transaction per image despite concurrent retry/manual entry. Financial totals must remain accurate.
+57. As a user, I want duplicates/non-slips marked skipped without action. I should not need to resolve unnecessary images.
+58. As a user, I want factual limitations when images disappear or access changes. Unrecorded work must not appear resolved.
+59. As a user, I want outcomes and image bindings isolated by sign-in account. Account switching must not mix data.
 
-### สรุปและค้นหา
+### Summary and search
 
-60. As a user, I want เห็นได้รับ ใช้ไป และเหลือหรือใช้เกินรายรับใน Summary, so that เข้าใจผลรวมของเดือน
-61. As a user, I want ดูสัดส่วนตามหมวดหรือแท็กเป็นแท่งแนวนอน, so that เปรียบเทียบกลุ่มได้ง่าย
-62. As a user, I want เปิดคิวของรายการรอเลือกหมวดจากสรุปในช่วงและตัวกรองที่ดู, so that จัดหมวดตรงกลุ่มที่เห็น
-63. As a user, I want เห็นแนวโน้มหกเดือนและเทียบกับเดือนก่อน, so that รู้การเปลี่ยนแปลงของรายรับหรือรายจ่าย
-64. As a user, I want ค้นหารายการทุกเดือนพร้อมกัน, so that ไม่ต้องเดาว่ารายการอยู่เดือนไหน
-65. As a user, I want ค้นหาด้วยชื่อ โน้ต หมวด บัญชี หรือจำนวนเงิน, so that หารายการจากสิ่งที่จำได้
-66. As a user, I want เห็นจำนวนผล ยอดรายจ่ายรวม และคำที่ตรงเน้นไว้, so that ตรวจผลค้นหาได้เร็ว
-67. As a user, I want ใช้และลบคำค้นหาล่าสุดหรือแตะคำค้นหาตัวอย่างได้, so that เริ่มค้นหาได้สะดวก
-68. As a user, I want ผลค้นหาที่รอหมวดเปิดเลือกหมวดและผลอื่นเปิดแก้ได้, so that ทำงานต่อจากผลค้นหา
-69. As a user, I want จำนวนผลและยอดรวมครบแม้มีข้อมูลมากกว่าหนึ่งหน้า, so that ไม่เข้าใจว่าผลบางส่วนเป็นทั้งหมด
+60. As a user, I want Summary amounts for “ได้รับ” (received) and “ใช้ไป” (spent).
+    I also want “เหลือ” (remaining) or “ใช้เกินรายรับ” (spent above income). I can understand monthly totals.
+61. As a user, I want horizontal category/tag-share bars. I can compare groups.
+62. As a user, I want Summary's category queue limited to the viewed period/filter. I can categorize the visible group.
+63. As a user, I want six-month trends and comparison with the previous month. I can see income/expense changes.
+64. As a user, I want all months searched together. I should not need to guess the month.
+65. As a user, I want title, note, category, account, and amount search. I can search with details I remember.
+66. As a user, I want result count, expense total, and matching highlights. I can check search results quickly.
+67. As a user, I want recent-query use/deletion and tappable query examples. I can start searching easily.
+68. As a user, I want pending search results to open categorization and other results to open editing. I can continue from search.
+69. As a user, I want complete counts/totals across pages. Partial results must not appear to represent all data.
 
-### งบและกฎจดซ้ำ
+### Budgets and recurring rules
 
-70. As a user, I want ตั้งงบรวมทุกหมวดหรือเฉพาะหมวด/แท็ก, so that วางแผนรายจ่ายในระดับที่ต้องการ
-71. As a user, I want เห็นใช้ไป เหลือหรือเกิน พร้อมสถานะเป็นคำ, so that รู้ว่ายังใช้ได้เท่าไร
-72. As a user, I want เลือกระดับเตือน 50/70/80/90% และเห็นเป็นจำนวนบาท, so that เข้าใจว่าแอปจะบอกใกล้ครบงบเมื่อใด
-73. As a user, I want รู้ว่าการบันทึกงบเป้าหมายเดิมจะแทนวงเงินเก่า, so that ไม่เผลอคิดว่าเพิ่มงบซ้ำ
-74. As a user, I want ลบงบแล้วเอากลับคืนได้โดยรายการใช้จ่ายยังอยู่, so that เปลี่ยนแผนได้โดยไม่ลบประวัติ
-75. As a user, I want ตั้งกฎจดซ้ำด้วยวัน 1–31 และเดือนสิ้นสุดหรือจดไปเรื่อย ๆ, so that ตั้งรายการประจำได้โดยแตะตัวเลือก
-76. As a user, I want เดือนที่ไม่มีวันที่กำหนดใช้วันสุดท้ายของเดือน, so that กฎทำงานได้ทุกเดือน
-77. As a user, I want เห็นวันจดครั้งแรกและครั้งถัดไปก่อนบันทึก, so that รู้ว่าแอปจะจดให้เมื่อไร
-78. As a user, I want กฎใหม่จดวันที่ถึงกำหนดถึงวันนี้และบอกจำนวนที่จดให้, so that รู้ผลทันทีหลังตั้งกฎ
-79. As a user, I want สร้างหรือเปิดกฎจากรายการเดิมโดยรักษาความเชื่อมโยงและไม่จดรายการเดิมซ้ำ, so that จัดการรายการประจำจาก editor ได้
-80. As a user, I want กฎจดซ้ำรักษาธนาคาร บัตร หมวด แท็ก และโน้ตที่เลือก, so that รายการที่สร้างตรงกับที่ตั้งไว้
-81. As a user, I want การแก้กฎมีผลกับครั้งถัดไป, so that ประวัติที่เกิดขึ้นแล้วไม่เปลี่ยนหรือมีรายการย้อนหลังใหม่โดยไม่ตั้งใจ
-82. As a user, I want กดหยุดกฎแล้วเปิดกลับมาโดยไม่จดย้อนช่วงที่หยุด, so that การหยุดมีผลตามที่ตั้งใจ
-83. As a user, I want กฎที่ยังเปิดอยู่จดวันที่ถึงกำหนดเมื่อกลับมาใช้แอปแม้ไม่ได้เข้าแอปหลายเดือน, so that การไม่เปิดแอปไม่กลายเป็นการหยุดกฎ
-84. As a user, I want ลบกฎโดยคงรายการที่เคยจดไว้และเอากฎกลับคืนได้, so that เลิกจดซ้ำได้โดยไม่เสียประวัติ
+70. As a user, I want all/category/tag budgets. I can plan spending at the required level.
+71. As a user, I want spent, remaining/over-budget values, and status words. I can see remaining allowance.
+72. As a user, I want 50/70/80/90% warning choices with baht amounts. I can understand the warning threshold.
+73. As a user, I want an explanation that saving the same budget target replaces its allowance. It must not imply another budget.
+74. As a user, I want budget deletion/undo with spending history preserved. I can change plans without losing history.
+75. As a user, I want recurring days 1–31 and an end month or forever. Tappable choices configure regular transactions.
+76. As a user, I want nonexistent month days capped to the last day. The rule can run every month.
+77. As a user, I want the first and next dates before saving. I can see when entries will be created.
+78. As a user, I want new rules to generate due dates through today and report their count. Setup results should be immediate.
+79. As a user, I want rules created/opened from existing entries with links preserved and no original duplicate. I can manage recurrence from the editor.
+80. As a user, I want generated entries to retain selected bank, card, category, tags, and note. They should match the rule.
+81. As a user, I want edits to apply to the next occurrence. Existing history must remain without unintended historical generation.
+82. As a user, I want pause/resume to skip the intentional pause interval. Pausing must respect my intent.
+83. As a user, I want active rules to generate due entries after months without app use. Inactivity must not imply pause.
+84. As a user, I want rule deletion/undo while preserving generated entries. Ending recurrence must preserve history.
 
-### หมวด แท็ก และปฏิทิน
+### Categories, tags, and calendar
 
-85. As a user, I want จัดการหมวดและแท็กจากหน้าที่มี tabs และจำนวนครั้งที่ใช้, so that รู้ว่าตัวเลือกใดมีรายการอ้างอยู่
-86. As a user, I want สร้างหมวดพร้อม emoji และเพิ่มแท็กจากคำแนะนำได้, so that จัดกลุ่มรายการได้เร็ว
-87. As a user, I want ระบบป้องกันชื่อซ้ำ แท็กเกิน 20 ตัวอักษร และการแก้หรือลบหมวดพื้นฐาน, so that ตัวเลือกไม่สับสน
-88. As a user, I want ลบหมวดที่สร้างเองแล้วรายการเดิมรอเลือกหมวดใหม่และงบของหมวดนั้นถูกลบด้วย, so that ไม่มีงบที่อ้างหมวดที่หายไป
-89. As a user, I want เอาหมวดกลับคืนพร้อมงบและการจัดหมวดรายการเดิม, so that กู้การลบผิดได้ครบ
-90. As a user, I want ลบแท็กแล้วเอากลับคืนพร้อมความสัมพันธ์ที่ได้รับผล, so that การกู้ไม่ทำให้แท็กหรือข้อมูลอื่นของรายการหาย
-91. As a user, I want ตั้งค่าปฏิทินด้วย radio cards/chips/day grid และใช้ได้ทันที, so that ไม่ต้องกดบันทึกหรือยืนยันซ้ำ
-92. As a user, I want เลือกวันเริ่มสัปดาห์และ anchor รอบสองสัปดาห์พร้อมเห็นช่วงจริง, so that เข้าใจรอบที่เลือก
-93. As a user, I want วันเริ่มเดือนมีผลกับ Home รายเดือน Summary และงบตรงกัน, so that ยอดทุกหน้าสอดคล้องกัน
-94. As a user, I want คืนค่าปฏิทินเริ่มต้นแล้วเอาค่าก่อนหน้ากลับคืนได้, so that ทดลองการตั้งค่าได้
+85. As a user, I want category/tag tabs with usage counts. I can identify referenced choices.
+86. As a user, I want category emoji and suggested tags. I can group entries quickly.
+87. As a user, I want duplicate-name prevention, a 20-character tag limit, and protected built-in categories. Choices should remain clear.
+88. As a user, I want custom-category deletion to uncategorize entries and delete its budgets. Budgets must not reference an absent category.
+89. As a user, I want category undo to restore budgets and original assignments. This fully reverses accidental deletion.
+90. As a user, I want tag deletion/undo with affected relationships restored. Undo must preserve other entry data and tags.
+91. As a user, I want immediate calendar radio-card/chip/day-grid settings. Extra save/confirmation should be unnecessary.
+92. As a user, I want weekday and fortnight-anchor choices with actual date ranges. I can understand the selected period.
+93. As a user, I want month-start settings shared by monthly Home, Summary, and budgets. Their totals must agree.
+94. As a user, I want default-calendar reset and restoration of previous values. I can experiment with settings.
 
-### โปรไฟล์ แครอต บัตร และส่งออก
+### Profile, carrots, cards, and export
 
-95. As a user, I want หน้า “พี่มนุษย์” แสดงเครื่องมือก่อนพร้อมสถานะล่าสุดจริง, so that รู้ว่าจะไปทำอะไรต่อ
-96. As a user, I want ดูอีเมลและเปลี่ยน consent ที่ใช้ร่วม onboarding, so that ข้อมูลบัญชีและการตั้งค่าตรงกัน
-97. As a user, I want เปิดคำแนะนำ FAQ ข้อตกลง และความสามารถอ่านสลิปเป็น sheets, so that เข้าใจการทำงานโดยไม่ออกจาก flow
-98. As a user, I want ออกจากระบบหลังยืนยันแล้วกลับหน้าเข้าสู่ระบบพร้อมอีเมลล่าสุด, so that กลับเข้าบัญชีเดิมได้สะดวก
-99. As a user, I want ดูสตรีค วันนี้ เจ็ดวันล่าสุด และแครอตสะสม, so that รู้ความต่อเนื่องในการจด
-100.  As a user, I want ให้อาหารหมูได้ตามเกณฑ์วันละหนึ่งครั้ง, so that แครอตไม่ถูกเพิ่มซ้ำ
-101.  As a user, I want เลือกนับจากการจด การจดพร้อมเลือกหมวด หรือปิดการนับ, so that ใช้แครอตตามที่เหมาะกับตนโดยรายการยังอยู่
-102.  As a user, I want เปิดบทสอนรับแครอตสี่หน้าพร้อมย้อนกลับและถัดไป, so that เข้าใจวิธีใช้
-103.  As a user without credit cards, I want ใช้แอปได้โดยไม่ต้องเพิ่มบัตร, so that ฟีเจอร์เสริมไม่ขวางการจดทั่วไป
-104.  As a card user, I want เพิ่มบัตรด้วยชื่อและเลขท้ายสี่หลักครั้งแรกแล้วเลือกใช้ต่อได้, so that จดบัตรจริงของตนได้
-105.  As a card user, I want เห็นยอดเดือนนี้ จำนวนรายการ และสามรายการล่าสุดของบัตรแต่ละใบ, so that ตรวจการใช้บัตรได้
-106.  As a card user, I want ดูทั้งหมดและจดเพิ่มโดยคงบัตรใบที่เลือก, so that รายการของบัตรชื่อเดียวกันไม่ปนกัน
-107.  As a user, I want ส่งออก CSV ภาษาไทยที่เปิดใน Excel/Sheets ได้, so that นำข้อมูลไปใช้ต่อได้
-108.  As a user, I want CSV แสดงเวลาทำรายการจริงเมื่อทราบและว่างเมื่อทราบเพียงวันที่, so that ไฟล์ไม่ใส่ข้อมูลเวลาที่เดา
-109.  As a tester, I want เริ่มข้อมูลการเงินทดลองใหม่โดยเก็บบัญชีและอีเมลเดิม, so that ทดลองแอปโฉมใหม่ได้โดยไม่สมัครใหม่
-110.  As a tester, I want ตรวจหน้าจอและงานหลักบน iPhone จริงกับเครื่องจำลอง iOS ก่อน, so that รอบนี้มีหลักฐานการใช้ที่ตรงอุปกรณ์ที่มี
+95. As a user, I want “พี่มนุษย์” (Human) to prioritize tools and actual current status. I can see my next action.
+96. As a user, I want to view email and change consent shared with onboarding. Account data/settings must agree.
+97. As a user, I want guidance, FAQ, terms, and slip capabilities in sheets. I can understand them without leaving the flow.
+98. As a user, I want sign-out confirmation to return me to sign-in with the latest email. I can return to that account easily.
+99. As a user, I want streak, today, recent seven days, and cumulative carrots. I can see recording continuity.
+100.  As a user, I want feeding limited to once daily under actual criteria. Carrots must not increase twice.
+101.  As a user, I want recorded/categorized modes or disabled counting. I can choose carrot behavior while retaining transactions.
+102.  As a user, I want the four-page carrot tutorial with back/next. I can learn the feature.
+103.  As a user without credit cards, I want full app use without adding one. Optional features must not block ordinary entry.
+104.  As a card user, I want first-time name/last-four entry and later selection. I can record my actual card.
+105.  As a card user, I want this month's total/count and each card's three recent transactions. I can check card spending.
+106.  As a card user, I want View all/Add entry to retain the chosen card. Same-name cards must stay separate.
+107.  As a user, I want Thai CSV export usable in Excel/Sheets. I can reuse my data.
+108.  As a user, I want actual known transaction time in CSV and blank time otherwise. Export must not invent times.
+109.  As a tester, I want fresh experimental financial data with the same account/email. I can test without registering again.
+110.  As a tester, I want iPhone and iOS-simulator checks first. This round needs evidence from available devices.
 
 ## Implementation Decisions
 
-### ขอบเขต ลำดับ และฐานเดิม
+### Scope, sequence, and existing foundation
 
-- ครอบคลุมทุกหน้าจอและ flow ใน handoff รวม light/dark และ states ที่ภาพหน้าจอไม่ได้ถ่ายไว้ ใช้ HTML/README ตรวจรายละเอียดและภาพ 29 ภาพเป็นรายการอ้างอิง
-- คง Expo / React Native, Expo Router, TanStack Query/Form, theme และ typography wrappers เดิมเป็นฐาน ใช้โค้ดร่วมต่อไป เป้าหมายสองแพลตฟอร์มยังอยู่ แต่ตรวจ runtime/UI และรับงานบน iOS เท่านั้นในรอบนี้
-- ทำตามสี่ช่วงใน Solution ภายในช่วงทำ UI ที่ไม่ติด schema ได้ก่อน แต่ flow ที่ใช้สัญญาใหม่ต้องเชื่อม owner ของสัญญานั้นให้พร้อมก่อนรับงาน
-- Ledger, Analytics, Planning, Preferences และ Auth ที่รองรับข้อกำหนดแล้วใช้ต่อ เพิ่มความสามารถใน operation เดิมเมื่อเหมาะสม เช่น all-month search ไม่มีเหตุให้สร้าง endpoint ใหม่เพียงเพราะตัดขอบเขตเดือนออก
-- เปลี่ยนพฤติกรรมเดิมที่ขัด handoff หรือคำตอบของ map อย่างชัดเจน โดยเฉพาะ scanner ที่ผูกกับ Home focus และข้อกำหนดเดิมที่ไม่ให้มีหน้าผลอ่านสลิป
+- Cover every handoff screen/flow in light/dark, including states absent from screenshots. Use HTML/README details and 29 reference images.
+- Retain Expo / React Native, Expo Router, TanStack Query/Form, theme, and typography wrappers. Keep shared code and the two-platform goal. This round accepts runtime/UI on iOS only.
+- Follow the four Solution stages. UI independent of schema may start first within a stage. Contract-dependent flows require their contract owner before acceptance.
+- Reuse qualifying Ledger, Analytics, Planning, Preferences, and Auth operations. Extend existing operations when appropriate. All-month search alone does not require a new endpoint.
+- Change old behavior that conflicts with the handoff or map. This includes Home-focus-bound scanning and the old exclusion of slip-result screens.
 
-### Visual fidelity และ shared controls
+### Visual fidelity and shared controls
 
-- UI ใช้ LINE Seed Sans TH Regular 400 ทุกข้อความ ยอดเงินใช้ font ระบบ iOS น้ำหนัก 500 และ tabular numerals เครื่องหมาย ฿ อยู่หลังยอดด้วยน้ำหนักปกติ Hierarchy ใช้ขนาด สี และระยะ ไม่ใช้ bold
-- Scale หลัก: header 17, body/row title 15, input 16, secondary 12–13, tab label 12, Home hero amount 36, card amount 32, entry amount 40 ลดเป็น 32 เมื่อเกิน 10 ตัวและ 26 เมื่อเกิน 14 ตัว ตามต้นแบบ คง font scaling และตรวจการเข้าถึง actions เมื่อขยายข้อความ
-- ใช้ palette ต่อไปนี้เป็น source of truth ของแอปทั้งสองธีม ไม่แทนสีแบรนด์ด้วยค่า system theme ที่ทำให้หน้าตาต่างจาก handoff
+- Use LINE Seed Sans TH Regular 400 for UI text. Amounts use iOS system font weight 500 and tabular numerals. Place ฿ after amounts at regular weight. Hierarchy uses size, color, and spacing rather than bold.
+- Main sizes: header 17, body/row title 15, input 16, secondary 12–13, tab label 12, Home hero 36, and card amount 32.
+- Entry amount starts at 40. Reduce it to 32 beyond 10 characters and 26 beyond 14 characters, as in the prototype. Preserve font scaling and accessible actions with larger text.
+- Use this palette as the source of truth for both themes. Preserve brand appearance rather than substituting different system-theme values.
 
 | Token               | Light              | Dark              |
 | ------------------- | ------------------ | ----------------- |
@@ -193,142 +203,155 @@ Source: [วางทางปรับแอปหมูจดตามดี�
 | inverseAccent       | #E1A68E            | #8D472D           |
 | shade               | rgba(30,27,25,.42) | rgba(0,0,0,.55)   |
 
-- Side padding 16, card padding 14–18, section gaps 18–26, chip gap 8; hero radius 20, grouped/card radius 16, sheet top radius 24, tab bar top radius 17 ใช้ค่ารายละเอียดที่เหลือตาม handoff
-- Cards ไม่มี drop shadow ใช้ raised inset ring; selected tiles ใช้ accent ring ใช้ shadows เฉพาะ floating action, toast, menu/dialog และ selected segment ตามต้นแบบ
-- Touchable targets อย่างน้อย 44×44, primary button สูง 52, rows 52–64 รักษาขนาด visual chips/day cells ตามต้นแบบและจัด effective touch area ให้กดง่ายโดยไม่ทับกัน ใช้ safe-area insets จริง ไม่ copy frame/top/bottom constants ของ mock phone
-- ใช้ shared header, segmented control, grouped list, chips, radio cards/day grid, sheet, info box และ toast ให้ consistent ใช้ mascot/assets/emoji/MDI icon ตาม handoff ไม่ copy prototype runtime และ device frame เข้าแอป
-- CTA ที่ข้อมูลไม่ครบยังกดแล้วแสดง error ตรง field ได้ ระหว่าง pending แสดง busy copy และป้องกัน submit ซ้ำ ไม่ทิ้ง draft หรือ dismiss ก่อน save สำเร็จ ข้อยกเว้น disabled ที่ต้นแบบกำหนด เช่น next period/future dates/filter ว่าง ให้รักษาพฤติกรรมและคำอธิบาย
-- Push/modal 0.34s, sheet 0.32s, dim 0.25s, centered dialog 0.2s, search 0.3s และ easing ตาม handoff Toast ปกติ 2.6s และมี action 5s คงการ dismiss/back และ interruptions ที่ไม่ทำให้ state หาย ไม่ใช้ timers จำลอง network เป็นเวลาตอบจริง
+- Spacing: side padding 16, card padding 14–18, section gaps 18–26, and chip gap 8.
+- Radii: hero 20, grouped/card 16, sheet top 24, and tab-bar top 17. Other details follow the handoff.
+- Cards use a raised inset ring without shadow. Selected tiles use an accent ring. Shadows belong only to floating actions, toast, menu/dialog, and selected segments under the prototype.
+- Targets are at least 44×44. Primary buttons are 52 high, and rows are 52–64. Preserve visual chip/day-cell sizes while providing nonoverlapping effective targets. Use real safe-area insets rather than mock-phone frame constants.
+- Share headers, segments, grouped lists, chips, radio cards/day grids, sheets, info boxes, and toast. Use handoff mascots/assets/emoji/MDI icons. The app retains its native runtime and layout rather than the prototype's runtime/device frame.
+- Incomplete primary actions remain tappable and show field errors. Pending work shows busy text and prevents duplicate submission. Preserve drafts until saving succeeds. Retain specified disabled exceptions such as next period, future dates, and empty filters, with explanations.
+- Durations: push/modal 0.34s, sheet 0.32s, dim 0.25s, centered dialog 0.2s, and search 0.3s. Use handoff easing. Ordinary toast lasts 2.6s, and action toast lasts 5s. Preserve dismissal/back and interruption-safe state. Actual network completion determines results rather than simulated timers.
 
-### Auth, onboarding และ navigation
+### Auth, onboarding, and navigation
 
-- Auth เป็น modes เข้าสู่ระบบ/สมัครบน flow ที่แชร์ draft ใช้ validation ชื่ออย่างน้อยสองตัว อีเมลถูกต้อง รหัสผ่านอย่างน้อยแปดตัว พร้อม labels/show-hide/errors/keyboard ตาม handoff First launch เปิดสมัคร; logout เปิด signin พร้อมอีเมลล่าสุด ไม่คงรหัสผ่านข้าม logout
-- Unknown email, wrong password และ duplicate signup ต้องใช้ข้อเท็จจริงจากสัญญา auth เพื่อแสดงข้อความและ action ตาม handoff ห้ามเดากรณีจาก error code เดียว ตรวจ library ที่ติดตั้งก่อนปรับ contract; หากพบข้อจำกัดที่เปลี่ยนผลที่ผู้ใช้ได้รับ ให้รายงานก่อนเปลี่ยน UI
-- Signup สำเร็จเข้า greeting; signin ของบัญชีที่ครบ onboarding เข้า Home พร้อมชื่อ บัญชีที่ยังไม่ครบใช้ guard พาไปทำต่อ
-- Onboarding เป็นข้อตกลง → สิทธิ์รูป/ค้นอัลบั้ม → เป้าหมาย → ข้อมูลเพิ่มเติม optional มี recap/ready ใช้ค่าจริงร่วม profile และ flag completion หลังบันทึกที่จำเป็นสำเร็จ จัดการ partial save โดยไม่อ้างว่าตั้งค่าครบแล้ว
-- Splash ไปต่อเมื่อครบสองวินาทีหรือแตะ วันเกิดเปิด sheet คอลัมน์วัน/เดือน/ปี พ.ศ.ตาม handoff วันที่ไม่ถูกต้องมี error เป้าหมายต้องเลือกอย่างน้อยหนึ่งข้อ ยอมรับข้อตกลงก่อนผ่านขั้นแรก และ consent สองข้อไม่ทำให้ผู้ใช้จำเป็นต้องกรอกวันเกิด
-- Request permissions ผ่าน OS จริง แยก counting รูปจากการอ่าน AI; unknown/limited/denied/skipped แสดงตามจริง ข้ามได้และเปิดภายหลังได้ กลับจาก Settings ตรวจสิทธิ์ใหม่ เมื่อพร้อมเข้า Home จึงเริ่มอ่าน
-- ใช้ tab หน้าแรก/พี่มนุษย์, จดเพิ่มเปิด editor โดยตรง, summary/search/plan/settings เป็น pushed screens, editor/budget/recurring เป็น modal, pickers/queues/help ตาม sheets/dialogs ที่ต้นแบบกำหนด Preserve draft เมื่อจัดการหมวดซ้อนเหนือ editor
+- Signup/sign-in share relevant draft data. Require a name of at least two characters, valid email, and password of at least eight characters. Match labels, show/hide, errors, and keyboard behavior to handoff. First app start opens signup. Logout opens sign-in with the latest email and cleared password.
+- Distinguish unknown email, wrong password, and duplicate signup from actual auth-contract facts. A shared error code cannot prove those cases. Inspect the installed library before changing contracts. Report user-visible limitations before changing UI.
+- Successful signup enters greeting. Completed-onboarding sign-in enters Home with the name. Guards resume incomplete setup.
+- Onboarding orders terms → photo access/album discovery → goals → optional information, then recap/ready. Use actual shared profile values. Mark completion only after required persistence succeeds. Partial saves preserve recovery rather than claiming readiness.
+- Splash advances after two seconds or a tap. Birthday opens a sheet with day/month/Buddhist-year columns. Invalid dates show errors. Require at least one goal. Require terms acceptance before the first step advances. Two consent choices leave birthday optional.
+- Request actual OS permission. Separate photo counts from AI reading. Show unknown/limited/denied/skipped accurately, allow skipping/later activation, and recheck after Settings. Reading starts when ready at Home.
+- Use “หน้าแรก” (Home) and “พี่มนุษย์” (Human) tabs. Add entry opens the editor directly. Summary/search/plan/settings push screens. Editor/budget/recurring use modals. Pickers/queues/help use specified sheets/dialogs. Preserve the editor draft under nested category management.
 
-### Domain และสัญญาข้อมูล
+### Domain and data contracts
 
-- จำนวนเงินเก็บเป็น satang จำนวนเต็ม วันรายการเป็น ISO calendar day ที่ไม่เลื่อนตาม timezone เวลาทำรายการเป็น optional จากหลักฐานที่เชื่อถือได้ เวลาบันทึกเป็นคนละข้อมูล ใช้แสดงจดล่าสุดและลำดับที่เกี่ยวข้อง ไม่เติมเวลาทำรายการจาก createdAt หรือเวลาจำลอง
-- ธนาคารของรายการเป็นกลุ่มธนาคาร ไม่แยกหลายบัญชีของธนาคารเดียวกัน บัตรของรายการแยกชื่อกับเลขท้ายสี่หลัก Normalize identity/display names ให้ selection/filter/search ตรงกัน ไม่ระบุคือไม่มีธนาคารหรือบัตรที่เลือก ไม่ใช่ manual source ทั้งหมด
-- รายจ่าย/รายรับที่ไม่มีหมวดเป็นรายการรอเลือกหมวด ย้ายเงินไม่เป็น pending category และไม่รวมรายรับรายจ่าย มีต้นทางหนึ่งค่าโดยยังไม่เพิ่มระบบบัญชีปลายทาง/ยอดคงเหลือ
-- Entry create/update ต้องรักษา fields ที่ผู้ใช้เลือก มี fallback title ตามต้นแบบ การเปลี่ยนชนิดล้างหมวดที่ไม่เข้ากัน จดเองเลือกวันที่อย่างเดียวและห้ามเลือกอนาคตตาม UI
-- Keypad รองรับ AC, %, การคำนวณพื้นฐาน, decimal, delete และ paste จำกัดสองตำแหน่งทศนิยม/12 digits ตามต้นแบบ พร้อม hardware keys และ errors; หลังยืนยันยอดใหม่เปิดเลือกหมวดอัตโนมัติ ไม่เพิ่มช่องเวลาให้ผู้ใช้กรอก
-- หลักฐานสลิปต้องมี schema/extraction/mapping ที่ส่งวัน เวลา คู่โอน และแหล่งที่ใช้ใน UI ตามข้อเท็จจริง Unknown ต้องยังเป็น unknown ชื่ออัลบั้มหรือเวลารูปไม่ใช่หลักฐานของทุก field Thumbnail ใช้การผูกภาพในมือถือที่มีอยู่ และมี fallback เมื่อเปิดรูปไม่ได้
-- อ่านรายการครบทุกหน้าหรือมีสัญญา aggregate ที่ให้ผลครบ Counts/totals/usage และ card summaries ห้ามใช้แถวแรก 1,000 เป็นข้อมูลทั้งหมด
+- Store amounts as integer satang. Transaction date is an ISO calendar day without timezone shifting. Transaction time is optional trustworthy evidence. Recording time is separate and drives latest-recorded text and relevant ordering. Never substitute `createdAt` or mock time for transaction time.
+- Transaction bank groups all accounts at the same bank. Transaction card separates name and last four digits. Normalize identity and visible names across selection/filter/search. Unspecified means the entry has neither a selected bank nor a selected card. It does not mean all manual-source transactions.
+- Expense/income without category are pending-category transactions. Transfers are neither pending-category nor income/expense totals. Retain one source value without adding destination accounts or balances.
+- Entry create/update preserves chosen fields and the prototype's fallback title. Kind changes clear incompatible category. Manual entries select date only and exclude future dates under the UI.
+- Keypad supports AC, %, basic arithmetic, decimal, delete, paste, hardware keys, and errors. Limit input to two decimal places and 12 digits. Accepting a new amount opens category selection. Manual input has no time field.
+- Slip schema/extraction/mapping supplies actual date, time, counterparties, and sources used by UI. Unknown evidence stays unknown. Album name/photo time cannot establish every field. Reuse local image bindings for thumbnails and unavailable-image fallback.
+- Read every transaction page or use a complete aggregate contract. Counts, totals, usage, and card summaries cannot treat the first 1,000 rows as the whole dataset.
 
-### Home, Summary และ Search
+### Home, Summary, and Search
 
-- Home ใช้ช่วงปฏิทินที่ตั้งไว้ แสดงยอดรายจ่าย/วันและแหล่งรายการตาม copy, badges/empty states/permission link/reading state กับจดล่าสุดจากเวลาบันทึกจริง เลื่อนข้ามรอบปัจจุบันไปอนาคตไม่ได้
-- Filter selection แชร์กับ Summary รายการธนาคาร/บัตร/ไม่ระบุมีความหมายเดียวกันทุก operation คิวหมวดเปิดตาม scope ของ action และ refresh หลังจัดการสำเร็จ
-- Summary นับเป็นรายเดือนเสมอแม้ Home เป็น week/fortnight ใช้เดือนสัมพันธ์กับช่วงที่เลือก custom month start มีผลกับขอบเขตและ labels แสดง income/expense/net, bars ตามหมวด/แท็ก, pending queue, transfer แยก และ trend หกเดือน
-- Tag share ใช้ยอดของชนิดรายการที่เลือกเป็นฐาน รายการหลายแท็กอาจปรากฏหลายกลุ่ม จึงไม่บังคับรวม shares เป็น 100% งบใช้ขอบเขตของงบ ไม่แอบทำเป็น budget ของ wallet filter
-- Search ไม่มีข้อจำกัดสองเดือน ค้นชื่อ โน้ต หมวด ธนาคาร/บัตร และจำนวนเงินตามพฤติกรรมข้อความในต้นแบบ รวม comma/decimal อย่างสอดคล้องกัน ไม่เปลี่ยนเป็น exact amount equality โดยปริยาย Highlight fields ที่ตรงและคงการเปิด pending→queue/other→editor
-- Recent searches เพิ่ม/ลบจริง และ prefilled query จากบัตรต้องรักษา identity ของใบที่เลือก แม้บัตรชื่อเดียวกันมีหลายใบ
+- Home uses selected calendar periods. Match expense totals, daily/source text, badges, empty states, permission links, and reading state. Latest-recorded time uses actual recording time. Period navigation stops at the current period.
+- Share filters with Summary. Bank/card/unspecified semantics remain identical across operations. Category queues use the initiating action's scope and refresh after success.
+- Summary remains monthly even when Home is weekly/fortnightly. Select the month related to the viewed range. Custom month start affects boundaries/labels. Show income/expense/net, category/tag bars, pending queue, separate transfers, and six-month trend.
+- Tag share uses the selected transaction kind's total as denominator. Multi-tag entries can appear in several groups. Shares need not sum to 100%. Budgets use their own scope rather than silently following the wallet filter.
+- Search covers all months without the two-month restriction. Search title, note, category, bank/card, and amount under prototype text behavior. Handle commas/decimals consistently. Preserve substring behavior rather than silently imposing exact amount equality. Highlight matching fields. Pending results open queue, and others open editor.
+- Recent queries support actual addition/deletion. Card-prefilled queries preserve exact card identity even with same-name cards.
 
-### การลบและเอากลับคืน
+### Deletion and undo
 
-- ลบ entry/budget/rule/custom category/tag ทันทีพร้อม action “เอากลับคืน” ใน toast ล่าสุด 5 วินาที Toast ใหม่แทน action เดิม เมื่อ action หายให้คงการกระทำที่เสร็จแล้ว ไม่ทำเป็น undo ทั้งสมุดข้อมูล
-- Server เป็นเจ้าของ delete/restore ของข้อมูล server ต้องมีข้อมูลผลของ operation เพื่อคืน ID/fields/relationships เดิมได้ ไม่สร้าง clone ด้วยชื่อเดียวกันแทน identity
-- ลบหมวดแล้วถอด category ของรายการและกฎที่ได้รับผล พร้อมลบงบที่ผูก รายการใช้จ่ายยังอยู่และกลับไปรอเลือกหมวด คืนแล้วต้องคืนหมวด งบ และ links ครบ ใช้หลักเดียวกันกับ tag links และงบที่ผูกแท็ก
-- ลบกฎคงรายการที่เคยสร้างไว้ คืนกฎและความสัมพันธ์ที่เปลี่ยนจากการลบให้ editor/generation เชื่อมได้ถูกต้อง
-- คืนข้อมูลภายใต้ ownership/transaction ที่ไม่ทับการแก้ fields หรือ links อื่น ถ้ามี conflict หรือคืนไม่ได้ครบ ให้คืน error ที่ UI อธิบายและลองแก้ได้ ไม่รายงานสำเร็จทั้งที่กู้บางส่วน Validate repeated requests และไม่ปล่อย delete/save ที่ pending ทำให้ผู้ใช้เห็นผลสำเร็จเทียม
-- Calendar reset คืนค่าก่อนหน้าเฉพาะ preferences ที่เกี่ยวข้อง โดยใช้ operations การตั้งค่าเดิมได้
+- Delete entry/budget/rule/custom category/tag immediately. The latest toast offers “เอากลับคืน” (undo) for 5 seconds. A new toast replaces the previous action. When action expires, retain the completed operation. Undo applies to that operation rather than the whole ledger.
+- The server owns deletion/restoration of server data. Record enough operation effects to restore original IDs, fields, and relationships. A same-name clone cannot replace original identity.
+- Category deletion clears affected entry/rule categories and deletes linked budgets. Preserve transactions as pending-category work. Restore category, budgets, and links together. Apply the same principle to tag links and tag budgets.
+- Rule deletion preserves generated transactions. Restore the rule and deletion-affected relationships so editor/generation links remain correct.
+- Restore under ownership/transaction boundaries that preserve unrelated field/link edits. Conflicts or incomplete restoration return a recoverable UI error rather than false success. Check repeated requests. Pending deletion/save must not imply success.
+- Calendar reset restores previous relevant preferences through existing settings operations where suitable.
 
-### งานสลิปและรอบอ่าน
+### Slip work and scan rounds
 
-- ใช้ฐานอ่าน/บันทึก/กันซ้ำ/retry เดิม Owner ของรอบอ่านอยู่ระดับ signed-in app การเปลี่ยน route ไม่หยุดส่งใหม่ถ้า app active และสิทธิ์ครบ; พักแอป/ล็อกเครื่องหยุด scheduling รูปใหม่ คำขอที่ส่งแล้วจบและเก็บผลได้ กลับมาจึง resume; logout/account switch cancel และแยกผลตามบัญชี
-- รับ created พร้อม transaction binding; skipped แยก duplicate/no_candidate→ข้ามไป และ incomplete_candidate→ต้องช่วยหมู ข้อผิดพลาดชั่วคราวแสดงเหตุและ retry ตาม eligibility/backoff ส่วนข้อมูลไม่ครบใช้จดเอง
-- งานต้องช่วยหมูคงข้ามรอบ/วัน/restart จนจัดการเสร็จ เก็บบนมือถือแยกบัญชีเป็นฐานรอบนี้ แยก persistence งานค้างออกจาก cache/discovery รูปใหม่ย้อนหลัง 30 วัน จึงไม่ล้างงานค้างเพียงเพราะอยู่นอกช่วงค้นรูป
-- รูปเดิมที่มีผล incomplete และยังจำผลไว้ไม่ส่ง GenAI ซ้ำอัตโนมัติ การคงงานค้างไม่ทำให้วนอ่าน ข้อผิดพลาด temporary อ่านใหม่ในรอบที่มีสิทธิ์ทำงานเมื่อถึง retry time และมี targeted retry ที่เหมาะกับสาเหตุ
-- Manual resolution เติมวันรูป, ใช้ identity ของรูปเดียวกันกับ import, reconcile manual-vs-inflight/คำตอบสูญหายด้วย identity กันซ้ำ, ผูกภาพกับรายการที่สำเร็จ และคงสถานะจัดการแล้ว การแก้หรือเลือกรายการไม่สร้างซ้ำ
-- รักษา identity asset ต่อบัญชีและ unique write/conflict handling เดิม ไม่ใช้ title/amount/date ในต้นแบบเป็นหลักฐานซ้ำเพียงอย่างเดียว Soft-deleted imported entry ไม่ควรถูก scan สร้างใหม่เพราะยกเลิกการแสดงแถว
-- หากภาพเข้าถึงไม่ได้หรือ permission เปลี่ยน ให้รักษางานและบอกข้อจำกัดจริง ไม่เปลี่ยนเป็น resolved โดยคาดเดา การคงงานบนเครื่องไม่รับประกันหลังลบข้อมูลแอป/ติดตั้งใหม่
+- Retain existing reading/persistence/duplicate/retry foundations. Scan ownership moves to the authenticated app level. Route changes continue scheduling while active with full permission. Background/lock pauses new scheduling while existing requests finish and retain results. Return resumes work. Logout/account switching cancels and isolates results.
+- Created results bind the transaction image. Duplicate/no_candidate map to skipped. Incomplete_candidate maps to needs-help. Temporary failures expose reasons and retry under eligibility/backoff. Incomplete data uses manual entry.
+- Needs-help work persists across rounds/days/restarts until handled. Store it on device per account for this round. Separate pending-work persistence from discovery/cache of new images within 30 days. Older pending work remains even outside discovery range.
+- Remembered incomplete images are not automatically resent to GenAI. Pending retention must not cause repeated reading. Temporary failures retry at eligible times, with targeted actions matching the cause.
+- Manual resolution prefills photo date and shares import's image identity. Reconcile manual/in-flight races and lost responses through that identity. Bind the successful image and retain handled state. Editing/selecting entries creates no duplicates.
+- Retain per-account asset identity and unique-write/conflict handling. Prototype title/amount/date alone cannot prove duplicates. Hiding soft-deleted imported rows must not cause recreation.
+- Unavailable images or changed permissions preserve work with factual limitations. They do not imply resolution. Device persistence is not guaranteed after data clearing/reinstallation.
 
-### งบ จดซ้ำ หมวด แท็ก และปฏิทิน
+### Budgets, recurring rules, categories, tags, and calendar
 
-- งบเป็นแผนวงเงินรายจ่ายในเดือนบัญชี all/category/tag มี unique target ต่อ period บันทึกเป้าหมายเดิมแทนวงเงินเดิมพร้อมคำอธิบาย ใช้ warning chips 50/70/80/90 และประโยคจำนวนบาท Status เกินงบเมื่อ spent มากกว่าวงเงิน ไม่ใช่เท่าพอดี
-- กฎจดซ้ำมี type/amount/title/day/start/end/category/tags/bank/card/note/active ใช้ day 1–31 ที่ capped วันสุดท้ายของเดือน end month เลือกจากรายการหรือ forever และแสดงวันแรก/วันถัดไปจาก schedule จริง
-- สร้างกฎใหม่สร้างวันถึงกำหนดในช่วงที่ตั้งถึงวันนี้และรายงานจำนวนที่สร้าง เมื่อสร้างจาก existing entry เริ่มหลังวันรายการนั้นและผูกกฎกลับ original โดยไม่สร้าง original ซ้ำ; create-from-draft ที่ได้รายการจากกฎแล้วไม่บันทึก manual ซ้ำ
-- การแก้กฎมีผลกับครั้งถัดไป ไม่ย้อนเปลี่ยนประวัติหรือสร้างวันย้อนหลังใหม่ด้วยค่าที่แก้ ต้องเก็บ effective schedule/version หรือช่วงการมีผลที่ generator ใช้ได้จริง
-- หยุดกฎด้วย switch แล้วเปิดกลับมาเริ่มครั้งถัดไป ข้ามวันในช่วงหยุดและคงรายการก่อนหยุด การไม่เปิดแอปไม่ใช่หยุด: กลับมาสร้างวันครบกำหนดที่ยังมีผลภายในช่วง start/end ได้โดยไม่ซ้ำ ไม่เพิ่ม timer เปิดกลับอัตโนมัติหลังจำนวนเดือน
-- เก็บ card identity ในกฎและส่งต่อรายการที่สร้าง กำหนด due-generation trigger เมื่อเข้าแอปพร้อมทำงาน รวม retry/partial failure ที่ไม่สร้างกฎหรือรายการใหม่ซ้ำ
-- หมวด/แท็กมี tabs และ counts ของ active entries ครบ หมวดพื้นฐานแก้/ลบไม่ได้ทั้ง UI และ server หมวด custom เลือก emoji ได้ ไม่มี color picker ตรวจชื่อซ้ำในบริบทชนิดหมวด/แท็กและแท็กไม่เกิน 20 ตัวทุก create/update/inline path
-- Calendar ใช้ month/week/fortnight radio cards, weekday chips/anchor options/day grid ใช้ทันทีโดยไม่มี save-confirm จัดลำดับ writes/pending/failure rollback ให้ค่าไม่ย้อนเพราะคำตอบเก่ามาถึงทีหลัง วันเริ่มเดือน capped และมีผลตรงกันใน Home รายเดือน/Summary/งบ
+- Budgets plan expenses per accounting month for all/category/tag targets. Targets are unique per period. Saving an existing target replaces its allowance with an explanation. Use 50/70/80/90 warning chips and baht thresholds. Over-budget means spent greater than allowance, not equal.
+- Recurring rules contain type/amount/title/day/start/end/category/tags/bank/card/note/active. Days 1–31 cap to month end. Choose the end month from a list, or choose forever. Show actual first/next schedule dates.
+- New rules generate due occurrences from the selected start through today and report count. Rules from existing entries start after that transaction date and link the original without duplicating it. Rule-generated entries from drafts exclude a second manual save.
+- Rule edits apply to the next occurrence. Preserve history and prevent generation of new historical dates with edited values. Store effective schedule/version or periods that generation can actually use.
+- Pause/resume skips intentional pause dates and retains earlier transactions. Resume starts with the next occurrence. App inactivity is not pause: generate still-active due dates within start/end on return, without duplicates. Scope excludes timed automatic resumption after a number of months.
+- Preserve card identity in rules and generated transactions. Define due-generation activation when the app becomes eligible. Retry/partial failure must prevent extra rules or entries.
+- Category/tag tabs show complete active-entry counts. Built-in categories cannot be edited/deleted in UI/server. Custom categories choose emoji without a color picker. Check duplicate names in category-kind/tag context and the 20-character tag limit across create/update/inline paths.
+- Calendar uses month/week/fortnight cards, weekday chips, anchor choices, and day grid. Apply choices immediately without save confirmation. Coordinate write ordering, pending, and rollback so late responses cannot revert newer choices. Cap month-start day and align monthly Home/Summary/budgets.
 
-### Profile, streak, cards และ CSV
+### Profile, streak, cards, and CSV
 
-- Profile ใช้ sections/copy ตาม handoff ให้ tools และ live status อยู่ก่อน ค่า email มาจาก session consent ใช้ค่าเดียวกับ onboarding Help/FAQ/terms เป็น sheets และ accordion ตามต้นแบบ ภาษาเป็น info ไทย Version ใช้ข้อมูลแอปจริง ไม่ใช่ seed
-- Streak ใช้วันรายการและ mode recorded/categorized กับ enabled; feed ได้วันละหนึ่งครั้งเมื่อครบเกณฑ์จริง รอ server สำเร็จก่อนยืนยันแครอต ปิดการนับไม่ลบรายการหรือ reset ประวัติโดยปริยาย Tutorial สี่หน้าตาม assets ที่กำหนด
-- เพิ่มบัตรด้วยชื่อกับเลขท้ายสี่หลักเป็น optional flow ตรวจข้อมูลและรักษา draft จากนั้นเลือกใช้ต่อได้จริงจาก editor/rule/cards บัตรตัวอย่างไม่เป็นบัตรของผู้ใช้ วิธีนี้ทบทวนหลังผู้ใช้บัตรจริงลองได้ โดยยังไม่เพิ่มระบบหนี้หรือชำระบัตร
-- หน้าบัตรแสดงใบที่ใช้จด ยอดรายจ่ายและจำนวนรายการรายจ่ายในเดือนบัญชี และสามรายการล่าสุดทุกชนิดจากทุกเดือน พร้อม actions ที่คง card identity ดูทั้งหมดต้องไม่ปนบัตรชื่อเดียวกัน จดเพิ่ม prefill ใบที่เลือก
-- CSV จริงเป็น UTF-8 พร้อม BOM และคอลัมน์ตามลำดับ: วันที่, เวลา, ประเภท, ชื่อรายการ, หมวด, จำนวนเงิน (บาท), บัญชี, แท็ก, โน้ต, ที่มา ใช้วันที่/เวลาทำรายการจริง; เวลา unknown ว่าง รักษา Thai encoding/formula escaping และ formatter ตรงกันทั้ง server/native
+- Profile follows handoff sections/text, with tools/current status first. Email comes from session. Consent shares onboarding values. Help/FAQ/terms use specified sheets/accordions. Language information says Thai. Version uses actual app data.
+- Streak uses transaction date, recorded/categorized mode, and enabled state. Feed once daily only after actual criteria. Await server success before reporting carrots. Disabled counting preserves transactions/history. Tutorial uses four specified asset pages.
+- Optional card setup accepts name and last four digits, checks input, and preserves drafts. The actual card remains selectable in editor/rules/cards. Sample cards are not user cards. Revisit the approach after real-card user feedback. Debt/payment features remain outside scope.
+- Card screens show recorded cards, expense total/count for the accounting month, and three latest transactions of all kinds across months. Actions preserve identity. View all isolates same-name cards. Add entry prefills the selected card.
+- Actual CSV is UTF-8 with BOM and these ordered columns:
+  1. “วันที่” (date).
+  2. “เวลา” (time).
+  3. “ประเภท” (type).
+  4. “ชื่อรายการ” (transaction title).
+  5. “หมวด” (category).
+  6. “จำนวนเงิน (บาท)” (amount in baht).
+  7. “บัญชี” (account).
+  8. “แท็ก” (tags).
+  9. “โน้ต” (note).
+  10. “ที่มา” (source).
+- Use actual transaction date/time. Unknown time stays blank. Preserve Thai encoding/formula escaping and agreement between server/native formatters.
 
-### การเปลี่ยนข้อมูลทดลอง
+### Experimental data transition
 
-- เมื่อ schema/index/generated client/API/native client ใหม่เข้ากันและตรวจ contract ด้วยฐานทดสอบแล้ว จึงเปลี่ยนชุดข้อมูลของบัญชี/environment ที่ระบุอย่างชัดเจน
-- หยุดส่งรูปและ writes ใหม่ จัดการผลคำขอที่ยังทำงานให้แน่นอนก่อน reset การปิด client ไม่พิสูจน์ว่า server หยุดบันทึกแล้ว
-- Reset รายการ กฎ งบ แท็ก หมวด custom และ preferences ของบัญชีที่เลือก พร้อม outcome/work memory, image bindings และ query cache บนมือถือบัญชีเดียวกัน คง auth/อีเมล/credentials และหมวดพื้นฐาน ไม่ drop ทั้งฐานข้อมูลหรือกระทบบัญชีอื่น
-- ผ่าน onboarding ใหม่และตรวจ core flows ด้วยข้อมูลใหม่ รูปที่เคยอ่านในสมุดทดลองเก่าสามารถเติมสมุดใหม่ได้หลัง reset identities/memory เป็นการเริ่มข้อมูลใหม่ ไม่ใช่การสร้างซ้ำในสมุดเดียวกัน
-- เอกสารและการทดสอบ spec นี้ไม่ดำเนิน reset จริง ขั้นตอน cutover ต้องมีชุดข้อมูลเป้าหมาย คำสั่งที่ review ได้ และรายงานผลในงานลงมือทำ
+- First align schema/index/generated client/API/native client and prove contracts through a test database. Then transition an explicitly identified account/environment dataset.
+- Stop new uploads/writes. Resolve existing request results before reset. Closing a client does not prove server writes stopped.
+- Reset the selected account's transactions, rules, budgets, tags, custom categories, and preferences. Clear matching mobile outcome/work memory, image bindings, and query cache. Preserve auth/email/credentials, built-in categories, and other accounts. Keep the database as a whole.
+- Complete onboarding again and check core flows with fresh data. After reset of identities/memory, earlier photos may populate the new experimental ledger. This starts a new dataset rather than duplicating transactions within one ledger.
+- This spec/testing performs no actual reset. Implementation must identify target data, supply reviewable commands, and record transition results.
 
 ## Testing Decisions
 
-### ขอบเขตหลักที่ใช้ต่อจากแผนที่ตกลงแล้ว
+### Agreed test boundaries
 
-- ใช้ workflow ของแอปผ่าน transport ที่เรียก authenticated API กับฐานข้อมูล MongoDB ทดสอบแยกเป็นขอบเขตหลัก สังเกต outgoing requests, API responses, รายการ/identity/relationships ที่บันทึก และ query-derived results แทนตรวจ private helper calls
-- ใช้ scan session/transport เดิมร่วมกับ server จริงใน harness สำหรับงานสลิป แทนเฉพาะ GenAI, photo library, clock, device storage และ image bindings เพื่อควบคุม created/skipped/incomplete/retry/inflight/race ได้แน่นอน ไม่สร้าง wrapper test seam ต่อหน้าจอหรือทุก service
-- ใช้ขอบเขต iOS UI สำหรับสิ่งที่ API พิสูจน์ไม่ได้ เช่นฟอนต์ ภาพ ระยะ safe areas, keyboard, touch targets, sheet/navigation และ draft recovery
-- ขอบเขตเหล่านี้สืบทอดจากแผนตรวจที่ผู้ใช้ทบทวนแล้วและคำสั่งล่าสุดให้ตรวจ iOS ก่อน ไม่ต้องเปลี่ยนผล source inspection เดิมให้เป็น runtime proof
+- Drive app workflows through transport and authenticated API into isolated test MongoDB. Observe requests, responses, persisted entries/identities/relationships, and query results rather than private helper order.
+- Reuse scan session/transport with a real server harness. Substitute only GenAI, photo library, clock, device storage, and image bindings. Control created/skipped/incomplete/retry/in-flight/race outcomes. Avoid separate wrapper boundaries for every screen/service.
+- Check iOS fonts, illustrations, spacing, safe areas, keyboard, targets, sheets/navigation, and draft recovery that API evidence cannot prove.
+- These boundaries follow the reviewed plan and latest iOS-first instruction. Source inspection remains distinct from runtime evidence.
 
-### Prior art และโมดูลที่ต้องตรวจ
+### Existing tests and modules
 
-- ใช้แนวทาง integration tests เดิมของ slip import และ native auto-import ที่ต่อ transport/route/Import/Ledger กับ MongoDB ชั่วคราวและ fake provider รวม identity tests ที่พิสูจน์ per-user uniqueness หลัง soft deleteและ concurrent writes
-- ใช้ scanner session tests เดิมที่มี clock/photo/storage ports ตรวจ scheduling, retry, permissions, retention และการพัก/กลับมา ทำ assertions ที่ผลสังเกตได้
-- ขยาย integration coverage ของ Ledger/delete-restore, Planning/effective schedule, Analytics/filters/periods, Preferences/reset และ Auth contracts ผ่าน interfaces ที่ผู้ใช้แอปใช้ สร้าง fixtures จากสถานการณ์ ไม่เรียก production reset หรืออาศัยภาพการเงินจริงเพื่อให้ tests ผ่าน
-- ไม่เขียน tests ที่เพียงทวน implementation หรือ style constants รูปลักษณ์ตรวจจาก handoff กับภาพ/การเดิน flow และพฤติกรรมใหม่มี tests ที่แยกความผิดพลาดได้จริง
+- Reuse slip/native-import integration patterns linking transport/route/Import/Ledger with temporary MongoDB and fake providers. Retain identity tests for user-scoped uniqueness after soft deletion and concurrent writes.
+- Use existing scanner clock/photo/storage ports for scheduling, retry, permissions, retention, and pause/resume. Assert observable results.
+- Extend Ledger/delete-restore, Planning/effective schedules, Analytics/filters/periods, Preferences/reset, and Auth coverage through app-facing interfaces. Build scenario fixtures. Tests do not perform production reset or require real financial photos.
+- Avoid tests that merely repeat implementation or style constants. Check appearance against handoff and captured flows. Behavior tests must detect actual failures.
 
-### กรณีตรวจข้อมูลและพฤติกรรมที่ต้องผ่าน
+### Required data and behavior cases
 
-1. มีข้อมูลมากกว่า 1,000 รายการแล้ว search/count/expense total/category usage/card summary ครบทุกหน้า พร้อม amount substring/comma/decimal และชื่อธนาคารไทย
-2. Card name เดียวกันต่าง last4 ยังแยก filter/view-all/recurring/CSV ถูกต้อง และผู้ไม่มีบัตรใช้ core ได้
-3. Calendar month start 29–31, leap/month end, week/fortnight anchor และ custom-period Summary/งบ/trend ตรงกัน เทียบ spent เท่างบกับ spent เกินงบ
-4. Delete/undo ทุกชนิดคืน identity/fields/references/งบที่ cascade ครบ ทำซ้ำไม่สร้าง clone รักษาการแก้ unrelated fields/tag links และจัดการ failure/conflict/account ownership
-5. กฎใหม่ backfill ตาม start/end, rule-from-entry ไม่ซ้ำ original, edit day/amount มีผลครั้งถัดไป, pause สองเดือนแล้ว resume ไม่จดช่วงหยุด, หลาย pause intervals และ app inactivity ไม่เป็น pause เรียก generator ซ้ำไม่สร้างรายการซ้ำ
-6. Scan สามกลุ่มตรง reason; incomplete ไม่ส่งซ้ำรูปเดิม, temporary failures retry ตามเวลา, manual-help race กับ import/คำตอบสูญหายยังมีรายการเดียว และภาพผูกกับรายการที่ชนะ
-7. งานค้างอยู่หลัง restart/รอบใหม่/เกิน 30 วัน และกรณี photo unavailable/permission revoked ไม่ถูกทิ้งหรือแสดง resolved เทียม เปลี่ยน route อ่านต่อ; background/lock พักการส่งใหม่; logout/user switch แยกผล
-8. Auth field errors และ account-specific errors ได้ตาม contract จริง, incomplete onboarding guard, goals/terms validation, consent/profile shared values และ partial save ไม่ทำให้ completion เทียม
-9. CSV 10 columns/order, UTF-8 BOM, formula-like text, bank/card labels, satang precision และ known/unknown actual time ทั้งสอง formatter ตรงกัน
-10. Cutover ในฐานทดสอบรักษา auth ของบัญชีเดิม/บัญชีอื่น ล้างข้อมูลการเงินกับความจำมือถือที่เลือกครบ เริ่ม onboarding และนำรูปเดิมเข้าชุดใหม่ได้โดยไม่ปน queries เก่า
+1. More than 1,000 rows produce complete search/count/expense/category-usage/card results across pages. Cover amount substring/comma/decimal and Thai bank names.
+2. Same-name cards with different last4 remain distinct in filters, View all, recurring rules, and CSV. Users without cards retain core use.
+3. Check month starts 29–31, leap/month end, week/fortnight anchors, and consistent custom-period Summary/budgets/trends. Compare spending equal to versus above budget.
+4. All deletion/undo types restore IDs, fields, references, and cascading budgets without clones on repeat. Preserve unrelated field/tag edits. Cover failures/conflicts/account ownership.
+5. Cover new-rule backfill within start/end and no original duplicate from existing entries. Day/amount edits affect the next occurrence. Two-month pause/resume skips paused dates, including multiple intervals. App inactivity is not pause. Repeated generation creates no duplicates.
+6. Three scan groups match reasons. Incomplete images are not resent. Temporary failures honor retry timing. Manual-help/import races and lost responses leave one transaction with the winning image binding.
+7. Pending work survives restart, new rounds, and more than 30 days. Unavailable photos/revoked access preserve unresolved work. Route changes continue reading. Background/lock pauses scheduling. Logout/user changes isolate results.
+8. Auth field/account errors follow actual contracts. Check incomplete-onboarding guards, goals/terms, shared consent/profile, and partial-save completion accuracy.
+9. Both CSV formatters agree on 10 columns/order, UTF-8 BOM, formula-like text, bank/card labels, satang precision, and known/unknown transaction time.
+10. Test-database transition preserves existing/other-account auth. Clear selected financial/mobile memory, restart onboarding, and import earlier photos into fresh data without stale queries.
 
-### การตรวจหน้าจอและอุปกรณ์
+### UI and device checks
 
-- ตรวจ iPhone 13 Pro ผ่าน Expo Go เป็นเครื่องจริง และ iPhone 11 จำลองผ่าน Device Hub เป็นการตรวจเพิ่มเติม เตรียม working launch/network/session ก่อนใช้เป็นหลักฐาน แอปหรือ configuration ที่มีอยู่เฉย ๆ ไม่ใช่ผลตรวจสำเร็จ
-- เริ่มด้วยทาง Expo Go ที่ผู้ใช้ใช้ หาก feature ที่เลือกต้อง development build ให้ระบุ capability ที่ตรวจพบและเตรียมเฉพาะที่จำเป็น ไม่บังคับเปลี่ยน SDK/toolchain โดยไม่มีเหตุ
-- ตรวจ primary task ของแต่ละช่วง พร้อมอย่างน้อยหนึ่ง failure/recovery ของ flow ที่โหลดหรือ save เปรียบเทียบภาพ 29 ภาพและ interactions/sheets/empty/errors จากต้นแบบ ตรวจ light/dark, ไทย/ชื่อยาว, ยอดเงินยาว, Dynamic Type, keyboard, close/back, scrolling และ photo permissions
-- รายงานเครื่องจริงกับ simulator และรายการที่ยังไม่ตรวจแยกกัน ตรวจ native permission/photo behavior บนเครื่องจริงเมื่อ simulatorพิสูจน์ไม่ได้ การตรวจ Android SDK/AVD/runtime/UI ไม่เป็นเงื่อนไขรับงานรอบนี้ และผล iOS ไม่รับรอง Android
-- รัน Review Checklist ของ repo: install, check, test และ scripts ที่จำเป็นสำหรับ workspace ที่แก้ การตรวจ code changes ต้องรัน check-types แยกเพราะ check ปัจจุบันไม่ได้เปิด type checking; ใช้ผล tests ที่เหมาะกับงาน ไม่อ้างว่าชุดเดิมที่ผ่านพิสูจน์ดีไซน์ใหม่แล้ว
+- Check physical iPhone 13 Pro through Expo Go. Use iPhone 11 in Device Hub as additional simulator evidence. Establish working app/network/session before claiming proof. Existing app/configuration alone is insufficient.
+- Start with the user's Expo Go path. If a feature needs a development build, identify the actual capability and prepare only necessary work. SDK/toolchain changes require a concrete reason.
+- Check each stage's primary task and one failure/recovery for loaded/saved flows. Compare the 29 images and prototype interactions/sheets/empty/error states. Cover light/dark, Thai/long names, large amounts, Dynamic Type, keyboard, close/back, scrolling, and photo permissions.
+- Separate physical-device/simulator evidence and unverified cases. Check native photo/permission behavior on-device where simulator evidence is insufficient. Android SDK/AVD/runtime/UI is outside this round's acceptance. iOS evidence does not establish Android behavior.
+- Run repository install/check/test and necessary workspace scripts. Run code type checks separately because current `check` excludes type checking. Use appropriate tests. Existing passing tests alone do not prove the new design.
 
 ## Out of Scope
 
-- การเตรียม Android SDK/AVD และการตรวจรับ runtime/UI/เครื่องจริง Android ในรอบนี้; กลับมาทำเป็นงานภายหลังโดยคงฐานโค้ดร่วมไว้
-- ปรับเว็บแอป และเผยแพร่ App Store/Google Play
-- แยกหลายบัญชีของธนาคารเดียวกัน ระบบยอดคงเหลือ/บัญชีปลายทางของการย้ายเงิน และข้อมูลบัญชีเก่าที่ต้องเดาแยกย้อนหลัง
-- ระบบหนี้ รอบบิล วงเงิน และการชำระบัตรเครดิตเพิ่มเติมจากหน้าบัตรตาม handoff
-- Sync งานสลิปค้างข้ามเครื่อง การรับประกันอยู่หลัง uninstall/reset แอป และการอ่านรูปเมื่อปิดแอปด้วย OS background task
-- การเปิดกฎจดซ้ำกลับอัตโนมัติหลังระยะหยุดที่ตั้งเป็นเดือน ฟีเจอร์นี้ยังไม่ใช่ข้อตกลง
-- Flow นำเข้า statement/PDF ใหม่ และฟีเจอร์ที่ prototype บอก “จะทำในรอบถัดไป” หรือเร็ว ๆ นี้
-- Copy HTML/support runtime มาเป็นแอปจริง หรือใช้ seed dates/amounts/timers เป็น production data/contract
-- Drop ทั้งฐานข้อมูล เปลี่ยน credentials หรือลบบัญชี auth จากการเริ่มข้อมูลการเงินทดลองใหม่
+- Android SDK/AVD setup and runtime/UI/device acceptance this round. Preserve shared code for later Android work.
+- Web redesign and App Store/Google Play publication.
+- Separate accounts within one bank, balances/destination transfer accounts, and guessed historical account separation.
+- Additional card debt, billing periods, limits, and payments beyond the handoff card screen.
+- Pending-slip sync across devices, guaranteed retention after uninstall/reset, and OS background image reading with the app closed.
+- Automatic recurring-rule resumption after a configured month-based pause. This feature is not agreed.
+- New statement/PDF import and prototype features marked “จะทำในรอบถัดไป” (planned for a later round), or coming soon.
+- Copying HTML/support runtime as the actual app, or using seed dates/amounts/timers as production data/contracts.
+- Dropping the whole database, changing credentials, or deleting auth accounts during experimental-data reset.
 
 ## Further Notes
 
-- สังเคราะห์จาก [แผนที่ต้นทาง](../native-redesign-wayfinding/map.md) และอ่าน Answer ของทุกชื่อที่ Decisions so far ลิงก์ไว้ ใช้คำตอบล่าสุด โดยเฉพาะ iOS-only verification แทนแผนสองแพลตฟอร์มที่คุยในช่วงแรก
-- รายละเอียดการตรวจ codebase อยู่ใน [ข้อมูลและ API สำหรับดีไซน์มือถือใหม่](../native-redesign-wayfinding/assets/data-api-coverage.md); ลำดับและเกณฑ์เดิมอยู่ใน [แผนส่งต่อ](../native-redesign-wayfinding/assets/delivery-plan-proposal.md) ทั้งสองเป็นหลักฐานวางแผน ไม่ใช่รายงานว่า implementation ใหม่ผ่านแล้ว
-- Design reference ชุดที่ผูก version อยู่ใน repo ที่ [docs/design/native-redesign-2026-09-30](../../docs/design/native-redesign-2026-09-30/VERSION.md): [README handoff](../../docs/design/native-redesign-2026-09-30/README.md) และ [HTML prototype](<../../docs/design/native-redesign-2026-09-30/Moojot Home.dc.html>) พร้อม assets/fonts/screenshots ชุดเดียวกัน ทุก ticket ตรวจกับชุดนี้ ก่อนสร้างหรือแก้ UI ทุกหน้า sheet หรือ dialog และก่อน review UI diff ให้อ่าน [วิธีใช้ design reference](notes/design-reference.md): HTML เป็นต้นฉบับ มีรูปของ state ที่ README ไม่มี และบอกวิธีเทียบความตรงกับดีไซน์ตอน review
-- ข้อยกเว้นเหนือ prototype คือการคงงานค้าง, classification ของ incomplete, cascade budget/full undo, CSV unknown time, pause/resume และเพิ่มบัตรใบแรก ตามคำตอบใน map ถ้าพบข้อจำกัดจริงที่เปลี่ยนผลที่ผู้ใช้ได้รับ ให้อธิบายด้วยสถานการณ์ก่อนเปลี่ยนขอบเขต
-- ภาษาร่วมใช้ [บริบทแอปมือถือ](../../apps/native/GLOSSARY.md) และ [บริบทการนำเข้าสลิป](../../packages/api/GLOSSARY.md) ก่อนเขียน Effect code ต้องอ่านคำแนะนำของ Effect ใน dependency ตามกฎ repo
-- Spec นี้เป็นงานพร้อมส่งต่อ `ready-for-agent` ยังไม่เปลี่ยน implementation ไม่ติดตั้งเครื่องมือ iOS/Android และไม่รีเซ็ตข้อมูลจากการเขียนเอกสาร การแตก build issues เริ่มที่ 01 ใน feature directory นี้และแยกจาก decision tickets ของ map
+- Synthesized from the [source map](../native-redesign-wayfinding/map.md) and every Answer linked under Decisions so far. Use latest answers, especially iOS-only checks rather than earlier two-platform plans.
+- [Data/API inspection](../native-redesign-wayfinding/assets/data-api-coverage.md) and [delivery proposal](../native-redesign-wayfinding/assets/delivery-plan-proposal.md) record planning evidence. They do not claim implementation passed.
+- The versioned reference is [docs/design/native-redesign-2026-09-30](../../docs/design/native-redesign-2026-09-30/VERSION.md), with [README handoff](../../docs/design/native-redesign-2026-09-30/README.md) and [HTML prototype](<../../docs/design/native-redesign-2026-09-30/Moojot Home.dc.html>). Assets/fonts/screenshots belong to that version. Every ticket checks against it.
+- Before creating/changing any UI screen, sheet, or dialog, read [design reference instructions](notes/design-reference.md). Read them before reviewing UI diffs too. HTML is authoritative, includes states absent from README, and explains design comparison.
+- Map answers override the prototype for pending retention, incomplete classification, cascading budgets/full undo, unknown CSV time, pause/resume, and first-card setup. Explain actual user-visible limitations through scenarios before changing scope.
+- Use [Mobile Ledger terms](../../apps/native/GLOSSARY.md) and [Finance Import terms](../../packages/api/GLOSSARY.md). Read the dependency's Effect guide before writing Effect code under repository rules.
+- This `ready-for-agent` spec hands over work without implementation changes, iOS/Android tool installation, or data reset. Build issues start at 01 here, separate from map decision tickets.

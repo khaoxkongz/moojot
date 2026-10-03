@@ -1,20 +1,20 @@
-# กำหนดข้อมูลเดิมที่ต้องเก็บ
+# Define existing-data retention needs
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-ผู้ใช้ต้องการเก็บข้อมูลที่ทดลองจดในแอปเดิมไว้ใช้ต่อกับแอปโฉมใหม่หรือไม่ และมีชุดข้อมูลใดที่ต้องรักษาเป็นพิเศษ? ข้อนี้ตัดสินใจความต้องการเก็บข้อมูลก่อน ส่วนวิธีย้ายและตรวจสอบข้อมูลเป็นคำถามแยกที่รอผล API coverage การระบุว่าแอปยังทดลองอยู่ไม่ใช่การอนุญาตให้ลบข้อมูล
+Does the user need experimental app data in the redesign? Does any dataset need special preservation? Decide retention needs first. Migration and checks are a separate question awaiting API coverage. Experimental status alone does not authorize deletion.
 
 ## Answer
 
-ผู้ใช้เลือก “เป็นข้อมูลทดลอง เริ่มใหม่ได้” จึงวางแผนให้เริ่มชุดข้อมูลทดลองใหม่ได้ โดยไม่ต้องย้ายรายการการเงินเดิมเป็นข้อกำหนดของการปรับโฉม
+The user selected a fresh start because existing data is experimental. The redesign therefore does not require migrating existing financial entries.
 
-- คำตอบนี้กำหนดความต้องการเก็บข้อมูลสำหรับแผน ยังไม่มีการลบหรือรีเซ็ตข้อมูลใด
-- กำหนดขอบเขตชุดข้อมูลที่จะเริ่มใหม่ เวลาเปลี่ยนระบบ และวิธีตรวจผลใน [กำหนดวิธีพาข้อมูลทดลองไปสู่ระบบใหม่](05-data-transition.md) หลังตรวจช่องว่างข้อมูล/API แล้ว
-- แยกข้อมูลทดลองทางการเงินออกจากบัญชีเข้าสู่ระบบ การเริ่มชุดข้อมูลใหม่ไม่กำหนดให้ลบบัญชีผู้ใช้หรือเปลี่ยน credentials
+- This answer defines planning requirements. No deletion or reset occurred.
+- Define the reset dataset, cutover timing, and checks in [the transition decision](05-data-transition.md) after data/API inspection.
+- Distinguish experimental finance data from the login account. A fresh dataset does not require deleting the user account or changing credentials.

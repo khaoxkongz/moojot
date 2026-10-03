@@ -32,6 +32,12 @@
       "skillPath": "skills/apple-design/SKILL.md",
       "computedHash": "0190417d092a0df447b000154e39733ea6d97efad6d3bec8a6ce3845aeb88914"
     },
+    "asd-ste100": {
+      "source": "danyuchn/asd-ste100-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "8108b805edf6415735ad74d2a3ee56f5609a11955f3610327434aab3989b4e64"
+    },
     "ask-matt": {
       "source": "mattpocock/skills",
       "sourceType": "github",

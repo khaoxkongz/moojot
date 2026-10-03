@@ -1,1 +1,2 @@
-vp staged
+vp staged || exit $?
+python3 scripts/check-agent-documents.py --staged

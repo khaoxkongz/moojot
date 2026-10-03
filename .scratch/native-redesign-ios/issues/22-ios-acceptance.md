@@ -1,22 +1,22 @@
-# 22: ตรวจรับแอปครบชุดบน iOS
+# 22: Accept the complete app on iOS
 
-**What to build:** ทดลองทุก flow กับชุดข้อมูลใหม่บน iPhone จริงและเครื่องจำลอง มีหลักฐานว่าหน้าตาและข้อมูลทำงานร่วมกันตาม spec
+**What to build:** Try every flow with fresh data on physical iPhone and simulator. Record evidence that design and data work together under the spec.
 
-**Blocked by:** 21 — [เริ่มข้อมูลทดลองใหม่ในบัญชีเดิม](21-scoped-cutover.md)
+**Blocked by:** 21 — [Start fresh experimental data in the existing account](21-scoped-cutover.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 1–110 (integration/visual acceptance)
 
-**Why blocked:** ต้องเปลี่ยนชุดข้อมูลและผ่านเส้นทางหลักในงานเริ่มข้อมูลทดลองใหม่ก่อนรับงานทั้งชุด
+**Why blocked:** Fresh data and core paths from ticket 21 precede whole-app acceptance.
 
-- [ ] เดิน auth/onboarding/Home/editor/slips/summary/search/budgets/rules/manager/calendar/streak/profile/cards/CSV ครบ primary task พร้อม failure/recovery ของ flow โหลดหรือ save (stories 1–110)
-- [ ] เปรียบเทียบภาพ 29 ภาพและ states/sheets ที่ไม่มีภาพกับ handoff ทั้ง light/dark คง copy/spacing/assets/motion/targets
-- [ ] ตรวจ iPhone 13 Pro/ExpoGo จริง และ iPhone 11 จำลอง/DeviceHub แยกผล; permission/photo behaviors ที่ simulator พิสูจน์ไม่ได้ตรวจเครื่องจริง
-- [ ] Keyboard, safe areas, Dynamic Type, ไทย/ชื่อ/ยอดยาว, scroll/back/dismiss/unsaved draft ยังทำงานครบ
-- [ ] Cross-feature data consistent: เปลี่ยนหมวด/filter/calendar/undo/rule/work queue แล้วทุก consumer ได้ข้อมูลจริง ไม่ข้ามข้อมูลหน้าอื่น
-- [ ] รัน check, tests ที่เปลี่ยน และ check-types ของ workspace ที่แก้; ผ่านเกณฑ์ fixture สำคัญของ spec โดยไม่อ้างว่าชุดเดิมพอ
-- [ ] ตัด legacy UI/font aliases ที่ไม่ใช้เมื่อผู้เรียกย้ายครบ และตรวจไม่ทำให้ flow เดิมหรือสัญญาที่ต้องคงอยู่เสีย
-- [ ] รายงาน evidence/เครื่อง/รุ่น/runtime และกรณียังไม่ตรวจอย่างตรงไปตรงมา Android ไม่เป็นเงื่อนไขรับงานรอบนี้; bug ที่พบมี issue แยก ไม่ปิดงานที่เกณฑ์ยังไม่ครบ
+- [ ] Complete primary tasks across auth/onboarding/Home/editor/slips/Summary/Search/budgets/rules/manager/calendar/streak/profile/cards/CSV. Include failure/recovery for load/save flows. (stories 1–110)
+- [ ] Compare 29 images and unscreened states/sheets to handoff in light/dark. Preserve text/spacing/assets/motion/targets.
+- [ ] Separate physical iPhone 13 Pro/Expo Go and iPhone 11 simulator/Device Hub results. Check permission/photo behavior physically where simulator evidence is insufficient.
+- [ ] Keyboard, safe areas, Dynamic Type, Thai/long names/large amounts, scroll/back/dismiss, and unsaved drafts remain usable.
+- [ ] Category/filter/calendar/undo/rule/work changes produce consistent actual data across consumers. Include other-screen data.
+- [ ] Run check, changed tests, and type checks for modified workspaces. Pass key spec fixtures. Existing tests alone are insufficient.
+- [ ] Retire unused legacy UI/font aliases after all callers migrate. Preserve supported flows/contracts.
+- [ ] Report evidence/devices/versions/runtime and unverified cases accurately. Android is outside this round's acceptance. Record bugs as separate issues. Unmet criteria keep work open.

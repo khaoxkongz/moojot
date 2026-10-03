@@ -1,81 +1,64 @@
-# งานพัฒนา: หมูจดโฉมใหม่บน iOS
+# Implementation tickets: Moojot redesign on iOS
 
 Published: ready-for-agent
 Approval: ผู้ใช้ยืนยัน “ใช้ตามนี้ได้เลยครับ”
 
-Source: [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](spec.md)
+Approval explanation: The user approved the plan: “You can use this plan.”
 
-เผยแพร่ 22 งานแบบครบเส้นทางจาก UI ถึงข้อมูล/API และการตรวจของพฤติกรรมนั้น พร้อมเกณฑ์ตรวจรับ 146 ข้อในไฟล์แยกแต่ละงาน สถานะ ready-for-agent งานที่ blockers ยังไม่เสร็จต้องรอก่อนเริ่ม และไม่เปลี่ยน spec/แผนต้นทาง
+Source: [Spec: Redesign Moojot with iOS acceptance first](spec.md)
 
-## วิธีเดินงาน
+At publication, 22 tickets covered complete flows from UI through data/API and behavior checks. Their separate files contained 146 acceptance criteria with ready-for-agent status. Unfinished blockers must resolve before dependent work starts. The source spec/plan remains unchanged by publication.
 
-- เริ่ม “ตัวอักษรและธีมบน iOS” เป็น prefactor ที่มีผลให้ลองบนหน้าจอจริง แล้วให้ priority กับสมัคร/เริ่มใช้/จด/Home/อ่านสลิปก่อน
-- Blocked by คือ dependency ที่ทำให้ flow หรือสัญญาที่งานนั้นใช้ยังทำไม่ครบ Priority หลักก่อนส่วนเสริมเป็นลำดับแนะนำ ไม่เพิ่ม edge เพียงเพื่อบังคับทุกงานให้ต่อเป็นเส้นเดียว
-- หลัง prefactor งานสมัครและงานจดเองเริ่มได้แยกกัน เมื่อ blockers ของงานอื่นครบก็เริ่มงานนั้นได้ ตรวจว่ามีการแก้ไฟล์ร่วมกันก่อนทำควบคู่; นั่นเป็น coordination ไม่ใช่ dependency ของผลิตภัณฑ์
-- การขยายแบบข้อมูลทำควบคู่ flow ที่ใช้ข้อมูลนั้นใน ticket เดียว และยังรับ caller/ข้อมูลเดิมได้ก่อนย้ายหน้าอื่น Cleanup แบบเก่าทำหลังผู้เรียกย้ายครบ ไม่แบ่งเป็นก้อน schema/API/UI ที่ต้องรอครบจึงจะลองได้
-- ทุกงานใช้ design reference/version/glossary ตาม spec ตรวจ iOS เฉพาะ flow ที่เปลี่ยน และเรียก checks/type-check/tests ที่เหมาะสม ไม่มี Android verification ในรอบนี้
-- Ticket มีขนาดประมาณหนึ่ง flow หรือกลุ่มการเปลี่ยนสถานะที่เชื่อมกัน กรณี scanner กับ manual-race และ recurring-history มีรายละเอียดมาก ให้ถือเกณฑ์ตรวจรับเป็นขอบเขตและแยกเพิ่มได้หากผู้ใช้ต้องการ
+## Work sequence
 
-## งานที่เผยแพร่
+- Start iOS typography/theme as a preparatory refactor with observable screen results. Then prioritize signup/onboarding/manual entry/Home/slip reading.
+- Blocked by records dependencies needed to complete a flow or contract. Core-before-supporting priority is guidance rather than an extra edge forcing one linear chain.
+- Signup and manual entry can start independently after the foundation. Other work starts when blockers finish. Check shared-file edits before parallel work. File coordination differs from product dependency.
+- Extend data alongside its consuming flow in the same ticket. Retain existing callers/data until migration. Retire old code after all callers move. Each ticket should be independently usable rather than waiting for separate schema/API/UI batches.
+- Follow the spec's design version/reference/glossaries. Check changed iOS flows and appropriate checks/type checks/tests. Android verification follows later.
+- Each ticket covers a flow or connected state transitions. Scanner/manual races and recurring history have larger criteria. Those criteria define scope. Further splitting remains available if the user requests it.
 
-1. **[ตัวอักษรและธีมบน iOS](issues/01-ios-theme-foundation.md)** — **รอ:** ไม่มี — เริ่มได้ทันที — **ส่งมอบ:** เปิดแอปเดิมบน iOS และเลือกสว่าง/มืดได้จริง หน้าแรกและหน้าจดใช้ฟอนต์ สี และฐาน controls ร่วมตามดีไซน์ เป็น prefactor ก่อนปรับ flow อื่น โดยคงการอ่านและบันทึกเดิมให้ใช้งานได้
+## Published tickets
 
-2. **[สมัครและเข้าสู่ระบบ](issues/02-auth-flow.md)** — **รอ:** ตัวอักษรและธีมบน iOS — **ส่งมอบ:** สมัคร เข้าสู่ระบบ สลับ mode และออกจากระบบได้ตามดีไซน์ พร้อม field errors และข้อความบัญชีจากผล auth จริง
+| Ticket                                                                                            | Blocked by                     | Delivered behavior                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01: [iOS typography and theme foundation](issues/01-ios-theme-foundation.md)                      | None. Start immediately.       | Existing iOS app supports actual light/dark choice and shared design fonts/colors/controls on Home/editor. Preserve reading/persistence while preparing later flows. |
+| 02: [Signup and sign-in](issues/02-auth-flow.md)                                                  | 01                             | Designed signup/sign-in/mode switching/logout with field errors and factual auth messages.                                                                           |
+| 03: [Four-step onboarding](issues/03-onboarding.md)                                               | 02                             | Terms, photo access, goals, optional data, and recap before Home, using values shared with profile.                                                                  |
+| 04: [Manual entry and transaction editing](issues/04-manual-entry.md)                             | 01                             | Complete API amount/date/category/tags/bank entry, save/edit/delete/undo.                                                                                            |
+| 05: [Home, filters, and category queue](issues/05-home-filter-queue.md)                           | 04                             | Daily accounting-period entries, bank/card filters, sequential categorization, and editing from Home.                                                                |
+| 06: [Read slips and show actual evidence](issues/06-slip-evidence.md)                             | 04                             | Actual image/date/transaction time/counterparties/bank/card evidence in the editor, with unknown data left unknown.                                                  |
+| 07: [Slip results and needs-help work](issues/07-slip-work-queue.md)                              | 05, 06                         | Three result groups, navigation during reading, pending manual resolution/targeted retry, and duplicate protection.                                                  |
+| 08: [Summary totals and trends](issues/08-summary.md)                                             | 05                             | Relevant monthly Summary, totals/share bars/six-month trends, and scoped categorization.                                                                             |
+| 09: [Search all months and amounts](issues/09-search.md)                                          | 05                             | Complete cross-month results/totals, highlights/recent queries, and editing/category continuation.                                                                   |
+| 10: [Set budgets and restore deleted budgets](issues/10-budgets.md)                               | 01                             | All/category/tag allowances and actual spending, replacement of existing allowances, and original-budget undo.                                                       |
+| 11: [Add and select the first card](issues/11-first-card.md)                                      | 04                             | Actual first-card name/last4, reusable selection, and ordinary app use without cards.                                                                                |
+| 12: [Create recurring rules and generate due entries](issues/12-recurring-create.md)              | 11                             | Rules from Plan/editor with actual first/next dates, due entries, and links without duplicating original entries.                                                    |
+| 13: [Edit, pause, and resume recurring rules](issues/13-recurring-lifecycle.md)                   | 10, 12                         | Future-effective edits, skipped pause intervals, and delete/restore with preserved history.                                                                          |
+| 14: [Create and manage categories and tags](issues/14-category-tag-management.md)                 | 04                             | Tabbed creation/editing/selection, usage counts, and consistent input checks.                                                                                        |
+| 15: [Delete categories or tags with complete restoration](issues/15-category-tag-cascade-undo.md) | 13, 14                         | Coordinated entries/rules/budgets and complete undo while preserving unrelated edits.                                                                                |
+| 16: [Apply calendar settings immediately](issues/16-calendar.md)                                  | 05                             | Immediate period/week/month/anchor choices, actual ranges, defaults, and previous-value restoration.                                                                 |
+| 17: [Carrots, streak, and tutorial](issues/17-streak.md)                                          | 05                             | Actual continuity/feeding/counting choices and four-page tutorial, without unintended data reset.                                                                    |
+| 18: [Export CSV with actual transaction dates and times](issues/18-csv.md)                        | 06, 11                         | Complete all-month ten-column Thai CSV with factual account/card/time evidence.                                                                                      |
+| 19: [Card totals and transactions](issues/19-card-dashboard.md)                                   | 09, 11                         | Current-month totals, three latest entries, and identity-preserving View all/Add entry.                                                                              |
+| 20: [Human profile and guidance](issues/20-profile.md)                                            | 07                             | Tools/current status, settings/consent, help, and working primary destinations.                                                                                      |
+| 21: [Start fresh experimental data in the existing account](issues/21-scoped-cutover.md)          | 03, 08, 15, 16, 17, 18, 19, 20 | Fresh redesigned financial data with the same email and other accounts unaffected.                                                                                   |
+| 22: [Accept the complete app on iOS](issues/22-ios-acceptance.md)                                 | 21                             | Physical iPhone/simulator evidence that all fresh-data flows and design work together under the spec.                                                                |
 
-3. **[เริ่มใช้งานสี่ขั้น](issues/03-onboarding.md)** — **รอ:** สมัครและเข้าสู่ระบบ — **ส่งมอบ:** ผู้ใช้ใหม่ตั้งค่าข้อตกลง สิทธิ์รูป เป้าหมาย และข้อมูลเพิ่มเติม แล้วดู recap ก่อนเข้า Home โดยใช้ค่าจริงร่วมกับโปรไฟล์
+## Dependency checks
 
-4. **[จดเองและแก้รายการ](issues/04-manual-entry.md)** — **รอ:** ตัวอักษรและธีมบน iOS — **ส่งมอบ:** กดจดเพิ่ม ใส่ยอด เลือกวัน หมวด/แท็ก ธนาคาร และบันทึก/แก้/ลบ/เอารายการกลับคืนได้ครบกับ API
+- Summary and Search start independently after Home.
+- Budgets start after shared UI and use existing month operations, without waiting for Summary.
+- Calendar uses Home consumers/periods and existing APIs. It does not wait for Summary/budget redesign.
+- First-card work follows core use in recommended priority. It is a real dependency for card-selecting recurring rules and the card screen.
+- Recurring lifecycle needs created schedules and budget restoration operations. Category/tag cascades therefore wait for full budget/rule-history restoration.
+- Profile needs new slip routes/status. Existing auth/consent/planning/calendar/streak/card operations allow composition before all destination screens finish.
+- Data transition waits for final flows whose dependencies cover earlier work. Whole-app iOS acceptance follows transition. This round excludes whole-database deletion and Android setup.
 
-5. **[หน้าแรก ตัวกรอง และคิวเลือกหมวด](issues/05-home-filter-queue.md)** — **รอ:** จดเองและแก้รายการ — **ส่งมอบ:** ดูรายการรายวันตามรอบบัญชี กรองธนาคาร/บัตร และจัดหมวดเป็นคิวหรือเปิดแก้รายการได้จาก Home
+## Publication
 
-6. **[อ่านสลิปและดูหลักฐานจริง](issues/06-slip-evidence.md)** — **รอ:** จดเองและแก้รายการ — **ส่งมอบ:** รายการที่อ่านจากสลิปแสดงรูป วัน เวลาทำรายการ คู่โอน และข้อมูลธนาคาร/บัตรที่มีหลักฐานจริงใน editor โดยไม่เดาข้อมูลที่อ่านไม่ได้
+The user accepted ticket sizes and blocking edges. Publish one file per ticket in dependency order with reviewed criteria. The first eligible ticket is iOS typography/theme.
 
-7. **[ผลอ่านสลิปและงานต้องช่วยหมู](issues/07-slip-work-queue.md)** — **รอ:** หน้าแรก ตัวกรอง และคิวเลือกหมวด, อ่านสลิปและดูหลักฐานจริง — **ส่งมอบ:** ดูผลสามกลุ่ม ไปหน้าอื่นขณะอ่านได้ และกลับมาจัดการสลิปค้างด้วยจดเองหรือลองใหม่ตามสาเหตุจนเสร็จ โดยไม่สร้างรายการซ้ำ
+Work from the frontier. Start only tickets whose blockers are all done. After the foundation, signup/sign-in, manual entry, and budget allowances can start under their dependencies. Prioritize core use before supporting features under the spec.
 
-8. **[สรุปยอดและแนวโน้ม](issues/08-summary.md)** — **รอ:** หน้าแรก ตัวกรอง และคิวเลือกหมวด — **ส่งมอบ:** จาก Home เปิด Summary ของเดือนที่สัมพันธ์กับช่วงที่ดู เห็นยอด สัดส่วนแท่ง และแนวโน้มหกเดือน พร้อมจัดหมวดใน scope ได้
-
-9. **[ค้นหาทุกเดือนและจำนวนเงิน](issues/09-search.md)** — **รอ:** หน้าแรก ตัวกรอง และคิวเลือกหมวด — **ส่งมอบ:** ค้นด้วยสิ่งที่จำได้ข้ามทุกเดือน เห็นผลและยอดครบ พร้อม highlight/recent searches และเปิดแก้หรือเลือกหมวดต่อได้
-
-10. **[ตั้งงบและเอางบกลับคืน](issues/10-budgets.md)** — **รอ:** ตัวอักษรและธีมบน iOS — **ส่งมอบ:** ตั้งงบรวม/หมวด/แท็ก ดูวงเงินกับยอดจริง แก้แทนวงเงินเดิม และลบแล้วเอางบเดิมกลับคืนได้
-
-11. **[เพิ่มและเลือกบัตร](issues/11-first-card.md)** — **รอ:** จดเองและแก้รายการ — **ส่งมอบ:** เพิ่มชื่อบัตรกับเลขท้ายสี่หลักครั้งแรก แล้วเลือกบัตรจริงนั้นในการจดครั้งต่อไปได้ โดยผู้ไม่มีบัตรยังใช้แอปได้
-
-12. **[ตั้งกฎจดซ้ำและจดย้อนตามกำหนด](issues/12-recurring-create.md)** — **รอ:** เพิ่มและเลือกบัตร — **ส่งมอบ:** ตั้งรายการประจำใหม่จากหน้าแผนหรือ editor แล้วเห็นวันที่แรก/ถัดไป รายการที่ถึงกำหนด และความเชื่อมโยงกับกฎโดยไม่จด original ซ้ำ
-
-13. **[แก้ หยุด และเปิดกฎจดซ้ำ](issues/13-recurring-lifecycle.md)** — **รอ:** ตั้งงบและเอางบกลับคืน, ตั้งกฎจดซ้ำและจดย้อนตามกำหนด — **ส่งมอบ:** แก้รายการประจำให้มีผลครั้งถัดไป หยุด/เปิดโดยข้ามช่วงหยุด และลบ/เอากฎกลับคืนได้โดยประวัติยังอยู่
-
-14. **[สร้างและจัดการหมวดกับแท็ก](issues/14-category-tag-management.md)** — **รอ:** จดเองและแก้รายการ — **ส่งมอบ:** ใช้หน้าหมวด/แท็กแบบ tabs เพื่อสร้าง แก้ และเลือกใช้ พร้อมจำนวนรายการที่ใช้และ validation ที่สอดคล้องทุกทาง
-
-15. **[ลบหมวดหรือแท็กแล้วกู้คืนครบ](issues/15-category-tag-cascade-undo.md)** — **รอ:** แก้ หยุด และเปิดกฎจดซ้ำ, สร้างและจัดการหมวดกับแท็ก — **ส่งมอบ:** ลบหมวด/แท็กแล้วจัดการรายการ กฎ และงบที่ผูกให้สอดคล้องกัน และเอากลับคืนได้ครบโดยไม่ทับการแก้ข้อมูลอื่น
-
-16. **[ตั้งค่าปฏิทินแล้วใช้ทันที](issues/16-calendar.md)** — **รอ:** หน้าแรก ตัวกรอง และคิวเลือกหมวด — **ส่งมอบ:** แตะเลือกรอบ วันเริ่มสัปดาห์/เดือน และ anchor ได้ทันที พร้อมช่วงจริงและคืนค่าเริ่มต้น/เอาค่าก่อนหน้ากลับคืน
-
-17. **[แครอต สตรีค และบทสอน](issues/17-streak.md)** — **รอ:** หน้าแรก ตัวกรอง และคิวเลือกหมวด — **ส่งมอบ:** ดูความต่อเนื่อง ให้อาหารหมู เปลี่ยนเกณฑ์นับ และเรียนผ่านบทสอนสี่หน้าโดยข้อมูลจริงไม่ถูกรีเซ็ต
-
-18. **[ส่งออก CSV พร้อมวันเวลาจริง](issues/18-csv.md)** — **รอ:** อ่านสลิปและดูหลักฐานจริง, เพิ่มและเลือกบัตร — **ส่งมอบ:** ส่งออกข้อมูลครบทุกเดือนเป็นไฟล์ภาษาไทยสิบคอลัมน์ โดยบัญชี/บัตรและเวลาที่แสดงตรงกับหลักฐานจริง
-
-19. **[ดูรายการและยอดของบัตร](issues/19-card-dashboard.md)** — **รอ:** ค้นหาทุกเดือนและจำนวนเงิน, เพิ่มและเลือกบัตร — **ส่งมอบ:** จากหน้าบัตรดูยอดเดือนนี้และสามรายการล่าสุด เปิดดูทั้งหมดหรือจดเพิ่มโดยคงบัตรใบที่เลือก
-
-20. **[หน้า พี่มนุษย์ และคำแนะนำ](issues/20-profile.md)** — **รอ:** ผลอ่านสลิปและงานต้องช่วยหมู — **ส่งมอบ:** ใช้โปรไฟล์ที่รวมเครื่องมือพร้อมสถานะจริง การตั้งค่า/consent และความช่วยเหลือ โดยทุกลิงก์หลักพาไป flow ที่ทำงานแล้ว
-
-21. **[เริ่มข้อมูลทดลองใหม่ในบัญชีเดิม](issues/21-scoped-cutover.md)** — **รอ:** เริ่มใช้งานสี่ขั้น, สรุปยอดและแนวโน้ม, ลบหมวดหรือแท็กแล้วกู้คืนครบ, ตั้งค่าปฏิทินแล้วใช้ทันที, แครอต สตรีค และบทสอน, ส่งออก CSV พร้อมวันเวลาจริง, ดูรายการและยอดของบัตร, หน้า พี่มนุษย์ และคำแนะนำ — **ส่งมอบ:** เปลี่ยนมาทดลองแอปโฉมใหม่ด้วยสมุดข้อมูลใหม่ โดยใช้อีเมลเดิมและไม่กระทบบัญชีอื่น
-
-22. **[ตรวจรับแอปครบชุดบน iOS](issues/22-ios-acceptance.md)** — **รอ:** เริ่มข้อมูลทดลองใหม่ในบัญชีเดิม — **ส่งมอบ:** ทดลองทุก flow กับชุดข้อมูลใหม่บน iPhone จริงและเครื่องจำลอง มีหลักฐานว่าหน้าตาและข้อมูลทำงานร่วมกันตาม spec
-
-## จุดที่ตรวจ dependency แล้ว
-
-- สรุปและค้นหาแยกกันหลังหน้าแรก จึงไม่รอกันเอง
-- งบเริ่มหลังฐาน UI และใช้ operations เดือนเดิม ไม่ต้องรอสรุป
-- ปฏิทินใช้ consumer/period ของหน้าแรกและ API เดิม จึงไม่บังคับรอหน้าสรุปกับงบที่เปลี่ยนหน้าตา
-- เพิ่มบัตรวางหลังการใช้งานหลักในลำดับแนะนำ แต่เป็น dependency จริงของกฎจดซ้ำที่เลือกบัตรและหน้าบัตร
-- กฎจดซ้ำ lifecycle ใช้ schedule จากการสร้างกฎและ restore operation จากงบ; cascade หมวด/แท็กจึงรอให้คืนงบและ rule history ได้ครบ
-- โปรไฟล์รอ route/สถานะผลสลิปใหม่ แต่ compose จาก auth/consent/planning/calendar/streak/card operations เดิมได้ จึงไม่บังคับรอทุกหน้าปลายทาง; cutover รอทุก flow ปลายสายที่ครอบงานอื่นครบผ่าน dependencies แล้ว
-- ตรวจรับ iOS ทั้งชุดหลัง cutover ไม่มีการลบฐานข้อมูลทั้งก้อนหรือ Android setup ปะปนเป็น ticket ที่ต้องทำรอบนี้
-
-## การเผยแพร่
-
-ผู้ใช้ยอมรับขนาดงานและ blocking edges ของชุดนี้แล้ว เผยแพร่หนึ่งไฟล์ต่อ ticket ตามลำดับ dependency และคงเกณฑ์ตรวจรับที่ทบทวนไว้ งานแรกที่เริ่มได้คือ “ตัวอักษรและธีมบน iOS”
-
-ทำงานจาก frontier: เริ่มเฉพาะงานที่ blockers ทุกงานมีสถานะ done หลังงานฐานร่วมเสร็จจึงเริ่มสมัคร/เข้าสู่ระบบ จดเอง หรือวงเงินงบได้ตาม dependency โดยให้ priority การใช้งานหลักก่อนส่วนเสริมตาม spec
-
-การเผยแพร่ ticket ไม่ใช่การเริ่ม implementation หรือการรีเซ็ตข้อมูล ไม่แก้สถานะ parent spec และ Android verification ทำภายหลังตามขอบเขตเดิม
+Publishing tickets does not start implementation or reset data. Preserve the parent spec's status. Android verification follows later under the existing scope.

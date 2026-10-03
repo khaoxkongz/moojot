@@ -1,57 +1,63 @@
-# 04: จดเองและแก้รายการ
+# 04: Manual entry and transaction editing
 
-**What to build:** กดจดเพิ่ม ใส่ยอด เลือกวัน หมวด/แท็ก ธนาคาร และบันทึก/แก้/ลบ/เอารายการกลับคืนได้ครบกับ API
+**What to build:** Add an amount, date, category/tags, and bank. Complete API save/edit/delete/undo from the entry action.
 
-**Blocked by:** 01 — [ตัวอักษรและธีมบน iOS](01-ios-theme-foundation.md)
+**Blocked by:** 01 — [iOS typography and theme foundation](01-ios-theme-foundation.md)
 
 **Status:** done
 
 **Done in:** 7618bba feat(native): redesign manual entry editor with keypad, sources and undo; 6f3ac22 fix(native): address ticket 04 review findings; 98db784 fix(native): match entry editor to the design prototype
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 6, 8–10, 36–46
 
-**Why blocked:** ใช้ฐาน controls/typography/theme; ทดสอบด้วยบัญชีที่เข้าสู่ระบบอยู่แล้วได้ ไม่ต้องรอ flow สมัครใหม่
+**Why blocked:** This needs shared controls/typography/theme. An already authenticated account can test it independently of new signup.
 
-- [x] จดเพิ่มเปิด modal โดยตรง รายจ่าย/รายรับ/ย้ายเงินเป็นคำไทย Type switch ล้างหมวดที่ไม่เข้ากัน และย้ายเงินไม่นับรายรับรายจ่าย
-- [x] Keypad คำนวณ AC/%/พื้นฐาน/paste รองรับสองทศนิยม/12 digits พร้อม error; ยืนยันยอดใหม่เปิด category sheet
-- [x] Hardware keys บนเว็บ _(บน iOS ยังไม่ได้: Expo Go ไม่มี key event ถ้าไม่มีช่องพิมพ์ ต้องใช้ native module — แยกไป [23](23-ios-hardware-keypad.md))_
-- [x] เลือกวันย้อนหลัง/วันนี้และห้ามเลือกอนาคต ไม่มีช่องกรอกเวลา; title fallback, note, category/tags และ bank selection บันทึกเป็น satang/วันรายการถูกต้อง
-- [x] เลือกบัตรที่มีอยู่ด้วยชื่อ+last4 ได้; flow เพิ่มบัตรใบแรกเป็นงานเพิ่มและเลือกบัตร ไม่ hardcode บัตรตัวอย่าง _(ชิป "เพิ่มบัตร" พาไปหน้าบัตรแล้วกลับมาที่ draft เดิม ไม่เปิด editor ซ้อน; การเพิ่มบัตรจริงอยู่ใน [11](11-first-card.md))_
-- [x] Close เปลี่ยน draft แสดง save/discard; save failure รักษา draft และยังแก้ได้ พร้อม duplicate-submit guard
-- [x] ลบ entry ทันทีและ toast ล่าสุด 5 วินาที เอากลับคืนคืน ID/fields เดิมผ่าน server โดยไม่สร้าง clone; delete/restore failure แสดงตามจริง
-- [ ] Query consumers เห็นผลหลัง create/edit/delete/restore และตรวจ UI keyboard/back/ข้อความยาว/ยอดยาว light-dark บน iOS _(query refresh ทำแล้วและมี integration test; เหลือตรวจบน iPhone)_
+- [x] Add entry directly opens a modal with Thai expense/income/transfer labels. Kind changes clear incompatible category. Totals exclude transfers from income/expense.
+- [x] Keypad supports AC/%, basic calculation, paste, two decimals, 12 digits, and errors. Accepting a new amount opens category selection.
+- [x] Hardware keys work on web. _iOS remains unsupported: Expo Go lacks key events without a text input. This requires a native module. See [23](23-ios-hardware-keypad.md)._
+- [x] Allow past/today dates, excluding future dates and time input. Save fallback title, note, category/tags, and bank with accurate satang and transaction date.
+- [x] Select existing cards by name+last4 without hardcoded samples. _“เพิ่มบัตร” (add card) opens Cards, then returns to the existing draft without a nested editor. Actual first-card creation is [11](11-first-card.md)._
+- [x] Closing changed drafts offers save/discard. Failed saves retain editable drafts. Guard against duplicate submission.
+- [x] Delete immediately. The latest toast offers undo for 5 seconds. Server restoration returns original IDs/fields without clones. Report delete/restore failures accurately.
+- [ ] Queries reflect create/edit/delete/restore. Check keyboard/back/long text/large amounts in iOS light/dark. _Query refresh and integration tests are complete. iPhone UI checks remain._
 
 ## Comments
 
-**ต้องตรวจบน iPhone (Expo Go) ทั้งธีมสว่างและมืด** — โค้ดผ่าน check-types, lint และ tests แล้ว แต่ยังไม่ได้เปิดหน้าจอจริง (simulator ไม่มี session/การแตะอัตโนมัติ)
+**Check iPhone (Expo Go) in light/dark.** At this point, type checks, lint, and tests passed. Actual screens were not checked because the simulator lacked session/automated taps.
 
-1. หน้าแรก กด "จดเพิ่ม" → เข้าหน้า "จดรายการ" ทันที (ไม่มีเมนู) keypad เปิดอยู่แล้ว
-2. แท็บ รายจ่าย/รายรับ/ย้ายเงิน: เลือกหมวดแล้วสลับชนิด → หมวดหาย; ย้ายเงิน → ไม่มีแถวหมวด มีข้อความ "ไม่นับเป็นรายจ่าย/รายรับ" และยอดสรุปหน้าแรกไม่เพิ่ม
-3. Keypad: 120+45 แล้ว "=" เห็น "120+45=" และ 165; AC, %, ⌫, ทศนิยมได้ 2 ตำแหน่ง, พิมพ์ได้ไม่เกิน 12 ตัว, 5÷0 ขึ้น "ไม่สามารถคำนวณจำนวนนี้ได้"; "วาง" จากข้อความที่คัดลอก (เช่น "฿1,250.50") และข้อความไม่มีตัวเลข → "คลิปบอร์ดไม่มีจำนวนเงิน"; ปุ่ม AC กว้างสองช่องตรงแนว; caret กระพริบ
-4. ใส่ยอดใหม่แล้วกด "เสร็จ" → แผงเลือกหมวดเปิดเอง; เลือกแท็ก/เพิ่มแท็กใหม่ (เกิน 20 ตัวไม่ได้)/เลือกหมวด
-5. ยอดยาว (เช่น 999,999,999.99) ตัวเลขเล็กลงและไม่ล้นการ์ด
-6. วันที่: ปฏิทินกดวันพรุ่งนี้ไม่ได้ เดือนถัดไปกดไม่ได้ ย้อนหลังได้ ปุ่ม "วันนี้" ใช้ได้ ไม่มีช่องเวลา
-7. ชื่อรายการเว้นว่าง → placeholder บอก "ถ้าไม่ใส่ จะใช้ “…”" และหน้าแรกแสดงชื่อนั้นหลังบันทึก; ชื่อ/โน้ตยาวภาษาไทยไม่ล้น
-8. คีย์บอร์ด: แตะชื่อรายการ/โน้ต → keypad ปิด, ปุ่ม "บันทึก" ลอยเหนือคีย์บอร์ด, เลื่อนดูช่องได้
-9. "จ่ายจากบัญชี": เลือกธนาคาร/ไม่ระบุ บันทึกแล้วเปิดแก้ไขยังเลือกตัวเดิม; บัญชีที่ยังไม่มีบัตรเห็นชิป "เพิ่มบัตร" ซึ่งพาไปหน้าบัตร กดปุ่มในหน้าบัตร ("จดเพิ่ม"/"จดรายการบัตรเครดิต") แล้วกลับมาที่ editor เดิมที่ draft ยังอยู่ (ไม่มี editor ซ้อนสองชั้น — กด × ครั้งเดียวก็ออก); ถ้ามีรายการที่ใช้บัตร (ชื่อ+เลขท้าย) ต้องเห็นเป็นชิปแยกแต่ละใบ
-10. ปิด (×) หลังแก้อะไรแล้ว → กล่อง "บันทึกรายการมั้ย?" ทั้ง "ไม่บันทึก" และ "บันทึก" ทำงาน; ไม่แก้อะไร → ปิดเลย
-11. ปิดเน็ต/server แล้วกดบันทึก → ข้อความผิดพลาดภาษาไทย, ข้อมูลยังอยู่, เปิดเน็ตแล้วกดอีกครั้งบันทึกได้; กดบันทึกรัว ๆ ได้รายการเดียว
-12. เปิดรายการเดิม → ⋮ → ลบรายการ → กลับหน้าก่อนทันที, toast "ลบรายการแล้ว · เอากลับคืน" ค้าง ~5 วินาทีเหนือปุ่มจดเพิ่ม; กดเอากลับคืน → รายการเดิมกลับมา (ชื่อ ยอด หมวด แท็ก วันเดิม); ลองแบบปิดเน็ตก่อนกดเอากลับคืน → toast บอกเหตุและกดลองใหม่ได้
-13. หลังจด/แก้/ลบ/เอากลับคืน: หน้าแรก ยอดรวม สรุป ค้นหา และคิวรอเลือกหมวดเปลี่ยนตามทันที
-14. Dynamic Type ขนาดใหญ่: ปุ่มบันทึกและ keypad ยังกดได้
+1. Tap “จดเพิ่ม” (add entry) on Home. “จดรายการ” (record transaction) opens directly without a menu, with keypad open.
+2. Select a category, then switch expense/income/transfer. Incompatible category clears. Transfer hides category and shows “ไม่นับเป็นรายจ่าย/รายรับ” (excluded from expense/income). Home totals remain unchanged by transfers.
+3. Enter 120+45, then “=”. Check “120+45=” and 165. Check AC, %, ⌫, two decimals, 12-character input limit, and 5÷0 error “ไม่สามารถคำนวณจำนวนนี้ได้” (cannot calculate this amount).
 
-**หลังแก้ตาม review (6f3ac22) ตรวจเพิ่ม:**
+   “วาง” (paste) parses “฿1,250.50”. Nonnumeric clipboard text shows “คลิปบอร์ดไม่มีจำนวนเงิน” (clipboard has no amount). AC spans two aligned cells. The caret blinks.
 
-15. ~~ปุ่มหลักบอกสิ่งที่ต้องแก้ก่อนกด~~ เปลี่ยนตามดีไซน์ (98db784): ปุ่มเขียน "บันทึก" เสมอ; กดโดยยังไม่ใส่ยอด → แป้นตัวเลขเปิด กรอบยอดเป็นสีแดง และขึ้น "กรุณาใส่จำนวนเงินที่มากกว่า 0 บาท" ใต้ยอด; มียอดแต่ยังไม่เลือกหมวด → บันทึกได้เลย รายการไปรอเลือกหมวด
-16. ธนาคาร: จดเองเลือก "กสิกรไทย" แล้วเปิดตัวกรองที่หน้าแรก → มีแถว "กสิกรไทย" แถวเดียว (รวมรายการสลิป/ตัวอย่าง "KBank" และรายการที่เคยจดเป็น "กสิกรไทย" ก่อนแก้) เลือกแถวนั้นแล้วเห็นทั้งสองแบบ; แถวรายการหน้าแรกแสดงชื่อไทย
-17. กด "จดซ้ำล่วงหน้า" จาก editor ที่เลือกบัตรไว้ → ฟอร์มจดซ้ำยังไม่มีช่องบัตร (งาน 12) แต่ไม่พัง
+4. Enter a new amount and tap “เสร็จ” (done). Category selection opens automatically. Check tags/new tags, the 20-character limit, and category selection.
+5. A large amount such as 999,999,999.99 shrinks without overflowing the card.
+6. Calendar excludes tomorrow and next-month navigation. Past dates and “วันนี้” (today) work. Time input remains absent.
+7. Blank title explains its fallback through “ถ้าไม่ใส่ จะใช้ “…”” (if empty, use …). Home shows that title after saving. Long Thai titles/notes remain within layout.
+8. Title/note focus closes keypad. “บันทึก” (save) stays above the keyboard. Fields remain scrollable.
+9. “จ่ายจากบัญชี” (pay from account) preserves bank/unspecified selection after reopening. Accounts without cards show “เพิ่มบัตร” (add card), opening Cards. Its “จดเพิ่ม” (add entry)/“จดรายการบัตรเครดิต” (record credit-card transaction) returns to the same retained draft. One × closes that editor. Existing name+last4 cards appear as separate chips.
+10. Close a changed draft. “บันทึกรายการมั้ย?” (save this transaction?) offers working “ไม่บันทึก” (discard) and “บันทึก” (save). Unchanged drafts close directly.
+11. Disconnect network/server and save. Thai errors preserve input. Restored network allows retry. Repeated rapid Save taps create one transaction.
+12. Open an entry's ⋮ and delete. Return immediately to the previous screen. “ลบรายการแล้ว · เอากลับคืน” (deleted · undo) appears above Add entry for about 5 seconds. Undo restores original title/amount/category/tags/date. Disconnection before Undo produces an explanatory, retryable toast.
+13. Home, totals, Summary, Search, and the pending-category queue update immediately after create/edit/delete/restore.
+14. Larger Dynamic Type keeps Save and keypad tappable.
 
-**หลังปรับให้ตรงดีไซน์ (98db784) เทียบกับภาพดีไซน์:** เปิดภาพใน `.scratch/native-redesign-ios/notes/design-shots/` (`04-<state>.png` และ `04-<state>-dark.png`) คู่กับหน้าจอบน iPhone ในสถานะเดียวกัน ทั้งธีมสว่างและมืด ภาพที่ถ่ายจากแอปบนเว็บอยู่ที่ `notes/04-app-<state>[-dark].png` ใช้ดูคู่กันได้ ส่วนที่ตั้งใจให้ต่างจากดีไซน์เขียนไว้ใน notes/04 หัวข้อ "Design pass"
+**Additional checks after review fixes (6f3ac22):**
 
-18. ปฏิทิน (`04-calendar`): หัว "เลือกวันที่จด" อยู่กลาง ลูกศรสีส้มเข้ม ลูกศรเดือนถัดไปจางเมื่ออยู่เดือนนี้ วันนี้มีวงสีส้ม วันที่เลือกเป็นแคปซูลส้มเต็มช่อง วันอนาคตจาง กดไม่ได้ ปุ่ม "ยกเลิก" เป็นขอบส้ม "วันนี้" เป็นสีส้มเต็ม
-19. แป้นตัวเลข (`04-keypad-calculating`), แผงเลือกหมวด (`04-category-sheet`), เพิ่มแท็ก (`04-tag-add`: ปุ่มกลับ ช่อง # และปุ่ม + กลมอยู่แถวเดียว แตะชิปแนะนำแล้วแท็กถูกเพิ่มทันที), ฟอร์ม (`04-form-new`, `04-form-empty`, `04-type-transfer`), ยอดว่าง (`04-save-missing-amount`), กล่องปิด (`04-exit-dialog`: ปุ่ม "ไม่บันทึก" เป็นขอบ), แก้ไข/เมนู ⋮ (`04-edit-manual`, `04-edit-menu`), toast (`04-delete-toast`)
-20. ชิปบัญชีไม่มีไอคอน บัตรขึ้นเป็น "บัตร KTC •• 4821"; ชิป "เพิ่มบัตร" เป็นเส้นประสีส้ม (ไม่มีในดีไซน์ ใช้แบบเดียวกับ "เพิ่มแท็ก")
+15. ~~Primary action explains required corrections before tapping.~~ Design change (98db784): the label always says “บันทึก” (save). Missing amount opens keypad, gives a red amount border, and shows “กรุณาใส่จำนวนเงินที่มากกว่า 0 บาท” (enter an amount above 0 baht). A valid amount without category saves as pending-category work.
+16. Select “กสิกรไทย” (Kasikornbank) in a manual entry. Home filters show one bank row combining slip/sample “KBank” and earlier “กสิกรไทย” entries. Selecting it includes both. Home rows use the Thai name.
+17. From an editor with a card, tap “จดซ้ำล่วงหน้า” (schedule recurring entry). The recurring form still lacks card input at this point (ticket 12), but remains usable.
 
-2026-10-02: ผู้ใช้ตรวจบน iPhone ครบทุกข้อในรายการด้านบน (รวม 18–20 เทียบกับภาพดีไซน์) แล้ว ผ่านทั้งหมด จึงปิดตั๋วเป็น `done`
+**After design matching (98db784):** Compare `.scratch/native-redesign-ios/notes/design-shots/` images `04-<state>.png` and `04-<state>-dark.png` with matching iPhone states. Cover light/dark. Web-app images in `notes/04-app-<state>[-dark].png` provide additional comparisons. Deliberate differences are in notes/04, “Design pass”.
+
+18. Calendar (`04-calendar`) centers “เลือกวันที่จด” (choose transaction date). Arrows are dark orange, with next-month disabled for the current month. Today has an orange ring. The selected date forms an orange pill filling its cell. Future dates remain unavailable.
+
+    “ยกเลิก” (cancel) has an orange outline. “วันนี้” (today) uses an orange fill.
+
+19. Compare keypad (`04-keypad-calculating`), category sheet (`04-category-sheet`), and tag creation (`04-tag-add`). Tag Back, # input, and round + share a row. Suggested-chip taps add immediately. Compare forms (`04-form-new`, `04-form-empty`, `04-type-transfer`), missing amount (`04-save-missing-amount`), and exit dialog (`04-exit-dialog`). Check the outlined “ไม่บันทึก” (discard). Compare editing/menu (`04-edit-manual`, `04-edit-menu`) and toast (`04-delete-toast`).
+20. Account chips have no icon. Cards show “บัตร KTC •• 4821” (KTC card ending 4821). “เพิ่มบัตร” (add card) has a dashed orange border. This addition uses the same appearance as “เพิ่มแท็ก” (add tag).
+
+2026-10-02: The user checked every item above on iPhone, including design comparisons 18–20. All passed, so the ticket became `done`.

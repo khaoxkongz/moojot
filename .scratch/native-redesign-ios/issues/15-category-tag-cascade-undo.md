@@ -1,21 +1,21 @@
-# 15: ลบหมวดหรือแท็กแล้วกู้คืนครบ
+# 15: Delete categories or tags with complete restoration
 
-**What to build:** ลบหมวด/แท็กแล้วจัดการรายการ กฎ และงบที่ผูกให้สอดคล้องกัน และเอากลับคืนได้ครบโดยไม่ทับการแก้ข้อมูลอื่น
+**What to build:** Category/tag deletion coordinates affected entries, rules, and budgets. Undo restores everything affected while preserving unrelated edits.
 
-**Blocked by:** 13 — [แก้ หยุด และเปิดกฎจดซ้ำ](13-recurring-lifecycle.md); 14 — [สร้างและจัดการหมวดกับแท็ก](14-category-tag-management.md)
+**Blocked by:** 13 — [Edit, pause, and resume recurring rules](13-recurring-lifecycle.md); 14 — [Create and manage categories and tags](14-category-tag-management.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 88–90
 
-**Why blocked:** ต้องมี UI/identity ของหมวด-แท็ก และ schedule/rule กับ restore operation ของกฎ/งบที่พร้อม
+**Why blocked:** This needs category/tag UI/identity, schedules/rules, and complete rule/budget restoration operations.
 
-- [ ] ลบ custom category แล้ว entry/rule links ถูกถอด รายการยังอยู่กลับ pending และงบที่ผูกถูกลบ ไม่มีชื่อ fallback ค้าง (story 88)
-- [ ] ลบ tag แล้วถอด links ในรายการ/กฎและลบงบที่ผูกโดยคง fields/แท็กอื่น (story 90)
-- [ ] Undo ล่าสุด 5 วินาทีคืนตัว category/tag กับ ID เดิม งบเดิม และ affected entry/rule relationships รวม schedule data ที่เกี่ยวข้อง (stories 89, 90)
-- [ ] Restore เป็น operation ที่คืนครบใน transaction หรืออธิบาย conflict/error ไม่สร้าง clone และไม่ย้อนสมุดข้อมูลทั้งชุด
-- [ ] การแก้ amount/title/แท็กอื่นระหว่างนั้นยังอยู่ หลังคืน repeated requests ไม่เพิ่มข้อมูลซ้ำและผู้ใช้อื่นคืน receipt ไม่ได้
-- [ ] Counts/pending/budget/rule/search consumers refresh หลังผลจริง และ failure ไม่หายเงียบ
-- [ ] พิสูจน์ cascade+restore+concurrent edits ในฐานทดสอบ และลบหมวดกาแฟที่มีงบแล้ว undo บน iOS
+- [ ] Custom-category deletion clears entry/rule links and deletes linked budgets. Entries remain pending-category work without stale fallback names. (story 88)
+- [ ] Tag deletion clears entry/rule links and deletes linked budgets while preserving other fields/tags. (story 90)
+- [ ] Latest undo within 5 seconds restores original category/tag IDs, budgets, entry/rule relationships, and relevant schedule data. (stories 89, 90)
+- [ ] Restore completely within a transaction or report conflict/error. Preserve identity without clones or whole-ledger rollback.
+- [ ] Intervening amount/title/other-tag edits remain. Repeated restoration creates no duplicates. Other users cannot restore the receipt.
+- [ ] Counts/pending/budget/rule/search consumers refresh after actual results. Failures remain visible.
+- [ ] Prove cascade/restore/concurrent edits in a test database. Delete a coffee category with a budget, then undo on iOS.

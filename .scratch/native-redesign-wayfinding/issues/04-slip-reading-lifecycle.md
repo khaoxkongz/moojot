@@ -1,70 +1,72 @@
-# กำหนดการอ่านสลิปเมื่อเปลี่ยนหน้าหรือพักแอป
+# Define slip reading across navigation and app pauses
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-เมื่อเพิ่มหน้าผลอ่านสลิปตามดีไซน์ใหม่ การอ่านต้องทำงานต่อหรือพักเมื่อออกจากหน้าผล ไปหน้าจดรายการ กลับหน้าแรก หรือพักแอป และปุ่มอ่านอีกครั้ง/จดเองต้องเชื่อมกับผลเดิมอย่างไร? ตรวจ coordinator และผลลัพธ์ที่มีอยู่ใน `features/slips/auto-import/` กับ API ก่อนเสนอทางเลือก บันทึกข้อกำหนดที่แทนที่ [Spec: ปรับ Home มือถือให้รองรับการนำเข้าสลิปอัตโนมัติ](../../native-slip-auto-import/spec.md) ซึ่งเดิมใช้ Home เป็นพื้นผิวสถานะและหยุด scheduling เมื่อ Home เสีย focus
+When adding the new slip-results screen, when should reading continue or pause? Consider leaving results, opening entry creation, returning Home, and suspending the app. How do retry and manual-entry actions connect to the original result?
 
-## Comments
-
-### สิ่งที่ดีไซน์กำหนดไว้แล้ว
-
-- README ระบุ “เปิดแอปไว้ก่อนน้า ปิดหน้านี้ได้ หมูจะอ่านต่อให้” ต้นแบบอ่านชุดข้อมูลโดยไม่ผูกกับ route จึงรับพฤติกรรมอ่านต่อเมื่อไปหน้าอื่นภายในแอปตามดีไซน์ที่ผู้ใช้เลือก
-- ผลแบ่ง “ต้องช่วยหมู”, “จดให้แล้ว”, “ข้ามไป”; รายการที่อ่านสำเร็จเปิดเลือกหมวดหรือแก้ไขได้
-- ต้นแบบแยกกรณีระบบไม่ว่างให้ลองอีกครั้งหรือจดเอง และกรณีข้อมูลไม่ครบให้จดเอง; จดเองเติมวันที่ของรูป เมื่อบันทึกแถวเดิมเปลี่ยนเป็น “จดเองแล้ว”
-- การแทน network ด้วย timer และการกันซ้ำด้วยชื่อ/ยอด/วันในต้นแบบเป็นข้อมูลจำลอง ให้ยึดสัญญาข้อมูลจริงเมื่อวางระบบ
-
-### ความต่างจากระบบเดิมและแนวทางทางเทคนิค
-
-- `home-scan.ts` เดิมผูก eligibility กับ Home focus และ app active ต้องย้ายการเป็นเจ้าของรอบอ่านให้รองรับการไปหน้าอื่นตามดีไซน์
-- เมื่อแอปไม่ active ระบบเดิมหยุดส่งรูปใหม่ ส่วนคำขอที่ส่งแล้วจบได้ ใช้เป็นฐานสำหรับพักเมื่อสลับแอปหรือล็อกเครื่องและทำต่อเมื่อกลับมา โดยไม่อ้างว่าต้นแบบพิสูจน์การทำงาน background แล้ว
-- ระบบจริงผูกภาพกับ transaction ID และกันซ้ำตาม asset ID ต้องรักษาการกันซ้ำนี้ รวมการผูกภาพกับรายการที่ผู้ใช้จดเองจากผลอ่านล้มเหลว เพื่อไม่สร้างรายการซ้ำเมื่ออ่านรูปเดิมอีก
-- Spec ใหม่จะเปลี่ยนข้อกำหนดเดิมเรื่องไม่มีหน้าผลอ่านและ Home เป็นเจ้าของรอบอ่านเพียงหน้าเดียว ส่วนขอบเขตทำงานเมื่อเปิดแอปไว้ใช้เป็นฐานเดิมที่สอดคล้อง handoff
-
-### ประเด็นที่ยังต้องถาม
-
-เมื่อมีรอบอ่านใหม่ ต้นแบบแทน `scan.items` ทั้งชุด และไม่มีการจำลองการเก็บผลข้ามวัน README ระบุเพียงผลอ่านล่าสุด จึงยังไม่ชัดว่ารายการ “ต้องช่วยหมู” ที่ยังไม่จัดการควรอยู่ข้ามรอบอ่านหรือไม่
-
-Agent แนะนำให้รายการที่ยังต้องช่วยคงอยู่ให้กลับมาจัดการได้ แม้มีสลิปใหม่เข้ามาในวันถัดไป รอคำตอบผู้ใช้ก่อนถือเป็นข้อตกลง
-
-### ตรวจ API ปัจจุบันก่อนตัดสินใจ
-
-ผู้ใช้ขอให้ตรวจ API จากแอปจริงก่อนตอบ จากนั้นเลือกให้ตรวจจาก codebase หลังการควบคุม Device Hub ไม่เสถียร ได้ตรวจ router, schema, import service และ native scan memory แล้ว รายละเอียดและขอบเขตหลักฐานอยู่ใน [API อ่านสลิปปัจจุบันและสถานะที่แอปเก็บเอง](../assets/current-slip-api-review.md)
-
-ระบบปัจจุบันมีความจำผลอ่านในมือถืออยู่แล้ว แต่ยังไม่มี endpoint ดึงงานอ่านที่ค้างจาก server และการข้ามเพราะข้อมูลไม่ครบต่างจากการข้ามเพราะไม่ใช่สลิป การเสนอคงงานค้างข้ามรอบยังรอคำตอบผู้ใช้ ไม่ถือว่าคำขอตรวจ API เป็นการยอมรับข้อเสนอนี้
-
-### ตัวอย่างประกอบการอธิบาย
-
-ผู้ใช้ขอให้ขยายความอีกครั้ง จึงทำ [ตัวอย่างงานสลิปที่ยังค้าง](../assets/slip-work-queue-example.html) ให้กดดูเหตุการณ์จากเมื่อวานไปวันนี้และเมื่อช่วยจดเสร็จ ใช้ข้อมูลสมมติและไม่มีการเรียก API ตัวอย่างแยกรูปสลิป สถานะงาน และรายการที่บันทึกแล้วเพื่อช่วยอธิบายข้อเสนอ การกดดูตัวอย่างไม่ถือเป็นการยอมรับนโยบายเก็บงานค้าง
-
-### การยืนยันหลังอธิบายเงื่อนไขการอ่านซ้ำ
-
-ผู้ใช้ถามว่ารูปที่รอให้ช่วยจดจะไม่ส่งให้ GenAI อ่านอีกหรือไม่ Agent ตรวจ `isSettled` และอธิบายว่ากรณีอ่านแล้วข้อมูลไม่ครบจะไม่ส่งซ้ำอัตโนมัติเมื่อรูปเดิมและยังจำผลอ่านไว้ ส่วนบริการไม่พร้อม/เน็ตขัดข้อง/หมดเวลารอจะลองใหม่ในรอบอ่านถัดไปตามเวลา retry ผู้ใช้ตอบว่า “โอเค.. ถ้าอย่างนั้นผมก็เห็นด้วยครับ”
+Inspect `features/slips/auto-import/` and API outcomes before proposing options. Record requirements replacing [the native automatic-import spec](../../native-slip-auto-import/spec.md). That spec made Home the status surface and stopped scheduling when Home lost focus.
 
 ## Answer
 
-### ข้อตกลงเรื่องงานค้างและการส่งซ้ำ
+### Pending work and resends
 
-- คงรายการสลิปที่ยังต้องช่วยไว้ข้ามรอบอ่านจนจัดการเสร็จ การมีผลอ่านของวันใหม่ไม่ทำให้งานที่ค้างจากวันก่อนหายไป
-- สลิปที่ GenAI อ่านแล้วข้อมูลไม่ครบอยู่ใน “ต้องช่วยหมู” เพื่อให้จดเอง และไม่ส่งอ่านซ้ำอัตโนมัติสำหรับรูปเดิมที่ยังจำผลไว้ การคงรายการค้างไม่ใช่การสั่งให้อ่านรูปนั้นวนใหม่
-- ข้อผิดพลาดชั่วคราว เช่นบริการไม่พร้อม เน็ตขัดข้อง หรือหมดเวลารอ ยังคงลองใหม่ในรอบอ่านที่มีสิทธิ์ทำงานเมื่อถึงเวลา retry ตามเงื่อนไขเดิม ต้องแสดงสาเหตุและ action ให้ต่างจากข้อมูลไม่ครบ
-- เมื่อจดเองจากรูปค้างสำเร็จ ให้ผูกรูปกับรายการ บันทึกว่าจัดการแล้ว และกันการสร้างรายการซ้ำจากรูปเดียวกัน
+- Retain unresolved slip work across rounds until completion. New daily results must retain yesterday's unresolved work.
+- GenAI results with incomplete data enter “ต้องช่วยหมู” (needs help) for manual entry. Do not automatically resend the same image while its outcome remains remembered. Retaining work does not request repeated reading.
+- Temporary failures, including unavailability, network errors, and timeouts, retain existing retry rules. Retry in an eligible round when due. Show causes and actions separately from incomplete data.
+- Successful manual entry links the image, records completion, and prevents another entry from the same image.
 
-### พฤติกรรมที่รับตามดีไซน์
+### Approved design behavior
 
-- มีหน้าผลอ่านสามกลุ่ม “ต้องช่วยหมู”, “จดให้แล้ว”, “ข้ามไป” โดย `incomplete_candidate` เข้ากลุ่มต้องช่วย ไม่รวมกับกรณีรูปซ้ำหรือไม่ใช่สลิปที่ข้ามได้เลย
-- เมื่อยังเปิดแอปอยู่ การไปหน้าอื่นภายในแอปไม่หยุดรอบอ่านที่กำลังทำงาน เมื่อพักแอปหรือล็อกเครื่องให้หยุดส่งรูปใหม่และกลับมาทำต่อเมื่อเปิดแอปอีก ใช้การพักคำขอและกันซ้ำเดิมเป็นฐาน โดยไม่เพิ่มคำสัญญาทำงานขณะปิดแอป
-- จดเองจากผลอ่านเติมวันที่ของรูปตามต้นแบบ และรายการที่อ่านสำเร็จเปิดเลือกหมวดหรือแก้ไขได้
+- Provide “ต้องช่วยหมู” (needs help), “จดให้แล้ว” (recorded), and “ข้ามไป” (skipped). `incomplete_candidate` needs help. Keep it separate from duplicates and non-slips.
+- In-app navigation does not stop an active round while the app stays open. App suspension or locking stops new images. Continue when the app returns. Reuse existing pause and deduplication behavior. Add no promise of execution after the user closes the app.
+- Manual entry starts with the photo date. Successful entries support category selection and editing.
 
-### ผลต่อการวางระบบ
+### System consequences
 
-- แทนที่ข้อกำหนดเดิมเรื่องไม่มีหน้าผลอ่านและการผูกรอบอ่านกับ Home focus เพียงหน้าเดียวใน spec ที่ลิงก์ข้างต้น
-- แยกการเก็บงานค้างจากการล้างความจำผลอ่านตามช่วงค้นรูปใหม่ย้อนหลัง 30 วัน เพื่อรักษารายการค้างตามข้อตกลง การเลือกรูปแบบจัดเก็บและการเติม metadata ให้ตรวจในงาน API coverage
-- ข้อตกลงนี้ไม่รับประกันว่าความจำจะอยู่หลังลบข้อมูลแอป/ติดตั้งใหม่ และยังไม่ได้เลือกการ sync งานค้างข้ามเครื่อง ต้องเสนอเพิ่มเติมเฉพาะเมื่อมีความต้องการนั้น
-- เมื่อไม่พบรูปหรือสิทธิ์เข้าถึงเปลี่ยน ต้องสะท้อนข้อจำกัดจริงใน UI และรักษาสถานะงานให้ตรวจสอบได้ โดยไม่คาดเดาว่าจดสำเร็จแล้ว
+- Replace the linked spec's lack of a results screen and Home-only round ownership.
+- Separate pending-work retention from outcome-memory cleanup for the 30-day image-discovery window. Inspect storage and metadata in API coverage.
+- This agreement does not guarantee memory after app-data deletion or reinstallation. It does not select cross-device synchronization. Propose these only if required.
+- Missing images or changed permissions must show actual access limits. Keep work states inspectable. Do not assume successful recording.
+
+## Comments
+
+### Behavior already defined by the design
+
+- README says “เปิดแอปไว้ก่อนน้า ปิดหน้านี้ได้ หมูจะอ่านต่อให้” (keep the app open, close this screen, and reading continues). Prototype batches do not belong to a route. Accept continued reading across in-app navigation.
+- Results have “ต้องช่วยหมู” (needs help), “จดให้แล้ว” (recorded), and “ข้ามไป” (skipped). Successful entries support category selection or editing.
+- An unavailable service allows retry or manual entry. Incomplete data allows manual entry. Manual entry starts with the photo date. Saving changes the original row to “จดเองแล้ว” (recorded manually).
+- Prototype timers replace network calls. Its title/amount/day duplicate checks use simulated data. Use actual data contracts when designing the system.
+
+### Existing differences and technical approach
+
+- Existing `home-scan.ts` requires Home focus and an active app. Move round ownership to support navigation.
+- An inactive app stops new images, while requests already sent can finish. Use this behavior for app switching or locking, then continuation on return. The prototype does not prove background execution.
+- The actual system links images to transaction IDs and deduplicates asset IDs. Preserve this behavior for manually recorded failed results too. Rereading one image must not create another entry.
+- The new spec replaces the absence of a results screen and Home-only ownership. Existing app-open execution remains consistent with the handoff.
+
+### Pending-work question at that point
+
+A new prototype round replaces all `scan.items`. It does not simulate results retained across days. README only mentions the latest results. Retention of unresolved “ต้องช่วยหมู” (needs help) was unclear.
+
+The agent recommended retaining unresolved work when new slips arrive the next day. This awaited the user.
+
+### API inspection before the decision
+
+The user requested inspection of the actual app API. After unstable Device Hub control, the user chose codebase inspection. The agent inspected router, schema, import service, and native scan memory. See [current slip API and mobile state](../assets/current-slip-api-review.md) for evidence limits.
+
+The mobile app already remembers outcomes. The server has no endpoint for pending reading work. Incomplete data differs from a non-slip skip. Retention still awaited approval. Requesting API inspection did not approve that proposal.
+
+### Explanatory example
+
+The user requested another explanation. [The pending-slip example](../assets/slip-work-queue-example.html) shows yesterday, today, and completion with interactive controls. It uses invented data and calls no API. It distinguishes slip images, work states, and saved entries. Trying the example did not approve retention.
+
+### Confirmation after explaining rereads
+
+The user asked whether images awaiting manual help would go to GenAI again. The agent inspected `isSettled`. An unchanged image with a remembered incomplete result receives no automatic resend. Unavailability, network failures, and timeouts can retry in later rounds according to retry time. The user then agreed.

@@ -1,6 +1,6 @@
-# 01: ตัวอักษรและธีมบน iOS
+# 01: iOS typography and theme foundation
 
-**What to build:** เปิดแอปเดิมบน iOS และเลือกสว่าง/มืดได้จริง หน้าแรกและหน้าจดใช้ฟอนต์ สี และฐาน controls ร่วมตามดีไซน์ เป็น prefactor ก่อนปรับ flow อื่น โดยคงการอ่านและบันทึกเดิมให้ใช้งานได้
+**What to build:** Run the existing app on iOS with working light/dark selection. Home/editor use shared design fonts, colors, and controls. Prepare the foundation before other flows while preserving existing reading/persistence.
 
 **Blocked by:** None (can start immediately)
 
@@ -8,35 +8,40 @@
 
 **Done in:** 28a2ba6 feat(native): add iOS theme foundation for the redesign; 4cdc481 fix(native): keep fills readable and put baht after amounts
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 1–5, 7, 10, 110
 
-**Why blocked:** เป็นฐาน typography/theme/controls และทางรัน iOS ที่งานหน้าจอถัดไปใช้
+**Why blocked:** This supplies typography/theme/controls and the iOS startup path for later screens.
 
-- [ ] เก็บ design reference ชุดที่ผูก version พร้อม assets/font/copy สำหรับตรวจต่อได้ ไม่ใช้ HTML runtime เป็นแอปจริง
-- [ ] รันแอปและเชื่อม API ทดสอบบน iOS ได้ แยกผล iPhone 13 Pro/Expo Go กับ iPhone 11 จำลอง/Device Hub; หากต้อง build ให้บอกเหตุจาก capability จริง
-- [ ] เลือกธีมจากหน้าตั้งค่าแล้วเก็บค่าจริง เปิดแอปใหม่ยังใช้ค่าที่เลือก และ root/navigation/status/components ใช้ palette เดียวกัน
-- [ ] ข้อความไทย Regular 400 และยอดเงิน font ระบบ 500/tabular ในหน้าอ้างอิง; safe areas, touch targets และ Dynamic Type เข้าถึง actions ได้
-- [ ] ปรับฐาน reusable controls โดยรักษา interface เดิมหรือเพิ่มแบบใหม่คู่กันก่อนย้ายผู้เรียก ไม่ทำให้ screens เดิม compile หรือทำงานไม่ได้
-- [ ] ความล้มเหลวในการโหลด/บันทึกธีมแสดงตามจริงและไม่ทำให้ preference/หน้าจอแย้งกัน; มีภาพตรวจ light/dark และ primary task เดิมบน iOS
+- [ ] Retain a versioned design reference with assets/fonts/text for later checks. Use the app runtime rather than the HTML runtime.
+- [ ] Run the app with a test API on iOS. Separate iPhone 13 Pro/Expo Go from iPhone 11 simulator/Device Hub evidence. Explain any build requirement through an actual capability.
+- [ ] Theme selection persists across app starts. Root/navigation/status/components use one palette and the stored choice.
+- [ ] Reference screens use Thai Regular 400 and system-font 500/tabular amounts. Safe areas, targets, and Dynamic Type preserve action access.
+- [ ] Adapt reusable controls while preserving old interfaces or adding new variants before migrating callers. Existing screens continue compiling and working.
+- [ ] Theme load/save failures remain factual and keep preferences/display consistent. Capture light/dark and existing primary-task evidence on iOS.
 
 ## Comments
 
-**2026-10-01 — agent:** โค้ดเสร็จใน 28a2ba6 feat(native): add iOS theme foundation for the redesign และ 4cdc481 fix(native): keep fills readable and put baht after amounts (merge เข้า `feat/native-redesign-ios` ที่ 12f77b9) `vp check`, `vp test` (201), native check-types และ lint ผ่าน design reference อยู่ที่ `docs/design/native-redesign-2026-09-30/`
+**2026-10-01 — agent:** Implementation commits:
 
-เหลือให้คนตรวจบน iPhone 13 Pro (Expo Go) และ iPhone 11 จำลอง (Device Hub) แล้วค่อยตั้ง `Status: done`:
+- 28a2ba6 feat(native): add iOS theme foundation for the redesign
+- 4cdc481 fix(native): keep fills readable and put baht after amounts
 
-- เปิดด้วย `expo start --go` (มี `expo-dev-client` ติดตั้งอยู่ ถ้าไม่ใส่ `--go` จะหา development build) และเชื่อม API ทดสอบที่รันจริง
-- เลือก มืด/สว่าง ในหน้าธีม → ปิดแอปแล้วเปิดใหม่ ธีมคงอยู่ทุกหน้า รวม tabs, modals, status bar และคีย์บอร์ด
-- หน้าแรกและหน้าจด light/dark เทียบ `screenshots/01a-home.png`, `01b-home-dark.png`, `02a-entry-create-keypad.png`: ไทย Regular, ยอดเงิน 500/tabular, ฿ หลังยอดน้ำหนักปกติ (ตรวจว่า ฿ ใน hero วางตรงเส้นฐานตัวเลข), ยอดยาวย่อขนาด, tab bar อยู่เหนือ home indicator
-- Dynamic Type ขนาดใหญ่สุด: ยังกดบันทึก (หน้าจด) และปุ่มย้อนกลับในหน้าตั้งค่าได้
-- primary task เดิม: สร้าง แก้ และบันทึกรายการกับ API จริง
-- เก็บภาพ light/dark เป็นหลักฐาน (ภาพจำลองหน้า sign-in ที่ agent ถ่ายไว้ไม่พอสำหรับข้อนี้)
+Merge into `feat/native-redesign-ios` is 12f77b9. `vp check`, `vp test` (201), native check-types, and lint passed. The design reference is `docs/design/native-redesign-2026-09-30/`.
 
-**2026-10-01 — ผู้ใช้ตรวจบน iOS:** ผ่าน
+At this point, human checks remain on iPhone 13 Pro (Expo Go) and iPhone 11 simulator (Device Hub). Set `Status: done` afterward:
 
-- เลือกธีมมืด → ปิดแล้วเปิดใหม่ ทุกหน้ามืด; เลือกธีมสว่าง → ปิดแล้วเปิดใหม่ ทุกหน้าสว่าง
-- ฿ ใน hero หน้าแรกวางเสมอแนวตัวเลข
-- จด แก้ และบันทึกรายการกับ API ทำงานเหมือนเดิม
-- Dynamic Type ขนาดใหญ่สุด: ไม่ได้ทดสอบ ผู้ใช้ตัดสินว่าไม่จำเป็นสำหรับตั๋วนี้
+- Start with `expo start --go`. Installed `expo-dev-client` makes Expo seek a development build without `--go`. Connect the actual test API.
+- Select dark/light in theme settings. Close/reopen the app. Check the theme across screens, tabs, modals, status bar, and keyboard.
+- Compare light/dark Home/editor with `screenshots/01a-home.png`, `01b-home-dark.png`, and `02a-entry-create-keypad.png`. Check Thai Regular, 500/tabular amounts, regular-weight trailing ฿, aligned hero currency, shrinking large amounts, and tabs above the home indicator.
+- At maximum Dynamic Type, check editor Save and settings Back remain accessible.
+- Create, edit, and save through the actual API.
+- Capture light/dark evidence. The agent's simulator sign-in images are insufficient for this criterion.
+
+**2026-10-01 — user checked iOS:** Passed.
+
+- Dark selection survived reopening across screens. Light selection also survived reopening across screens.
+- Home hero ฿ aligns with digits.
+- API create/edit/save behavior remains intact.
+- Maximum Dynamic Type was not tested. The user decided it was unnecessary for this ticket.

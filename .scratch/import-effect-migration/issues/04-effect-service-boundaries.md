@@ -1,4 +1,4 @@
-# ออกแบบขอบเขต Effect สำหรับ Import Feature
+# Define Effect boundaries for the Import Feature
 
 Type: grilling
 Label: wayfinder:grilling
@@ -6,16 +6,64 @@ Status: resolved
 
 ## Question
 
-จะแบ่ง `route`, `schema`, `service`, `error` และ provider สำหรับภาพสลิป, Gemini, configuration และ persistence อย่างไร เพื่อให้ทุกฟังก์ชันใน `features/import` ใช้ Effect รวมถึง helper ที่เดิมเป็น pure function? ระบุการประกอบ Layer กับ app runtime, การตรวจผลจาก AI และจุดที่แปลง Effect error เป็น oRPC error
+How should `route`, `schema`, `service`, `error`, image/Gemini providers, configuration, and persistence divide responsibility? Every function in `features/import` must use Effect, including formerly pure helpers. Define Layer/runtime composition, AI result checks, and the Effect-to-oRPC error boundary.
 
 ## Answer
 
-**ขอบเขตหลัก:** `ImportService.autoImportSlip(userId, input)` เป็น Effect ที่กำกับลำดับตรวจคำขอ → ตรวจภาพ → ตรวจ `slip:<assetId>` เดิม → ให้ Gemini อ่าน → ตรวจผล AI และความพร้อมบันทึก → ขอให้ Ledger สร้างรายการ → คืน `created`/`skipped` ตามสัญญาเดิมของ map. ใช้ `userId` จาก session เท่านั้น. `skipped` เป็นผลปกติ ไม่ใช่ error; ระบบอ่านหรือบันทึกล้มเหลวต้องอยู่ใน error channel.
+### Orchestration
 
-- `import.route.ts`: ประกาศ `protectedProcedure` สำหรับ `import.autoImportSlip` และ path ที่ตกลงแล้ว; อ่าน `context.session.user.id`; เรียก `context.runtime` ครั้งเดียวต่อคำขอ; แปลง tagged Effect errors เป็น oRPC errors เฉพาะที่ adapter นี้. `UNAUTHORIZED` เป็นหน้าที่ของ auth middleware. Route ไม่เรียก Gemini หรือ Prisma และไม่ตัดสินว่า candidate พร้อมบันทึกหรือไม่. Callback ของ oRPC ต้องคืน Promise ตาม API ของ framework จึงเป็นขอบเขตแปลง Effect; ฟังก์ชันงานที่เราเขียนเองใน feature รวมทั้ง helper ที่เคย pure ต้องคืน Effect.
-- `import.schema.ts`: ใช้ Effect Schema กำหนด input, tagged output, รูปผล Gemini ที่ยังไม่เชื่อถือ และชนิด candidate; ใช้การ decode ที่คืน Effect ในการตรวจข้อมูลจริง. แยกการผิดชนิด/โครงสร้าง JSON หรือ `kind` ที่ไม่รู้จักเป็น `AI_INVALID_RESPONSE` จาก candidate ที่โครงสร้างถูกแต่ `amountSatang`/`occurredOn` เป็น `null` หรือไม่ผ่านกฎรายการพร้อมบันทึก ซึ่งเป็น `skipped: incomplete_candidate`. อาร์เรย์ว่างเป็น `skipped: no_candidate`; ชื่อที่ว่างใช้ “รายการจากสลิป” พร้อม warning ตามคำตัดสินก่อนหน้า. เก็บ `issues` เป็น warnings, ไม่คำนวณ `confidence`, ไม่ทิ้ง candidate ที่ผิดรูปเงียบ ๆ. ขีดจำกัดจำนวน candidate และนโยบายทรัพยากรให้ ticket “กำหนดนโยบายทรัพยากรและความล้มเหลวของ Import” ตัดสิน.
-- `import.service.ts`: เป็น `Context.Service` ที่เปิดเมธอด Effect สำหรับ orchestration. ตัวตรวจ `assetId`, base64, byte size และ JPEG/PNG signature เป็น Effect helpers ใน feature (แยกไฟล์ได้ถ้าอ่านง่าย) ไม่ต้องสร้าง provider สำหรับงานคำนวณนี้. Helper ที่เคยคืนค่า/throw ตรง ๆ เปลี่ยนเป็น `Effect.fnUntraced` หรือ Effect Schema decode; ขั้นตอนที่ควร trace ใช้ `Effect.fn`. ไม่แอบเรียก `Promise` หรือ throw error ธุรกิจจาก helper.
-- Gemini เป็น provider `Context.Service` แยกจาก `ImportService`: รับ bytes/MIME ที่ผ่านการตรวจแล้ว, ส่ง prompt/JSON schema ด้วย `store: false`, และห่อ SDK call ด้วย Effect พร้อมแปลง upstream/ผลผิดรูปเป็น tagged errors. Server ส่ง Gemini key และ model ผ่าน configuration Layer ตอนสร้าง app runtime; ไม่อ่าน `process.env` ระหว่างคำขอ และไม่ส่ง key ผ่าน oRPC context. Configuration ที่ขาดหรือใช้ไม่ได้ต้องตรวจระหว่างเริ่ม server ก่อนรับคำขอ.
-- Persistence ใช้ `LedgerService` เป็น provider ที่สร้าง `FinanceTransaction` ทางเดียว; `ImportService` ไม่เข้าถึง Prisma. ให้ Ledger เปิดการตรวจ `dedupeKey` ของผู้ใช้ซึ่งรวมแถว soft-delete. ตรวจล่วงหน้าเพื่อลดการอ่าน AI ซ้ำได้ แต่ unique constraint ยังคงตัดสินเมื่อคำขอแข่งกัน. ถ้า `createTransaction` พบ conflict ให้ตรวจ identity เดียวกันผ่าน Ledger อีกครั้ง: พบ `slip:<assetId>` เดิมจึงคืน `skipped: duplicate`; ถ้าไม่พบต้องส่ง persistence error. ห้ามแปลง `FinanceConflictError` ทุกกรณีเป็น duplicate.
-- `import.error.ts`: กำหนด tagged errors ที่แยก input/image, AI, configuration และ persistence; ไม่มี `ORPCError` ใน service/provider. Route แปลงเป็น HTTP/code ตาม ticket “กำหนดสัญญา API นำเข้าที่บันทึกอัตโนมัติ”; ต้องไม่ปล่อยให้ schema validation กลายเป็น `BAD_REQUEST` ทั่วไปเมื่อสัญญาระบุ `INVALID_ASSET_ID`, `FILE_REQUIRED`, `INVALID_FILE`, `UNSUPPORTED_IMAGE` หรือ `UNSUPPORTED_FILE`. Defect ที่ไม่คาดคิดเป็น 5xx และบันทึกเหตุภายในโดยไม่ส่ง secret ให้ client. รหัส timeout, concurrency และ retry รายละเอียดเป็นของ ticket “กำหนดนโยบายทรัพยากรและความล้มเหลวของ Import”.
-- `createAppRuntime` ประกอบ configuration Layer → Gemini provider → ImportService พร้อม `LedgerService` ตัวเดิม แล้วสร้าง `ManagedRuntime` ร่วมหนึ่งชุดให้ server ใช้ซ้ำ. `features/index.ts` ชี้ไป `import.route.ts`; การปรับ session exception, body-limit path และการถอด route เก่าเป็นเกณฑ์ cutover ใน ticket “กำหนดหลักฐานความถูกต้องและการตัดระบบ Import เดิม”.
+`ImportService.autoImportSlip(userId, input)` uses Effect for this sequence:
+
+1. Check the request.
+2. Check the image.
+3. Check existing `slip:<assetId>` identity.
+4. Read through Gemini.
+5. Check AI output and candidate completeness.
+6. Ask Ledger to create the transaction.
+7. Return `created`/`skipped` under the map's contract.
+
+Derive `userId` only from the session. `skipped` is a normal outcome. Reading and persistence system failures remain in the error channel.
+
+### Route
+
+`import.route.ts` declares `protectedProcedure` for `import.autoImportSlip` and the agreed path. Read `context.session.user.id`. Call `context.runtime` once per request. This adapter alone converts tagged Effect errors to oRPC errors. Authentication middleware owns `UNAUTHORIZED`.
+
+The route calls neither Gemini nor Prisma directly. Services decide candidate qualification. The oRPC callback returns `Promise` as the framework requires. This is the Effect conversion boundary. Feature functions and formerly pure helpers that we write return Effect.
+
+### Schema and candidate checks
+
+`import.schema.ts` uses Effect Schema for input, tagged output, untrusted Gemini output, and candidate types. Decode real data through Effect.
+
+- Wrong JSON type/structure or unknown `kind` returns `AI_INVALID_RESPONSE`.
+- Structurally valid candidates with `null` or invalid `amountSatang`/`occurredOn` return `skipped: incomplete_candidate`.
+- An empty array returns `skipped: no_candidate`.
+- A blank title uses “รายการจากสลิป” (transaction from a slip) with a warning, as previously decided.
+- Retain `issues` as warnings. Exclude `confidence` computation. Report malformed candidates instead of discarding them silently.
+
+[capacity and failure policy](05-import-resource-and-failure-policy.md#answer) decides candidate count and resource limits.
+
+### Service and helpers
+
+`import.service.ts` is a `Context.Service` with Effect orchestration methods. Checks of `assetId`, base64, byte size, and JPEG/PNG signatures are Effect helpers within the feature. Separate files are acceptable when they improve readability. These calculations need no provider.
+
+Convert direct-value/throw helpers to `Effect.fnUntraced` or Effect Schema decoding. Use `Effect.fn` for steps that need tracing. Helpers use Effect rather than hidden `Promise` calls or thrown business errors.
+
+### Gemini provider and configuration
+
+Gemini is a provider `Context.Service` separate from `ImportService`. It accepts checked bytes/MIME. Send prompt/JSON schema with `store: false`. Wrap SDK calls in Effect. Convert upstream failures and malformed results to tagged errors.
+
+The server supplies key/model through a configuration Layer when creating the app runtime. Request handling uses that configuration rather than `process.env` or keys in oRPC context. Check missing or unusable configuration before the server accepts requests.
+
+### Ledger persistence
+
+`LedgerService` is the sole provider that creates `FinanceTransaction`. `ImportService` does not access Prisma. Expose the user's `dedupeKey` lookup, including rows that Ledger marks as deleted.
+
+An initial check can avoid repeated AI reading. The unique constraint still decides concurrent requests. After a `createTransaction` conflict, check the same identity through Ledger again. A matching `slip:<assetId>` returns `skipped: duplicate`. An absent match returns a persistence error. Convert only matching-key conflicts, rather than every `FinanceConflictError`, to duplicate.
+
+### Errors and runtime
+
+`import.error.ts` defines tagged input/image, AI, configuration, and persistence errors. Services/providers use these instead of `ORPCError`. The route maps HTTP/code according to [authenticated API contract](03-authenticated-import-api-contract.md#answer).
+
+Use specific schema codes where defined: `INVALID_ASSET_ID`, `FILE_REQUIRED`, `INVALID_FILE`, `UNSUPPORTED_IMAGE`, and `UNSUPPORTED_FILE`. Preserve these distinctions rather than generic `BAD_REQUEST`. Unexpected defects return 5xx. Log their internal cause while excluding secrets from client output. Detailed timeout/concurrency/retry codes belong to [capacity and failure policy](05-import-resource-and-failure-policy.md#answer).
+
+`createAppRuntime` composes configuration Layer, Gemini provider, ImportService, and existing `LedgerService`. Create one shared `ManagedRuntime` for server reuse. `features/index.ts` points to `import.route.ts`. Session exceptions, body-limit paths, and old route retirement follow [migration evidence](06-migration-proof-and-cutover.md#answer).

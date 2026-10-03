@@ -1,39 +1,39 @@
-# 09: ค้นหาทุกเดือนและจำนวนเงิน
+# 09: Search all months and amounts
 
-**What to build:** ค้นด้วยสิ่งที่จำได้ข้ามทุกเดือน เห็นผลและยอดครบ พร้อม highlight/recent searches และเปิดแก้หรือเลือกหมวดต่อได้
+**What to build:** Search remembered details across all months with complete results/totals, highlights, and recent queries. Continue to editing/categorization from results.
 
-**Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
+**Blocked by:** 05 — [Home, filters, and category queue](05-home-filter-queue.md)
 
 **Status:** done
 
 **Done in:** b786f2c feat(search): search every month by amount, bank name and card; dc0a5d2 fix(search): match a bank only when the whole term names it, and share search helpers
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 64–69
 
-**Why blocked:** ใช้ editor และ pending queue/filter identity ที่พร้อมผ่านงานหน้าแรก
+**Why blocked:** This needs the editor, pending queue, and filter identity through Home.
 
-- [x] เอาขอบเขตสองเดือนออก มี pagination หรือ aggregate ที่ให้ counts/expense total ของผลทั้งหมดถูกต้องเมื่อเกิน 1,000 แถว (stories 64, 69)
-- [x] จับ title/note/category/Thai bank/card/amount ตามพฤติกรรมข้อความ baht ในต้นแบบ รวม comma/decimal ไม่เปลี่ยนเป็น exact-only เอง (story 65)
-- [x] Grouped day/newest order, matched highlights, initial focus/clear, examples/no-results และ recent add/remove ทำงานจริง (stories 66, 67)
-- [x] ผล pending ไปคิวและผลอื่นไป editor; prefilled query รองรับ exact card name+last4 scope เพื่อใช้จากหน้าบัตรภายหลัง (story 68)
-- [x] คำขอเก่าหรือ error ไม่ทับผลของคำล่าสุด และ recovery ไม่ทำคำค้นหาย
-- [x] ตรวจ authenticated query contract กับ >1,000 rows และหลายใบชื่อเดียวกัน พร้อมเดิน search→edit/queue บน iOS
+- [x] Delete the two-month restriction. Pagination/aggregates produce complete counts/expense totals beyond 1,000 rows. (stories 64, 69)
+- [x] Match title/note/category/Thai bank/card/amount with prototype baht-text behavior, including commas/decimals. Preserve text matching rather than imposing exact-only matching. (story 65)
+- [x] Daily groups/newest ordering, matching highlights, initial focus/clear, examples/no-results, and recent-query addition/deletion work. (stories 66, 67)
+- [x] Pending results open queue and others open editor. Prefilled search accepts exact card name+last4 scope for later card-screen use. (story 68)
+- [x] Old requests/errors cannot overwrite the latest query. Recovery preserves the query.
+- [x] Check authenticated search with >1,000 rows and same-name cards. Check search→editor/queue on iOS.
 
 ## Comments
 
-**จากงาน 04 (review):** รายการเก็บธนาคารเป็น identity แบบที่สลิปใช้ ("KBank", "SCB", "KTB", "BBL", "Krungsri", "ttb", "TrueMoney") และแสดงชื่อไทยด้วย `bankDisplayName` (`apps/native/features/wallets/banks.ts`) แถวเก่าอาจเป็นชื่อไทย ("กสิกรไทย") ตอนนี้ server ค้น `bank contains search` ตรงตัว ค้น "กสิกร" จึงไม่เจอแถว "KBank" งานนี้ต้องค้นด้วยทุกชื่อของธนาคารเดียวกัน (เช่นแปลงคำค้นเป็นกลุ่ม identity ก่อนส่ง หรือย้ายตาราง alias ไปไว้ที่ใช้ร่วมกับ server)
+**From ticket 04 review:** Bank identities use slip values: "KBank", "SCB", "KTB", "BBL", "Krungsri", "ttb", and "TrueMoney". `bankDisplayName` in `apps/native/features/wallets/banks.ts` supplies Thai names for screens. Older rows may store “กสิกรไทย” (Kasikornbank). At this point, the server directly searches `bank contains search`. “กสิกร” (Kasikorn) therefore misses "KBank" rows. Search must cover all names of the same bank, through identity normalization or aliases shared with the server.
 
-**จากงาน 09 (agent, 2026-10-03):** โค้ด tests และการเดินบน simulator เสร็จแล้ว (ดู [notes/09-search.md](../notes/09-search.md)) ในข้อสุดท้าย ส่วน API (มากกว่า 1,000 แถว และบัตร KTC สองใบชื่อเดียวกัน) ผ่านใน `apps/server/test/search.test.ts` และเดิน search→edit/queue บน simulator แล้วทั้งสองธีม ข้อนี้ยังเปิดอยู่จนกว่าจะตรวจบน iPhone 13 Pro (Expo Go หรือ dev build) สิ่งที่ต้องตรวจ:
+**Ticket 09 — agent, 2026-10-03:** Code, tests, and simulator flows completed. See [notes/09-search.md](../notes/09-search.md). `apps/server/test/search.test.ts` passed API cases for more than 1,000 rows and two same-name KTC cards. Light/dark simulator search→editor/queue passed. At this point, the last criterion remained open for iPhone 13 Pro checks through Expo Go or a development build:
 
-1. หน้าแรก → แตะแว่นขยาย: ช่องค้นหาได้ focus และคีย์บอร์ดขึ้นเอง เห็นหมู ข้อความ "หมูค้นให้ทุกเดือน" และชิป Grab / อาหาร / เงินเดือน
-2. พิมพ์จำนวนเงินของรายการที่มีอยู่แบบมี comma (เช่น "1,250") และไม่มี comma: เจอรายการจากหลายเดือน ยอดเงินมีพื้นสีส้ม บรรทัดบน "พบ N รายการ · รายจ่ายรวม … ฿" ตรงกับที่คาด
-3. พิมพ์ "กสิกร" แล้วพิมพ์ "kbank": เจอรายการของกสิกรไทยทั้งที่มาจากสลิปและจดเอง
-4. แตะผลที่ "รอเลือกหมวด": เปิดชีตเลือกหมวดของรายการนั้น เลือกหมวดแล้วกลับมาที่ผลค้นหาเดิม แถวเปลี่ยนเป็นหมวดที่เลือก
-5. แตะผลอื่น: เปิดหน้าแก้ไข ปิดแล้วกลับมาที่ผลค้นหาเดิม คำค้นยังอยู่
-6. กด × ในช่อง: คำที่ค้นไปขึ้นใน "ค้นหาล่าสุด" แตะคำนั้นค้นได้อีก กด × ท้ายแถวลบได้ ปิดแอปเปิดใหม่แล้วรายการล่าสุดยังตรง
-7. ปิด Wi-Fi/เน็ต แล้วพิมพ์คำใหม่: ขึ้น "ค้นหาไม่สำเร็จ" คำค้นยังอยู่ เปิดเน็ตแล้วกด "ลองอีกครั้ง" ครั้งเดียว: ผลโหลดขึ้น
-8. ดูทั้งธีมสว่างและมืด ว่าตัวอักษร ระยะ และพื้นสีของคำที่ตรงอ่านง่าย
+1. Tap Home search. Input autofocus opens the keyboard. The screen shows Moo, “หมูค้นให้ทุกเดือน” (Moo searches every month), and Grab / “อาหาร” (food) / “เงินเดือน” (salary) chips.
+2. Search an existing amount with/without commas, such as "1,250". Results span months with orange amount highlights. “พบ N รายการ · รายจ่ายรวม … ฿” (N results · total expenses) matches expected counts/totals.
+3. Search “กสิกร” (Kasikorn), then "kbank". Include Kasikornbank entries from slips and manual entry.
+4. Tap “รอเลือกหมวด” (awaiting category). Categorize that entry in its sheet. Return to the same search, showing the chosen category.
+5. Other results open editing. Closing returns to the same results/query.
+6. Clear input with ×. “ค้นหาล่าสุด” (recent searches) retains the query for reuse. Row × deletes it. Starting the app again preserves the accurate recent list.
+7. Disconnect Wi-Fi/network, then enter a new query. “ค้นหาไม่สำเร็จ” (search failed) preserves the query. Restore network and tap “ลองอีกครั้ง” (retry) once. Results load.
+8. Check readable typography, spacing, and matching backgrounds in light/dark.
 
-2026-10-03: ผู้ใช้ลองบน iPhone แล้วบอกว่าโอเค แต่ยังไม่ได้ไล่ทุกข้อในรายการด้านบน (1–8) อย่างละเอียด จึงปิดตั๋วเป็น `done` ตามที่ผู้ใช้ตกลง ข้อ 7 (ปิดเน็ตแล้วกดลองอีกครั้ง) และการแก้หลังรีวิว (dc0a5d2: ค้น "bangkok" และคำที่มีชื่อธนาคารปนอยู่ เช่น "ค่ารถไปกรุงเทพ") ยังไม่เคยเห็นบนเครื่องจริง ควรดูอีกครั้งตอนตรวจรวมในตั๋ว 22
+2026-10-03: The user tried iPhone and said it was acceptable, without checking every item 1–8 in detail. By agreement, the ticket became `done`. Item 7 and dc0a5d2 review changes remained unobserved on-device. These include "bangkok" and mixed bank-name text such as “ค่ารถไปกรุงเทพ” (fare to Bangkok). Recheck them in acceptance ticket 22.

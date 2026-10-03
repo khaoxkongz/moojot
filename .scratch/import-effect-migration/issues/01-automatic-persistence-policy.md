@@ -1,4 +1,4 @@
-# กำหนดนโยบายบันทึกรายการที่ AI อ่านได้
+# Define automatic persistence policy
 
 Type: grilling
 Label: wayfinder:grilling
@@ -6,15 +6,23 @@ Status: resolved
 
 ## Question
 
-เมื่อ API อ่านเอกสารแล้วบันทึกอัตโนมัติ จะจัดการ candidate ที่ยอดเงินหรือวันที่หายไป, ข้อมูลไม่มั่นใจ, ไม่มีรายการ, และรายการที่อาจซ้ำอย่างไร? ต้องการบันทึกบางรายการ, ปฏิเสธทั้งคำขอ, หรือเก็บสถานะรอแก้ไข และกฎใดบอกว่ารายการหนึ่งพร้อมเป็น `FinanceTransaction`?
+How should automatic import handle missing amount/date, uncertain data, no transactions, and possible duplicates? Should it save some candidates, reject the request, or retain candidates for correction? Which rules make a candidate ready for `FinanceTransaction`?
 
 ## Answer
 
-นโยบายนี้ใช้กับการนำเข้าทั้งสลิปและ statement ตามขอบเขตของ map โดย `ImportCandidate` จะพร้อมบันทึกเป็น `FinanceTransaction` เมื่อชนิดรายการเป็น `expense`/`income`/`transfer`, `amountSatang` เป็นจำนวนเต็มบวกที่ปลอดภัย, `occurredOn` เป็นวันที่ ISO ที่ถูกต้อง และ `title` ไม่ว่าง ชื่อทั่วไปที่ระบบเติมให้ เช่น “รายการจากสลิป” ใช้ได้ แต่ต้องส่งคำเตือนเรื่องชื่อที่หายไปกลับไปด้วย
+At this decision point, policy covers both slips and statements within the map's scope. `ImportCandidate` is ready to save as `FinanceTransaction` when:
 
-- ข้ามเฉพาะ candidate ที่ขาดหรือมีค่าฟิลด์จำเป็นไม่ถูกต้อง พร้อมรายงานเหตุผลรายรายการ; candidate อื่นที่พร้อมบันทึกยังไปต่อได้ นี่เป็นกฎคัดเลือกรายการ ไม่ใช่ข้อสรุปเรื่อง atomicity เมื่อฐานข้อมูลเขียนล้มเหลว
-- `issues` จาก AI เป็นคำเตือน ไม่กันการบันทึกเมื่อฟิลด์จำเป็นครบ ไม่ใช้ `confidence` ตัดสิน และไม่ต้องคำนวณ เก็บ หรือส่งค่าคะแนนนี้ในสัญญาใหม่
-- ไม่สร้างรายการซ้ำเมื่อมีหลักฐานที่เชื่อถือได้ว่าเป็นเอกสารหรือธุรกรรมเดิม เช่น อัตลักษณ์แหล่งนำเข้าที่คงที่ การตรงกันเพียงชนิด ยอด วันที่ และชื่อเป็นข้อสงสัย ไม่ใช่หลักฐานพอให้ข้ามอัตโนมัติ วิธีสร้าง `dedupeKey`, วิธีพิสูจน์ความซ้ำ และพฤติกรรมเมื่อเขียนฐานข้อมูลได้บางส่วนให้ตัดสินใน ticket “กำหนดเจ้าของการบันทึกและผลลัพธ์เมื่อบันทึกได้บางรายการ”
-- ถ้าไม่มี candidate ที่พร้อมบันทึก หรือทุกรายการถูกข้าม ให้ตอบผลสำเร็จที่บันทึก 0 รายการพร้อมเหตุผล ไม่ถือเป็นความล้มเหลวของการอ่านเอกสาร
+- Kind is `expense`/`income`/`transfer`.
+- `amountSatang` is a positive safe integer.
+- `occurredOn` is a valid ISO date.
+- `title` is nonempty.
 
-บริบทของผลิตภัณฑ์: `autoScan` ใน native app อ่านรูปย้อนหลังจากอัลบั้มธนาคารและส่ง `dedupeKey` ตาม asset ID; แอปตั้งใจไม่มี flow ให้ผู้ใช้เรียก import เอง การบังคับสิทธิ์และรูปแบบ API จะตัดสินใน ticket “กำหนดสัญญา API นำเข้าที่บันทึกอัตโนมัติ” ส่วนการแก้ native app ยังอยู่นอกขอบเขต migration นี้
+A generated generic title, such as “รายการจากสลิป” (transaction from a slip), is acceptable. Return a warning about the missing title.
+
+- Skip only candidates with missing or invalid required fields. Report reasons per candidate. Other complete candidates may proceed. This qualification rule leaves database failure atomicity undecided.
+- AI `issues` are warnings. They cannot block persistence when required fields are complete. The new contract neither uses, computes, stores, nor returns `confidence`.
+- Prevent duplicates only with reliable evidence of the same document or transaction, such as a stable source identity. Matching kind, amount, date, and title suggests possible duplication. It is insufficient evidence for automatic skipping.
+- Decide `dedupeKey`, duplicate evidence, and partial database failure behavior in [persistence ownership](02-persistence-ownership-and-atomicity.md#answer).
+- If no candidate is ready, return success with 0 saved transactions and reasons. Use the same result when the API skips every candidate. This outcome does not mean document reading failed.
+
+Product context: native `autoScan` reads earlier photos from bank albums and sends an asset-ID-based `dedupeKey`. The app intentionally has no user-triggered import flow. Decide authentication and API shape in [authenticated API contract](03-authenticated-import-api-contract.md#answer). Native changes remain outside this migration.

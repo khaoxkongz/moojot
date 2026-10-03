@@ -1,54 +1,294 @@
 # Notes from ticket 10 (budgets)
 
-## For later tickets
+## Server deletion records and undo
 
-- **Delete with undo, kept by the server** (`packages/api/src/shared/finance/deletions.ts`, model `FinanceDeletion` in `packages/db/prisma/schema/finance.prisma`). Rules (13), categories and tags (15) reuse it:
-  - `deleteWithUndo(db, { userId, kind, targetId, remove })` (an Effect): one transaction. `remove(tx)` deletes and returns a JSON snapshot of everything its restore needs (or `null` when the record is already gone). The record is kept with `restoredAt: null` and its ID is returned as `{ deletionId }`. A repeated delete of a record already gone returns the open deletion of that target again, so a retried request neither fails nor makes a second undo. Two deletes at once get the same `deletionId`: the one that loses the write conflict (`P2034`) runs again (up to three tries) and finds the other's deletion.
-  - `keepDeletion(tx, { userId, kind, targetId, snapshot })`: keeps a deletion inside a transaction the caller already has open. Use it for any removal that happens on the way to something else (the budget edit below), so every removal can be undone the same way.
-  - **Decision: deletions are kept seven days.** Older ones are pruned after the next delete commits. Pruning is best effort: a failure is logged (`Effect.logWarning`) and the delete still reports success, because the record is already gone.
-  - `restoreDeletion(db, { userId, kind, deletionId, restore, current })`: one transaction. Another user's deletion, or one of another kind, is `NOT_FOUND`. The record is claimed (`restoredAt` set) before `restore(tx, snapshot)` runs, so two restores at once conflict instead of copying. A repeated restore returns `current(tx, targetId)` (the record as it is now), or `CONFLICT` when it was deleted again after the restore. `restore` throws `FinanceConflictError` when the snapshot cannot go back whole; the transaction then rolls back and the undo stays usable.
-  - Write conflicts (Prisma `P2034`) and unique clashes (`P2002`) inside either step come back as `CONFLICT` (for a delete, only after its retries). Native shows a `CONFLICT` with no reason of its own as "…ไม่สำเร็จ งบนี้เพิ่งถูกเปลี่ยนจากอีกที่ ลองอีกครั้ง", not as bad input.
-  - Add a kind to `DeletionKind` and decode the snapshot with an Effect `Schema` (the budget's is `BudgetSnapshot` in `planning.service.ts`; satang go in as a decimal string because JSON has no 64-bit integers).
-  - **MongoDB gotcha:** a Prisma filter `restoredAt: null` does not match a document where the field was never written, so the record is created with `restoredAt: null` written out (the same reason as `activeTransactionWhere`).
-- **Budget contract changes** (`planning.*`):
-  - `deleteBudget({ id })` returns `{ deletionId }` instead of a boolean, and is `NOT_FOUND` for a budget that was never this user's.
-  - `restoreBudget({ deletionId })` brings back the same ID, period, target, limit, warning percent and dates. `CONFLICT` when another budget was set for that target meanwhile, or the budget's category or tag no longer exists (no budget for a name that is gone).
-  - `upsertBudget` takes an optional `id`: the budget being edited keeps its ID and month, moves to the new target, and a budget already set for that target is removed in the same transaction through `keepDeletion`, so it can be brought back like a deleted budget (repeating `deleteBudget` on its ID returns that deletion). A different `periodKey` on an edit is `BAD_REQUEST`: an edit never moves a budget to another month. Without `id` it is the old upsert by target (same target → same ID, new limit; nothing is removed). An `id` that is not this user's is `NOT_FOUND` and changes nothing.
-  - `restoreBudget` checks the category and tag with the same `validateCategory`/`validateTagIds` as a save, refused as `CONFLICT`. Categories and tags have no archived or soft-deleted state (deleting one removes it, and its budgets, for good), so existence is the whole check.
-  - `getBudgetStatuses`: `isOverLimit` is now `spent > limit` (spending exactly the limit is not over). The name is kept: no caller relied on the old "from 100%" meaning, and the new meaning is the glossary's **เกินงบ** (`apps/native/GLOSSARY.md`) and is written on the field. `isNearLimit` keeps its meaning (at or past the warning percent, **ใกล้ครบงบ**), so it is also true when over; `budgetRow` reads both flags, over first.
-- **Native modules:** `features/planning/plan.ts` (`planBudgets`, `budgetRow`, `budgetPeriodLine`, `warningLine`, `replaceNote`/`replacedBudget`, `budgetTarget`, `WARNING_OPTIONS`), `features/planning/budget-actions.ts` (`createBudgetActions(client.planning)`: Thai failures in `BudgetActionError`), `features/planning/use-budget-actions.ts` (refreshes `orpc.planning.key()`, which covers the plan, the form and Summary's วางแผนงบ row, before each success returns). `typedAmount` in `utils/format.ts` groups a typed baht amount (prototype `typedAmount`). The old `upsertBudget`/`deleteBudget` mutation options are gone. Shared from the review: `MessageCard` in `components/ui/controls.tsx` (centered load-error / gone card with an optional ลองอีกครั้ง) and `queryState(queries)` in `utils/query-state.ts` (`ready`, `pageError`, `refreshError`, `retry`); the plan and the budget form use them, and Summary and Search could move onto them later.
-- **Routes:** `/budget-form` takes `periodKey` and either `target` (`all` / `category` / `tag`, for a new budget) or `id`. It is a full-screen modal with its own header now; `/plan` is a pushed screen with its own header (back button "ย้อนกลับ"; `08-summary.yaml` now taps that).
-- **Maestro:** `apps/native/.maestro/10-budgets.yaml` saves one 120 ฿ อาหาร entry, opens the plan from Summary, deletes any budgets left from a stopped run, sets an all-category budget (100 ฿, 70%) and an อาหาร budget (120 ฿) after the missing-category error, saves อาหาร again at 2,500 ฿ (replace notice), opens it, deletes it, taps เอากลับคืน, then deletes the budgets and the entry. Gotchas found: the number pad has no return key, so `hideKeyboard` fails (picking a target/category/tag/warning closes it in the app); scroll to "ลบงบนี้" first; wait until the form is gone before tapping the toast's เอากลับคืน, or the tap lands on the closing modal; a manual entry with no title is named after its category on Home ("อาหาร 120 บาท อาหาร · จดเอง ใหม่").
-- **Tests:** `apps/server/test/budgets.test.ts` (temporary MongoDB replica set: equal vs over, replace on the same target, edit moving to a new target and replacing that target's budget, edit of another user's or a missing budget, delete then restore with the same fields and the spending of the entries still there, repeated delete/restore without copies, deleted-again undo, conflict with a new budget on the target and the undo still working after it is gone, tag gone, category gone, ownership, Thai action errors, an edit to another month refused, the budget an edit replaced brought back, two deletes at once with one `deletionId`, a delete whose pruning fails still reported done), `apps/native/features/planning/budget-actions.test.ts` (a `CONFLICT` shown as a clash, not bad input), `apps/native/features/planning/plan.test.ts` (rows, status words, bars, count line, period line with a custom month start, warning baht line, replace notice incl. the all-vs-tag near miss), `apps/native/utils/format.test.ts` (`typedAmount`).
+`packages/api/src/shared/finance/deletions.ts` owns the shared deletion helpers.
+The model is `FinanceDeletion` in `packages/db/prisma/schema/finance.prisma`.
+Recurring rules in ticket 13 and categories/tags in ticket 15 reuse this boundary.
 
-## Seams
+### Delete and retain a snapshot
 
-No user was available to confirm seams, so the ones tickets 04–09 used were kept: pure native modules (`plan.ts`, `typedAmount`) tested directly, and native modules (`createBudgetActions`) → authenticated oRPC → Planning → MongoDB in `apps/server/test`. The shared deletion helpers are tested through the budget routes, not on their own. Screens are checked on the simulator.
+`deleteWithUndo(db, { userId, kind, targetId, remove })` is an Effect using one transaction.
+`remove(tx)` deletes the target and returns the JSON snapshot needed for complete restoration.
+It returns `null` when the target is already absent.
+The server stores the deletion with `restoredAt: null` and returns its ID as `{ deletionId }`.
 
-## Design pass against the HTML prototype
+A repeated deletion returns the target's existing open deletion record.
+The repeated request neither fails nor creates another undo record.
+Two concurrent deletions receive the same `deletionId`.
+The request losing a write conflict (`P2034`) repeats, with at most three attempts, and finds the other request's deletion.
 
-Checked against `Moojot Home.dc.html` blocks `07 วางแผน` (~1078–1150) and `08 ตั้งงบ` (~1152–1207) and the script (`planVals` ~3316–3420, `openNewBudget`/`openBudgetForm`/`saveBudget`/`deleteBudget` ~2814–2850, `budgetKey`, `typedAmount`). Design shots: `design-shots/10-{plan,plan-bottom,plan-previous,form-edit,form-replace,delete-toast,form-new,form-missing}[-dark].png` (script `capture/10-budgets.mjs`). App captures: `10-app-<state>[-dark].png` next to this file.
+`keepDeletion(tx, { userId, kind, targetId, snapshot })` retains a deletion inside an existing caller transaction.
+Use it for deletion within another operation, such as budget editing below.
+Every such deletion then supports the same restoration path.
 
-What matches: 52 title bar with 44 back (MDI chevron 30) and centered 17 title; month nav with 44 `accentText` chevrons (26), 15 title (min 140), next at 0.35 on the current month; accent overall card radius 20, 16/18/14 padding, 15 title, status icon 17 + 13 label, "ใช้ไป" 13, 32 spent at 500 tabular + "จาก X ฿" 15, 10 bar on `rgba(30,27,25,.16)` filled `onAccent`, left label + pencil "แก้ไข"; no overall: "ยังไม่ได้ตั้งงบรวม" + copy + 44 "ตั้งงบรวม" pill on `rgba(30,27,25,.12)`; "งบแยกหมวด" 15 with count "N งบ · เกิน N / ใกล้ครบ N" 13 `muted`; grouped card radius 16 with `raised` ring, rows 12/14 padding, 36 `raised` circle with emoji or "#", 15 name, status icon 15 + 12 label in `danger`/`accentText`/`success`, 8 bar on `raised` filled `danger`/`accent`/`success` (at least 2% when there is spending), "ใช้ไป X จาก Y ฿" 12 and "เหลือ / เกิน X ฿" (`danger` when over); hint copy when empty; 48 `raised` add buttons radius 24 with MDI plus 19 in `accentText`; rule section title, count and sub line. Form: 52 header with close (MDI close 26) and "ตั้งงบใหม่"/"แก้ไขงบ"; period line 13 `muted` centered; "งบนี้ใช้กับ" 13 label; 3-way segment (shared `SegmentedControl`); category tiles three to a row, min 78, radius 14, `raised`, selected with 2px `accent` ring, 22 emoji + 12 name; tag chips "# name" (shared `Chip`) or "ยังไม่มีแท็ก เพิ่มแท็กได้ตอนจดรายการ"; "ใช้ได้เดือนละ"; 72-tall amount box radius 16 with `raised` ring, 32 input at 500 tabular, ฿ 20 `muted`; replace notice 13 `accentText`; four 44 warning radios radius 12 (`accent` with `onAccent` when picked, else `raised`) with 16 labels; warning line in baht; "ลบงบนี้" 15 `danger` with MDI trash 20 when editing; 52 save pill "ตั้งงบนี้"/"บันทึก" with the error line above it; toasts "ตั้งงบแล้ว หมูจะช่วยดูให้", "บันทึกงบแล้ว", "ลบงบแล้ว · เอากลับคืน".
+### Retention decision
 
-Deliberate differences:
+The recorded decision retains deletion records for seven days.
+After the next deletion commits, the helper prunes older records.
+Pruning uses best effort. A failure logs through `Effect.logWarning`.
+The completed deletion still reports success because the target is already absent.
 
-- **Data, not seed**: budgets, spending and categories come from the account.
-- **Spending exactly the limit** shows "ใกล้ครบงบ" with "เหลือ 0 ฿", never "เกินงบ" (the prototype's `status`; spec story 72). The server's `isOverLimit` now agrees.
-- **Undo restores on the server** and can fail: when another budget took the target or the category/tag is gone, the toast says "เอากลับคืนไม่ได้ เดือนนี้ตั้งงบของเป้าหมายนี้ใหม่แล้ว หรือหมวดหรือแท็กของงบถูกลบไป" (the prototype re-inserts its local object).
-- **Changing an edited budget's target** keeps its ID and replaces the target's budget in one server step; a failed save keeps the form open with the error and shows no toast.
-- **Picking a choice closes the number pad**: the decimal pad has no return key, and the save button sits above it.
-- **Missing category/tag names** ("หมวดที่ลบไปแล้ว"/"แท็กที่ลบไปแล้ว") are only a fallback: deleting a category or tag deletes its budgets on the server, and restoring a budget for a target that is gone is refused.
-- **Recurring rows** keep "ทุกวันที่ N" without "ครั้งถัดไป …": the next due date belongs to tickets 12/13. Paused rows show "หยุดไว้ · หมูยังไม่จดให้" with MDI pause-circle-outline as in the prototype.
-- **Loading/error states** are not in the prototype: a spinner, an error card "โหลดแผนไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง" (Summary's style), the one-line refresh error over older data, "โหลดงบไม่สำเร็จ" and "ไม่พบงบนี้แล้ว" in the form, and save/delete failures in words above the save button.
-- **Status bar / dev gear**: the floating gear in captures is Expo's dev menu.
+### Restore and handle conflicts
 
-## iOS run (simulator iPhone 11, iOS 18.6, dev build, 2026-10-03)
+`restoreDeletion(db, { userId, kind, deletionId, restore, current })` uses one transaction.
+Another user's deletion or a deletion of another kind returns `NOT_FOUND`.
+The server claims the record by setting `restoredAt` before calling `restore(tx, snapshot)`.
+Concurrent restores therefore conflict instead of creating copies.
 
-Driven with the `ios-preview` skill against the dev database, light and dark: `10-app-plan-empty`, `-form-new` (all-category target, number pad up), `-form-all` (100 ฿, 70%: "ใช้ไปถึง 70 ฿ หมูจะเตือนว่าใกล้ครบงบ"), `-form-missing` ("กรุณาเลือกหมวด"), `-plan` (overall over, อาหาร 120 ฿ budget over: the account already had other อาหาร spending this month; toast "ตั้งงบแล้ว หมูจะช่วยดูให้"), `-form-replace` ("มีงบนี้อยู่แล้ว 120 ฿ บันทึกแล้วจะใช้วงเงินใหม่แทน"), `-form-edit` and `-form-edit-bottom` (2,500 ฿, ลบงบนี้), `-delete-toast` ("ลบงบแล้ว · เอากลับคืน", row gone), `-restored` (same อาหาร 2,500 ฿ budget back with its spending). Failure/recovery in light only, by stopping the API server by hand (flows kept out of the repo): `10-app-save-error` (save while offline: "บันทึกงบไม่สำเร็จ เชื่อมต่อไม่ได้ ลองอีกครั้ง", form kept), `10-app-plan-error` (a month never loaded: error card), `10-app-plan-recovered` (server back, one ลองอีกครั้ง loads the month). `08-summary.yaml` was re-run in light and still passes with the plan's new back button. Every budget and entry the flows made was deleted again.
+A repeated restore returns `current(tx, targetId)`, the target's current record.
+If another operation deleted it again after restoration, the repeat returns `CONFLICT`.
+When complete restoration is impossible, `restore` throws `FinanceConflictError`.
+The transaction reverses its changes, and the undo record remains usable.
 
-The dev database got the new `finance_deletion` collection on the first delete (MongoDB makes it on insert); its indexes come with the next `vp run db:push` against that database, which this run did not do.
+Write conflicts (`P2034`) and unique clashes (`P2002`) within either operation return `CONFLICT`.
+Deletion returns that error only after its retry attempts.
+Native presents a `CONFLICT` without its own reason as a concurrent change rather than invalid input.
+The text is “…ไม่สำเร็จ งบนี้เพิ่งถูกเปลี่ยนจากอีกที่ ลองอีกครั้ง” (failed, this budget changed elsewhere, retry).
 
-Not checked on the simulator: a tag budget (the account has no tags; API test only), a custom month start (unit test only), restore refused for a taken target or a deleted tag (API test only), two restores at once, Dynamic Type, VoiceOver, the iPhone 13 Pro device.
+Add a kind to `DeletionKind` when extending this boundary.
+Decode the snapshot through an Effect `Schema`.
+Budgets use `BudgetSnapshot` in `planning.service.ts`.
+Store satang as a decimal string because JSON has no 64-bit integer representation.
 
-Review fixes (fix/native-redesign-ios-10-review) were not re-run on the simulator: no screen looks different (the error cards moved to the shared `MessageCard` with the same styles), and the new conflict wording only shows in a race. The API tests cover the server changes.
+### MongoDB null fields
+
+Prisma's `restoredAt: null` filter does not match documents lacking that field.
+The server therefore explicitly stores `restoredAt: null` when creating a deletion record.
+`activeTransactionWhere` has the same reason for an explicit null field.
+
+## Budget contracts
+
+These changes belong to `planning.*`.
+
+### Delete and restore
+
+`deleteBudget({ id })` returns `{ deletionId }` instead of a boolean.
+A budget that never belonged to this user returns `NOT_FOUND`.
+
+`restoreBudget({ deletionId })` restores the original ID, period, target, limit, warning percentage, and dates.
+Another budget occupying the target returns `CONFLICT`.
+A missing category or tag also returns `CONFLICT`. Restoration cannot create a budget for an absent target.
+
+`restoreBudget` uses the save path's `validateCategory`/`validateTagIds`, with refusal as `CONFLICT`.
+At this implementation point, categories/tags have no archived or soft-deleted state.
+Deleting one permanently deletes it and its linked budgets.
+Existence is therefore the complete target check.
+
+### Edit and replace
+
+`upsertBudget` accepts an optional `id`.
+An edited budget retains its ID and month while moving to the chosen target.
+If that target already has a budget, the same transaction deletes it through `keepDeletion`.
+The replaced budget can then return through the ordinary undo path.
+Repeating `deleteBudget` for the replaced ID returns that deletion record.
+
+An edited budget cannot change months. A different `periodKey` returns `BAD_REQUEST`.
+An `id` outside the user's ownership returns `NOT_FOUND` without changing data.
+Without `id`, the existing target-based upsert remains: the same target retains its ID with a new limit.
+That path deletes nothing.
+
+### Spending status
+
+`getBudgetStatuses` now sets `isOverLimit` from `spent > limit`.
+Spending exactly equal to the limit is not over budget.
+The name remains because no caller relied on the former “from 100%” meaning.
+The new meaning matches “เกินงบ” (over budget) in `apps/native/GLOSSARY.md` and the field documentation.
+
+`isNearLimit` retains its threshold meaning: at or above the warning percentage.
+The flag therefore also remains true when over budget.
+`budgetRow` reads both flags, with over-budget status first.
+The visible “ใกล้ครบงบ” (near budget limit) state remains separate from over-budget status.
+
+## Native modules and routes
+
+`features/planning/plan.ts` exports:
+
+- `planBudgets`, `budgetRow`, and `budgetPeriodLine`.
+- `warningLine`, `replaceNote`, and `replacedBudget`.
+- `budgetTarget` and `WARNING_OPTIONS`.
+
+`features/planning/budget-actions.ts` provides `createBudgetActions(client.planning)` and Thai `BudgetActionError` messages.
+`features/planning/use-budget-actions.ts` refreshes `orpc.planning.key()` before success returns.
+That key covers Plan, the budget form, and Summary's “วางแผนงบ” (plan budget) row.
+
+`typedAmount` in `utils/format.ts` groups typed baht amounts, following prototype `typedAmount`.
+The old `upsertBudget`/`deleteBudget` mutation options are absent.
+Review added shared `MessageCard` in `components/ui/controls.tsx`.
+It provides a centered load-error or missing-record card with an optional “ลองอีกครั้ง” (retry).
+
+`queryState(queries)` in `utils/query-state.ts` provides `ready`, `pageError`, `refreshError`, and `retry`.
+Plan and the budget form use it. Summary and Search could adopt it later.
+
+`/budget-form` accepts `periodKey` and either `target` (`all`/`category`/`tag`, for a new budget) or `id`.
+It is now a full-screen modal with its own header.
+`/plan` is a pushed screen with its own header and “ย้อนกลับ” (back) button.
+`08-summary.yaml` now taps that button.
+
+## Maestro flow and capture limits
+
+`apps/native/.maestro/10-budgets.yaml` performs this sequence:
+
+1. Save one 120 ฿ “อาหาร” (food) entry.
+2. Open Plan from Summary.
+3. Delete budgets remaining from interrupted runs.
+4. Create an all-category budget of 100 ฿ with a 70% warning.
+5. Exercise the missing-category error.
+6. Create an “อาหาร” (food) budget of 120 ฿.
+7. Save “อาหาร” (food) again at 2,500 ฿ through the replacement notice.
+8. Open the budget.
+9. Delete it.
+10. Tap “เอากลับคืน” (undo).
+11. Delete the budgets and the entry.
+
+The number pad has no return key, so `hideKeyboard` fails.
+Choosing a target, category, tag, or warning closes the pad in the app.
+Scroll to “ลบงบนี้” (delete this budget) before tapping.
+Wait for the form to disappear before tapping the toast's “เอากลับคืน” (undo).
+Otherwise, the tap reaches the closing modal.
+
+A manual entry without a title receives its category name on Home.
+The observed text was “อาหาร 120 บาท อาหาร · จดเอง ใหม่” (food, 120 baht, manual, new).
+
+## Tests and boundaries
+
+`apps/server/test/budgets.test.ts` uses a temporary MongoDB replica set to cover:
+
+- Spending equal to and above the limit.
+- Replacement on the same target.
+- Editing to a new target and replacing its existing budget.
+- Editing another user's or a missing budget.
+- Original fields and remaining-entry spending after delete/restore.
+- Repeated delete/restore without copies.
+- Undo after another operation deletes the restored budget.
+- Conflict with a new target budget, followed by successful undo after that budget disappears.
+- Missing tags or categories.
+- Ownership and Thai action errors.
+- Refusal of a different month during editing.
+- Restoration of the budget that an edit replaced.
+- Concurrent deletions returning one `deletionId`.
+- Successful deletion despite pruning failure.
+
+`apps/native/features/planning/budget-actions.test.ts` checks that `CONFLICT` describes a clash rather than invalid input.
+`apps/native/features/planning/plan.test.ts` covers rows, status words, bars, counts, custom month-start labels, and warning baht values.
+It also covers replacement notices, including an all-category/tag near miss.
+`apps/native/utils/format.test.ts` covers `typedAmount`.
+
+The user was unavailable to approve test boundaries.
+The implementation retained tickets 04–09's boundaries.
+Pure `plan.ts` and `typedAmount` modules have direct tests.
+Native `createBudgetActions` integrates through authenticated oRPC → Planning → MongoDB in `apps/server/test`.
+The shared deletion helpers have budget-route tests rather than direct helper tests.
+Simulator runs supply screen evidence.
+
+## Design comparison
+
+The comparison used `Moojot Home.dc.html`, blocks `07 วางแผน` (Plan, about 1078–1150) and `08 ตั้งงบ` (Set budget, about 1152–1207).
+Script references include `planVals` near 3316–3420, and `openNewBudget`/`openBudgetForm`/`saveBudget`/`deleteBudget` near 2814–2850.
+They also include `budgetKey` and `typedAmount`.
+
+Design images are `design-shots/10-{plan,plan-bottom,plan-previous,form-edit,form-replace,delete-toast,form-new,form-missing}[-dark].png`.
+`capture/10-budgets.mjs` creates them.
+App images are `10-app-<state>[-dark].png` beside this file.
+
+### Plan geometry
+
+- Header: height 52, Back target 44 with MDI chevron 30, centered title 17.
+- Month navigation: targets 44, `accentText` chevrons 26, title 15/minimum 140, current-month Next opacity 0.35.
+- Overall `accent` card: radius 20, padding 16/18/14, title 15, status icon 17 and label 13.
+- Spending uses “ใช้ไป” (spent) at 13, amount 32/500/tabular, and “จาก X ฿” (out of X baht) at 15.
+- The bar is 10 high on `rgba(30,27,25,.16)`, with `onAccent` fill.
+- The left label and pencil use “แก้ไข” (edit).
+- No overall budget shows “ยังไม่ได้ตั้งงบรวม” (no overall budget), copy, and a 44-high “ตั้งงบรวม” (set overall budget) pill.
+- That pill uses `rgba(30,27,25,.12)`.
+- Section title “งบแยกหมวด” (category budgets) is 15.
+- Count text “N งบ · เกิน N / ใกล้ครบ N” (N budgets, N over, N near) is 13/`muted`.
+- Grouped card: radius 16, `raised` ring, row padding 12/14, icon circle 36/`raised` with emoji or “#”.
+- Name size is 15. Status icon is 15, with label 12 in `danger`/`accentText`/`success`.
+- Bar height 8 uses `raised`, with `danger`/`accent`/`success` fill. With spending, bar width is at least 2%.
+- “ใช้ไป X จาก Y ฿” (spent X out of Y baht) is 12.
+- “เหลือ / เกิน X ฿” (X baht remaining/over) uses `danger` when over.
+- Empty state retains its hint copy.
+- Add buttons: height 48, `raised`, radius 24, MDI plus 19/`accentText`.
+- Recurring section retains its title, count, and subtitle.
+
+### Form geometry
+
+- Header: height 52, close MDI 26, “ตั้งงบใหม่” (new budget)/“แก้ไขงบ” (edit budget).
+- Centered period text is 13/`muted`.
+- “งบนี้ใช้กับ” (budget target) is 13. Targets use the shared three-way `SegmentedControl`.
+- Categories occupy three columns, minimum height 78, radius 14, `raised`, and a 2px `accent` ring when selected.
+- Category emoji is 22, with name 12.
+- Tags use shared `Chip` with “# name” or “ยังไม่มีแท็ก เพิ่มแท็กได้ตอนจดรายการ” (no tags, add them while recording).
+- Amount label is “ใช้ได้เดือนละ” (monthly allowance).
+- Amount box: height 72, radius 16, `raised` ring, input 32/500/tabular, ฿ 20/`muted`.
+- Replacement notice is 13/`accentText`.
+- Four warning radios: height 44, radius 12, label 16. Selection uses `accent`/`onAccent`, otherwise `raised`.
+- The warning line shows baht.
+- Editing shows “ลบงบนี้” (delete this budget), text 15/`danger` and MDI trash 20.
+- Save pill: height 52, “ตั้งงบนี้” (set this budget)/“บันทึก” (save), with errors above.
+- Toasts retain “ตั้งงบแล้ว หมูจะช่วยดูให้” (budget set), “บันทึกงบแล้ว” (budget saved), and “ลบงบแล้ว · เอากลับคืน” (deleted · undo).
+
+### Deliberate differences
+
+- Budgets, spending, and categories use account data rather than prototype seeds.
+- Exact equality shows “ใกล้ครบงบ” (near budget limit) and “เหลือ 0 ฿” (0 baht remaining), never “เกินงบ” (over budget).
+- This follows prototype `status` and spec story 72. Server `isOverLimit` now agrees.
+- Server undo may fail if another budget takes the target or its category/tag disappears.
+- The toast then says “เอากลับคืนไม่ได้ เดือนนี้ตั้งงบของเป้าหมายนี้ใหม่แล้ว หรือหมวดหรือแท็กของงบถูกลบไป” (undo unavailable after target replacement or deletion).
+- The prototype reinserts its local object.
+- Editing a target retains the original ID and replaces the destination budget in one server operation.
+- Failed saving retains the form and its error, without a success toast.
+- Choosing a value closes the decimal pad, which lacks Return. Save remains above it.
+- “หมวดที่ลบไปแล้ว” (deleted category)/“แท็กที่ลบไปแล้ว” (deleted tag) names are fallbacks only.
+- Category/tag deletion deletes linked budgets. Restoring a budget with an absent target fails.
+- Recurring rows retain “ทุกวันที่ N” (every month on day N), without “ครั้งถัดไป …” (next occurrence).
+- Actual next-due information belongs to tickets 12/13.
+- Paused rows show “หยุดไว้ · หมูยังไม่จดให้” (paused, Moo does not record), with MDI pause-circle-outline.
+- Added states use a spinner and “โหลดแผนไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง” (plan failed, check internet, retry).
+- Cached-data refresh has a one-line error above older data.
+- The form shows “โหลดงบไม่สำเร็จ” (budget load failed) and “ไม่พบงบนี้แล้ว” (budget missing).
+- Save/delete failures use words above Save.
+- The floating gear belongs to Expo's development menu.
+
+## iOS evidence: iPhone 11 simulator, iOS 18.6, development build, 2026-10-03
+
+`ios-preview` drove the development database in light/dark. Captures include:
+
+- `10-app-plan-empty`.
+- `-form-new`: all-category target, number pad open.
+- `-form-all`: 100 ฿ and 70%, with “ใช้ไปถึง 70 ฿ หมูจะเตือนว่าใกล้ครบงบ” (warn at spending of 70 baht).
+- `-form-missing`: “กรุณาเลือกหมวด” (select a category).
+- `-plan`: overall and “อาหาร” (food) budgets over the limit. The 120 ฿ food budget includes other existing food spending.
+- That capture includes “ตั้งงบแล้ว หมูจะช่วยดูให้” (budget set).
+- `-form-replace`: “มีงบนี้อยู่แล้ว 120 ฿ บันทึกแล้วจะใช้วงเงินใหม่แทน” (replace the existing 120-baht allowance).
+- `-form-edit` and `-form-edit-bottom`: 2,500 ฿ and “ลบงบนี้” (delete this budget).
+- `-delete-toast`: “ลบงบแล้ว · เอากลับคืน” (budget deleted · undo), with the row absent.
+- `-restored`: the same 2,500 ฿ food budget returns with its spending.
+
+Failure/recovery ran in light only. The API server stopped manually. The flows stayed outside the repository:
+
+- `10-app-save-error`: offline “บันทึกงบไม่สำเร็จ เชื่อมต่อไม่ได้ ลองอีกครั้ง” (budget save failed, cannot connect, retry). The form remains.
+- `10-app-plan-error`: error card for a month never loaded.
+- `10-app-plan-recovered`: one “ลองอีกครั้ง” (retry) loads after server recovery.
+
+`08-summary.yaml` ran again in light and passed with Plan's new Back button.
+The flows deleted every budget and entry they created.
+
+The development database created `finance_deletion` on its first deletion. MongoDB creates the collection on insert.
+Its indexes require the next `vp run db:push` against that database. This run did not execute it.
+
+### Verification limits
+
+The simulator did not check:
+
+- Tag budgets. This account has no tags. API tests cover them.
+- Custom month start. Unit tests cover it.
+- Restoration refused for an occupied target or a deleted tag. API tests cover it.
+- Two concurrent restorations.
+- Dynamic Type and VoiceOver.
+- Physical iPhone 13 Pro.
+
+At this capture point, review fixes from `fix/native-redesign-ios-10-review` had no repeated simulator run.
+Screens retained their appearance: error cards moved to shared `MessageCard` with the same styles.
+The new conflict wording appears only during a race. API tests cover the server changes.

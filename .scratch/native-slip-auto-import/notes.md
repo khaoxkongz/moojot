@@ -1,83 +1,82 @@
-# ปรับมือถือให้รองรับการนำเข้าสลิปอัตโนมัติ
+# Adapt mobile Home to automatic slip import
 
-สถานะ: ผู้ใช้ยืนยันข้อสรุปรวมของ grill-with-docs แล้ว รวมคำแก้ไขว่าอยู่หน้า Home เดิมตลอดการทำงาน
+Interview state: The user confirmed the complete grill-with-docs conclusions, including the correction that Home remains the same screen throughout.
 
-## ข้อสรุปที่ผู้ใช้ยืนยัน
+## Confirmed conclusions
 
-- ทำให้หน้า Home อ่านสลิปและบันทึกอัตโนมัติได้ครบก่อน พร้อมจัดการเมนูเดิมที่เรียกระบบนำเข้าซึ่งถูกถอดออกแล้ว
-- การปรับหน้าตาครั้งใหญ่แยกเป็นงานถัดไป
+- First make Home read and save slips automatically. Retire menus that call the old, unavailable import system.
+- A broader visual redesign is separate later work.
 
-### เส้นทางผู้ใช้ใหม่
+### New users
 
-ผู้ใช้อธิบายเส้นทางที่ต้องการดังนี้:
+The user described this sequence:
 
-1. สมัครบัญชีและเข้าสู่ระบบ แล้วเข้าสู่ onboarding
-2. ช่วงใกล้จบ onboarding ขอสิทธิ์เข้าถึงคลังรูปภาพทั้งหมด
-3. ค้นหาอัลบั้มของธนาคาร แสดงจำนวนรูปสลิปแยกตามธนาคารและจำนวนรูปรวม
-4. ผ่านขั้นตอนยืนยันที่เหลือ แล้วเข้าสู่หน้า Home
-5. หน้า Home ค้นหารูปย้อนหลัง 30 วัน ให้ AI อ่านและบันทึกอัตโนมัติตามข้อสรุปฝั่ง API เดิม
+1. Register an account.
+2. Sign in. Enter onboarding.
+3. Near the end of onboarding, request full photo-library access.
+4. Find bank albums. Show slip-photo counts per bank. Show the total photo count.
+5. Complete the remaining confirmation steps. Enter Home.
+6. Home discovers photos from the past 30 days. AI reads and saves them automatically under the existing API decisions.
 
-การค้นหาและนับรูปใน onboarding กับการอ่านภาพและบันทึกที่ Home เป็นคนละขั้นตอน จำนวนรูปที่พบจึงยังไม่ใช่จำนวนรายการที่บันทึกแล้ว
+Onboarding discovery/counting and Home reading/persistence are separate steps. Discovered photos are not yet saved transactions. Use this sequence as the baseline. The discussion did not select a separate activation button for automatic reading.
 
-ยึดเส้นทางที่ผู้ใช้อธิบายนี้เป็นฐาน โดยไม่มีข้อสรุปให้เพิ่มปุ่มเปิดการอ่านอัตโนมัติแยกต่างหาก
+### Returning users
 
-### เส้นทางผู้ใช้เดิม
+- Users who completed onboarding enter Home directly.
+- Home discovers the past 30 days and uses the same automatic reading/persistence rules as for new users.
+- Returning users retain automatic import without repeating onboarding.
 
-- ผู้ใช้ที่ผ่าน onboarding แล้วข้ามขั้นตอนนั้นและเข้าหน้า Home
-- ที่ Home ค้นหารูปย้อนหลัง 30 วัน ให้ AI อ่านและบันทึกอัตโนมัติด้วยกติกาเดียวกับผู้ใช้ใหม่
-- การกลับมาใช้งานจึงยังใช้การนำเข้าอัตโนมัติ ไม่ต้องทำ onboarding ซ้ำ
+### Incomplete photo access
 
-### เมื่อสิทธิ์เข้าถึงรูปภาพไม่ครบ
+- This includes denied access, selected-photo access, and later revocation.
+- Users retain app access, historical transactions, and manual entry.
+- Pause automatic slip reading until full photo access is available.
+- Home explains the required access and offers a settings button.
 
-- ครอบคลุมการไม่อนุญาต ให้สิทธิ์เฉพาะบางรูป และถอนสิทธิ์ภายหลัง
-- ผู้ใช้ยังเข้าแอป ดูรายการเดิม และจดรายการเองได้ตามปกติ
-- พักการอ่านสลิปอัตโนมัติจนกว่าจะมีสิทธิ์เข้าถึงรูปทั้งหมด
-- หน้า Home แสดงข้อความอธิบายว่าต้องเปิดสิทธิ์เข้าถึงรูปเพื่ออ่านสลิปอัตโนมัติ พร้อมปุ่มไปตั้งค่า
+### Return from another app
 
-### เมื่อกลับมาจากแอปอื่น
+- Returning to Home from another app triggers discovery and automatic reading.
+- Agreed example: start at Home, transfer money/save a slip in a bank app, then return to Moojot. Discovery starts without a refresh gesture.
+- Retain permission checks, the 30-day window, and duplicate protection from existing decisions.
 
-- เมื่อผู้ใช้สลับจากหมูจดไปแอปอื่นแล้วกลับมาที่หน้า Home ให้ค้นหารูปและอ่านสลิปอัตโนมัติ
-- ตัวอย่างที่ผู้ใช้ยืนยัน: อยู่หน้า Home → ไปโอนเงินและบันทึกสลิปในแอปธนาคาร → กลับมาหมูจดแล้วเริ่มค้นหา โดยไม่ต้องกดรีเฟรช
-- ใช้เงื่อนไขสิทธิ์เข้าถึงรูป ช่วงย้อนหลัง 30 วัน และกฎป้องกันการบันทึกรูปเดิมซ้ำตามข้อสรุปเดิม
+### Activation and refresh gestures
 
-### จังหวะเริ่มงานและการดึงเพื่อรีเฟรช
+- Work runs while Home is open in the active app. The user keeps that screen open during processing.
+- Entering Home triggers discovery/reading. Returning from another app or after unlocking also triggers it.
+- There is no continuous work in another app or while locked. Returning to Home resumes unfinished work.
+- A held pull gesture shows pull-responsive animation only. It does not start a new scan.
+- Release to refresh starts work. Automatic Home activation remains a separate trigger.
 
-- งานรอบนี้อ่านสลิปขณะที่หน้า Home เปิดอยู่ในแอปที่อยู่ด้านหน้า ผู้ใช้เปิดหน้านี้ทิ้งไว้ระหว่างทำงาน
-- เริ่มค้นหาและอ่านเมื่อเข้าหน้า Home รวมถึงเมื่อกลับมาจากแอปอื่นหรือกลับมาเปิดใช้งานหลังล็อกหน้าจอ
-- ไม่เพิ่มการทำงานต่อเนื่องขณะอยู่ในแอปอื่นหรือหน้าจอถูกล็อก กลับมาที่ Home แล้วจึงทำงานที่เหลือต่อ
-- ดึงหน้าจอลงค้างไว้โดยยังไม่ปล่อยนิ้ว: แสดงแอนิเมชันตอบสนองการดึงเท่านั้น การดึงค้างไม่เริ่มรอบสแกนใหม่
-- เมื่อปล่อยนิ้วเพื่อรีเฟรชจึงเริ่มงาน การค้นหาและอ่านอัตโนมัติเมื่อเข้าหน้า Home ยังคงมีอยู่แยกจากท่าทางดึงเพื่อรีเฟรช
+### Old import menus
 
-### เมนูนำเข้าเดิม
+- Delete “อ่านสลิป” (read slip) and “ใบแจ้งยอด” (statement) from Home's “+” menu.
+- Update related links and guidance for automatic reading.
+- Preserve manual entry and access to historical transactions.
 
-- นำเมนู “อ่านสลิป” และ “ใบแจ้งยอด” ออกจากเมนู “+” บน Home
-- เก็บกวาดลิงก์และปรับคำแนะนำที่เกี่ยวข้องให้สอดคล้องกับการอ่านสลิปอัตโนมัติ
-- ผู้ใช้ยังจดรายการเองและดูรายการเก่าที่เคยบันทึกไว้ได้ตามปกติ
+### Visible state and continued processing
 
-### การแสดงผลและการเดินงานต่อ
+- Discovery, reading, and saving remain on the same Home screen. Starting/ending a round changes visible state within that screen. There is no separate waiting route.
+- During discovery/reading, show “หมูกำลังอ่านสลิปใหม่” (Moo is reading new slips) with animation until the round ends.
+- After the round, return the same Home screen to its normal state with newly saved transactions.
+- The user's decision excludes the assistant's proposed round summary and scan-detail screen.
+- A skipped or failed photo does not block the next photo. Continue until no photos remain or there are no new photos.
+- Retain API rules: skipped outcomes do not retry unchanged images automatically. Temporary failures retry later after the specified delay. Continuing processing does not mean immediately repeating failed images.
+- In these conclusions, background/quiet means automatic reading/persistence while Home is open, without a round summary. The selected activity text and animation remain visible.
+- Retain the permission explanation and settings action when full access is unavailable.
 
-- อยู่บนหน้า Home เดิมตลอดการค้นหา อ่าน และบันทึก การเริ่มและจบรอบเปลี่ยนเฉพาะสถานะการแสดงผลภายในหน้าเดียวกัน ไม่มีการนำทางไปหน้ารอหรือกลับมาจากหน้าอื่น
-- ระหว่างค้นหาและอ่านสลิป ให้แสดงข้อความ “หมูกำลังอ่านสลิปใหม่” พร้อมแอนิเมชันจนจบรอบ เพื่อให้ผู้ใช้เห็นว่าระบบกำลังทำงานและรอผล
-- หลังจบรอบ เปลี่ยนสถานะการแสดงผลภายใน Home เดิมจากกำลังทำงานเป็นสถานะปกติ พร้อมอัปเดตรายการที่บันทึกสำเร็จ
-- ไม่เพิ่มสรุปผลรายรอบหรือหน้ารายละเอียดผลสแกนตามข้อเสนอของผู้ช่วย
-- เมื่อรูปหนึ่งถูกข้ามหรือทำไม่สำเร็จ ให้เดินงานรูปถัดไปต่อจนรูปหมดหรือไม่มีรูปใหม่
-- คงกติกา API เดิม: ผล skipped ไม่ลองรูปเดิมซ้ำอัตโนมัติ; ความล้มเหลวชั่วคราวลองใหม่ภายหลังตามระยะรอที่กำหนด การเดินงานต่อไม่ได้หมายถึงวนส่งรูปที่ผิดพลาดซ้ำทันที
-- “เบื้องหลัง/เงียบ ๆ” ในข้อสรุปนี้หมายถึงการอ่านและบันทึกอัตโนมัติขณะที่เปิดหน้า Home โดยไม่เพิ่มสรุปผลรายรอบ ทั้งนี้ยังแสดงสถานะและแอนิเมชันระหว่างทำงานตามที่ผู้ใช้เลือก
-- ข้อสรุปเรื่องข้อความและปุ่มเปิดสิทธิ์เมื่อเข้าถึงรูปไม่ครบยังคงอยู่
+## Sources
 
-## ฐานของงาน
+- [API Wayfinder plan](../import-effect-migration/map.md) and its linked answers provide the earlier decisions.
+- [API spec](../slip-auto-import-effect/spec.md) defines the slip contract and requirements for later native work.
+- [API migration record](../../docs/slip-auto-import.md) records the actual RPC route and later native work.
 
-- [แผน Wayfinder ฝั่ง API](../import-effect-migration/map.md) และคำตอบที่เชื่อมไว้ เป็นที่มาของการตัดสินใจเดิม
-- [Spec ฝั่ง API](../slip-auto-import-effect/spec.md) กำหนดสัญญานำเข้าสลิปและข้อกำหนดสำหรับงานมือถือที่ตามมา
-- [บันทึกการเปลี่ยน API](../../docs/slip-auto-import.md) อธิบายเส้นทาง RPC ที่ใช้งานจริงและงาน Native follow-up
+Use existing decisions as the native baseline. Record any proposed change to previously agreed behavior explicitly.
 
-ใช้ข้อสรุปเดิมเป็นฐานเมื่อกำหนดงานมือถือ และบันทึกให้ชัดหากมีข้อเสนอเปลี่ยนพฤติกรรมที่เคยตัดสินใจไว้
+## Related text changes
 
-## งานปรับข้อความที่เกี่ยวข้อง
+- Update onboarding/help for the two stages. Onboarding discovers/counts photos. Home sends images to AI and saves automatically.
+- Adapt old instructions about manual image selection and review before persistence to the confirmed sequence.
 
-- ปรับข้อความ onboarding และหน้าช่วยเหลือให้ตรงกับสองขั้นตอน: onboarding ค้นหาและนับรูป ส่วน Home ส่งภาพให้ AI อ่านและบันทึกอัตโนมัติ
-- ปรับข้อความเดิมที่ระบุว่าผู้ใช้ต้องเลือกรูปนำเข้าเองและตรวจทานก่อนบันทึก ให้ตรงกับเส้นทางที่ยืนยันไว้
+## Next step
 
-## ขั้นถัดไป
-
-จัดทำ [spec ฝั่งมือถือ](spec.md) สถานะ ready-for-agent แล้ว ผู้ใช้ยืนยันทั้งพฤติกรรมผลิตภัณฑ์ การทดสอบระบบอัตโนมัติ และการตรวจหน้าจอบนเครื่องหรือเครื่องจำลอง ขั้นถัดไปคือแบ่ง spec เป็นงานย่อยพร้อมลำดับการทำงานด้วย to-tickets
+The [native spec](spec.md) recorded status ready-for-agent at handoff. The user confirmed product behavior, automated tests, and device/emulator UI checks. Next, use to-tickets to divide the spec into ordered implementation tickets.

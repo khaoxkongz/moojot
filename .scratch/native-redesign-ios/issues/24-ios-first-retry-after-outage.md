@@ -1,29 +1,33 @@
-# 24: กด "ลองอีกครั้ง" ครั้งแรกหลังเซิร์ฟเวอร์กลับมาไม่โหลดใหม่บน iOS
+# 24: First iOS retry does not reload after server recovery
 
-**What to build:** หลังโหลดหน้าแรกไม่สำเร็จเพราะเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ และเซิร์ฟเวอร์กลับมาแล้ว การกด "ลองอีกครั้ง" ครั้งแรกต้องโหลดรายการใหม่ได้เลย
+**What to build:** After Home fails because the server is unavailable, the first “ลองอีกครั้ง” (retry) tap reloads once the server recovers.
 
-**Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
+**Blocked by:** 05 — [Home, filters, and category queue](05-home-filter-queue.md)
 
 **Status:** needs-triage
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md) (สถานะผิดพลาดและกลับมาทำสำเร็จได้) — พบระหว่างทำ 05
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md) (error/recovery states). Found during ticket 05.
 
-**Why blocked:** การ์ด "โหลดรายการไม่สำเร็จ" และปุ่มลองอีกครั้งแบบใหม่อยู่ในงาน 05
+**Why blocked:** Ticket 05 owns the new “โหลดรายการไม่สำเร็จ” (load failed) card and Retry button.
 
-## สิ่งที่พบ (simulator iPhone 11, dev build, 2026-10-02)
+## Observed behavior (iPhone 11 simulator, development build, 2026-10-02)
 
-1. เปิดหน้าแรกตอนเซิร์ฟเวอร์ทำงาน แล้วหยุดเซิร์ฟเวอร์
-2. กด "เดือนก่อน" → การ์ด "โหลดรายการไม่สำเร็จ" ขึ้น (ถูกต้อง)
-3. เปิดเซิร์ฟเวอร์อีกครั้ง รอให้ตอบ (`curl localhost:3000` ได้ 200) ทั้งรอ 5 และ 30 วินาที
-4. กด "ลองอีกครั้ง" ครั้งแรก → ไม่มีคำขอไปถึงเซิร์ฟเวอร์เลย (log ของเซิร์ฟเวอร์ว่าง) การ์ดยังอยู่
-5. กดครั้งที่สอง → คำขอทุกตัวไปถึงและหน้าโหลดได้
+1. Open Home with the server running. Stop the server.
+2. Tap “เดือนก่อน” (previous month). The load-failed card appears correctly.
+3. Restart the server. Wait for `curl localhost:3000` to return 200. The checks included 5-second and 30-second waits.
+4. Tap Retry once. No request reaches the server, its logs stay empty, and the card remains.
+5. Tap again. All requests arrive and Home loads.
 
-เกิดซ้ำได้สามรอบ กด "ลองอีกครั้ง" ทำ `refetch()` ของทุก query ที่เปิดอยู่ ยังไม่รู้สาเหตุ ทางที่น่าสงสัย: query ที่ยังค้างสถานะ fetching/paused แล้ว `refetch()` ของ query ที่ไม่มี data คืน promise เดิม (`continueRetry`) แทนการยิงใหม่ หรือ `expo/fetch` ยังไม่ส่งคำขอหลังเชื่อมต่อไม่ได้ ต้องตรวจบน iPhone จริงด้วยว่าเป็นแค่ simulator หรือไม่ (เช่นปิด Wi-Fi แล้วเปิด)
+This reproduced three times. Retry calls `refetch()` on every enabled query. The cause remains unknown.
 
-- [ ] หาสาเหตุ (log fetchStatus/failureCount ของแต่ละ query ตอนกด และดูว่า `rpcFetch` ถูกเรียกไหม)
-- [ ] กดครั้งเดียวโหลดใหม่ได้ ทั้งหน้าแรกและคิวเลือกหมวด
-- [ ] ตรวจบน iPhone ด้วยการปิดแล้วเปิดเน็ต
+One possible cause involves queries still fetching or paused. With no data, `refetch()` may return their existing Promise through `continueRetry`. Another possibility is `expo/fetch` failing to send after disconnection. Check physical iPhone to distinguish simulator behavior, for example by disabling/restoring Wi-Fi.
+
+- [ ] Find the cause. Log each query's fetchStatus/failureCount at the tap. Check whether `rpcFetch` runs.
+- [ ] One tap reloads both Home and the category queue.
+- [ ] Check physical iPhone after disconnecting/restoring network.
 
 ## Comments
 
-**จากงาน 09 (simulator):** ปุ่ม "ลองอีกครั้ง" ของหน้าค้นหาที่อยู่ชิดซ้ายบน กดผ่าน Maestro แล้ว `onPress` ไม่ถูกเรียกเลย (log ใน handler ไม่ขึ้น) เพราะปุ่มเฟืองลอยของ Expo dev tools ทางซ้ายรับแตะที่อยู่ใกล้มัน แตะครึ่งขวาของปุ่ม (`point: "96,226"`) ครั้งเดียวก็ refetch และโหลดได้หลังเซิร์ฟเวอร์กลับมา ก่อนไล่ TanStack/`expo/fetch` ให้ตรวจก่อนว่าครั้งแรกที่ "ไม่มีคำขอ" ในงานนี้แตะโดนปุ่มจริงหรือไม่ (ใส่ `console.log` ใน `onPress`) และลองบน iPhone ที่ไม่มีเฟืองนี้
+**From ticket 09 on simulator:** Maestro taps on Search's upper-left Retry never called `onPress`. Expo's floating development-tool gear intercepted nearby taps. The handler logged nothing. One tap on the button's right half (`point: "96,226"`) refetched and loaded after server recovery.
+
+Before investigating TanStack/`expo/fetch`, check whether ticket 24's first no-request tap actually reaches the button. Add `console.log` in `onPress`. Also try iPhone without that gear overlay.

@@ -1,34 +1,34 @@
-# กำหนดวิธีระบุบัตรที่ยังไม่เคยจดรายการ
+# Define first-time credit-card identification
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-หากผู้ใช้ต้องจดรายการบัตรเครดิตครั้งแรก และบัตรนั้นยังไม่มีในรายการที่บันทึกไว้ จะระบุชื่อบัตรและเลขท้ายสี่หลักผ่าน flow ใด ให้ใช้ตัวเลือกบัตรในดีไซน์ได้จริง? ตรวจทั้งภาพและต้นแบบก่อนเสนอ control ที่จำเป็นเพิ่มเติม โดยรักษาข้อตกลงแยกบัตรตามชื่อและเลขท้ายสี่หลัก
-
-## Comments
-
-ต้นแบบมีบัตร KTC พร้อมเลขท้าย 4821 เป็นข้อมูลตัวอย่าง จึงเลือก chip นี้ได้อยู่แล้ว แต่ไม่ใช่ข้อมูลของผู้ใช้จริง ระบบเดิมค้นพบบัตรจาก FinanceTransaction; createTransaction มี cardName/cardLast4 อยู่แล้ว จุดที่ต้องตัดสินใจคือวิธีระบุข้อมูลครั้งแรกในหน้าใช้งาน ไม่ใช่การสมมติว่าต้องสร้าง card catalog หรือ endpoint ใหม่
-
-### คำตอบของผู้ใช้
-
-ผู้ใช้ยอมรับวิธีเพิ่มบัตรด้วยชื่อบัตรและเลขท้ายสี่หลักเป็นแนวทางตั้งต้น ผู้ใช้และครอบครัวยังไม่มีบัตรเครดิต แต่ญาติหรือคนรอบตัวอาจใช้ และต้องการให้แก้ไขหรือเพิ่มความสามารถเมื่อได้ทดลองแล้วได้
+How does a first credit-card entry capture the card's name and last four before saved entries identify it? Inspect images and the prototype before proposing additional controls. Preserve the agreed name/last-four identity.
 
 ## Answer
 
-- มี action “เพิ่มบัตร” สำหรับระบุชื่อบัตรกับเลขท้ายสี่หลักครั้งแรก จากนั้นเลือกบัตรนั้นในการจดครั้งต่อไปได้
-- วิธีนี้เป็นแนวทางตั้งต้นที่กลับมาทบทวนได้หลังลองกับผู้ใช้บัตรเครดิตจริง ยังไม่มีหลักฐานจากการใช้ของผู้ใช้และครอบครัวว่าครบทุกความต้องการของบัตรเครดิต
-- การเพิ่มบัตรเป็น optional flow ผู้ใช้ที่ไม่มีบัตรใช้การจด รายการธนาคาร และฟีเจอร์หลักอื่นได้โดยไม่ต้องตั้งค่าบัตร
-- คงขอบเขตที่ตกลงไว้: บัตรของรายการแยกด้วยชื่อและเลขท้ายสี่หลัก ไม่มีข้อกำหนดใหม่เรื่องยอดหนี้ รอบบิล ชำระหนี้ หรือวงเงินบัตรจากคำตอบนี้
+- Provide “เพิ่มบัตร” (add card) to enter a name and last four initially. Make the card selectable in later entries.
+- This is a provisional approach for review with actual card users. The user/family's experience does not establish complete credit-card requirements.
+- Card setup is optional. Users without cards can record entries, use banks, and access other core features without setup.
+- Preserve name/last-four identity. This answer adds no debt, billing-cycle, repayment, or credit-limit requirements.
 
-### ผลต่อแผน
+### Planning consequences
 
-- ใช้ตัวเลือกบัตรชุดเดียวกันใน editor, กฎจดซ้ำ และหน้าบัตร ตรวจเส้นทางเก็บ/เลือกข้อมูลครั้งแรกตามความสามารถเดิมหรือข้อมูลที่ต้องเพิ่ม โดยไม่ใช้บัตรตัวอย่าง KTC เป็นข้อมูลจริง
-- คง draft ถ้าการบันทึกไม่สำเร็จ แสดง validation ชื่อและเลขท้ายสี่หลัก และมีทางเลือกไม่ระบุบัตรตามดีไซน์
-- เมื่อปรับความสามารถในอนาคต ให้พิจารณารายการที่อ้างบัตรเดิมและข้อมูลเก่าด้วย การทำให้ขยายได้ไม่ได้แปลว่าการเปลี่ยนรูปแบบข้อมูลทุกอย่างจะไม่มีงานย้ายข้อมูล
-- ในข้อเสนอการจัดลำดับงาน ให้การจดและอ่านสลิปที่ผู้ใช้ใช้อยู่มาก่อน แล้วตรวจฟีเจอร์บัตรเป็นส่วนหนึ่งของขอบเขตเต็มภายหลัง ไม่ตัดบัตรออกจากดีไซน์ที่ยอมรับ
+- Use one card-choice set in the editor, recurring rules, and card screen. Inspect existing capabilities and required additions for first storage/selection. Do not use sample KTC as actual data.
+- Preserve drafts after failed saves. Check the name and last four. Show validation errors. Retain the design's unspecified-card option.
+- Future changes must consider entries referencing existing cards and old data. Extensibility does not eliminate migration work for every representation change.
+- Prioritize the user's existing entry/slip flows in delivery planning. Check cards later within full scope. Keep cards in the approved design.
+
+## Comments
+
+The prototype includes sample KTC card 4821, so its chip is already selectable. This is not actual user data. Existing discovery uses FinanceTransaction. createTransaction already accepts cardName/cardLast4. The decision concerns first-use input, without assuming a new card catalog or endpoint.
+
+### User response
+
+The user accepted name and last four as an initial approach. The user and family have no credit cards, but relatives or nearby users may use them. The user wants changes or additions after real use.

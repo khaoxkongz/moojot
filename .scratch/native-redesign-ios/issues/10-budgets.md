@@ -1,42 +1,89 @@
-# 10: ตั้งงบและเอางบกลับคืน
+# 10: Set budgets and restore deleted budgets
 
-**What to build:** ตั้งงบรวม/หมวด/แท็ก ดูวงเงินกับยอดจริง แก้แทนวงเงินเดิม และลบแล้วเอางบเดิมกลับคืนได้
+**What to build:** Set all/category/tag budgets with actual spending and allowances. Saving an existing target replaces its allowance. Deletion can restore the original budget.
 
-**Blocked by:** 01 — [ตัวอักษรและธีมบน iOS](01-ios-theme-foundation.md)
+**Blocked by:** 01 — [iOS typography and theme foundation](01-ios-theme-foundation.md)
 
 **Status:** done
 
 **Done in:** 7dd6d6e feat(budgets): plan and budget form from the design, with delete and server-side undo; c0dc775 fix(budgets): undoable replace on edit, safe concurrent delete, review clean-ups
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 70–74
 
-**Why blocked:** ใช้ controls/theme ร่วม; operations ข้อมูลเดือน/งบเดิมมีแล้ว จึงไม่ต้องรอ Summary
+**Why blocked:** This uses shared controls/theme. Existing month/budget operations allow work independently of Summary.
 
-- [x] หน้าแผน/ฟอร์มงบ แสดง all/category/tag, selected month/custom bounds, empty state และยอด spent/remaining จริง (story 70)
-- [x] Warning chips 50/70/80/90 แสดงจำนวนบาท; spent เท่าวงเงินไม่แสดงเกิน แต่ spent มากกว่าวงเงินแสดงเกิน พร้อมคำ/ไอคอน (stories 71, 72)
-- [x] Target ที่มีอยู่แสดง notice และ upsert แทนวงเงินเดิม; เปลี่ยน target หรือ save failure ไม่ทำให้ข้อมูลสูญหาย/แจ้งสำเร็จผิด (story 73)
-- [x] ลบงบทันทีและ undo 5 วินาทีคืน ID/fields/target เดิมพร้อมยอดจากรายการที่ยังอยู่ (story 74)
-- [x] วางขอบเขต delete/restore operation ที่ server เก็บผลเพื่อให้กู้ได้ครบ รองรับ ownership, repeated requests และ conflict โดยไม่สร้าง clone ใช้ต่อสำหรับ rule/category/tag slices ได้
-- [x] Query status/summary consumers refresh หลังสำเร็จ ตรวจ contract กับ temporary DB และ create/edit/delete/undo/recovery บน iOS
+- [x] Plan/budget form shows all/category/tag, selected month/custom boundaries, empty state, and actual spent/remaining. (story 70)
+- [x] Warning chips 50/70/80/90 show baht thresholds. Equal spending is not over-budget. Greater spending is over-budget, with words/icons. (stories 71, 72)
+- [x] Existing targets show a replacement notice and upsert the allowance. Target changes/save failures preserve data and factual success state. (story 73)
+- [x] Delete immediately. Undo within 5 seconds restores original ID/fields/target and spending from retained transactions. (story 74)
+- [x] Define server delete/restore operations that retain complete effects. Cover ownership, repeated requests, and conflicts without clones. Reuse this boundary for rule/category/tag work.
+- [x] Refresh query/status/Summary consumers after success. Check contracts with temporary MongoDB and create/edit/delete/undo/recovery on iOS.
 
 ## Comments
 
-**จากงาน 10 (agent, 2026-10-03):** โค้ด tests และการเดินบน simulator เสร็จแล้ว (ดู [notes/10-budgets.md](../notes/10-budgets.md)) สัญญา delete/restore ตรวจกับ MongoDB ชั่วคราวใน `apps/server/test/budgets.test.ts` และเดิน create/edit/delete/undo/recovery บน simulator iPhone 11 ทั้งสองธีมแล้ว ข้อสุดท้ายยังต้องตรวจบน iPhone 13 Pro สิ่งที่ต้องตรวจ:
+**Ticket 10 — agent, 2026-10-03:** Code, tests, and simulator flows completed. See [notes/10-budgets.md](../notes/10-budgets.md).
+The delete/restore contract passed isolated MongoDB checks in `apps/server/test/budgets.test.ts`.
+The iPhone 11 simulator covered create/edit/delete/undo/recovery in both themes.
+At this point, the last criterion still needed physical iPhone 13 Pro checks:
 
-1. หน้าแรก → ดูสรุป → เลื่อนลง → วางแผนงบ: หน้าวางแผนเปิดที่เดือนเดียวกับสรุป ปุ่ม ‹ › เปลี่ยนเดือน และปุ่ม › กดไม่ได้ที่เดือนปัจจุบัน
-2. กด "ตั้งงบรวม" ใส่ 5,000 แล้วแตะ 70%: บรรทัดใต้ชิปเขียน "ใช้ไปถึง 3,500 ฿ หมูจะเตือนว่าใกล้ครบงบ" กด "ตั้งงบนี้" แล้วการ์ดส้มแสดงยอดใช้ไปจริงของเดือนนี้ และ toast "ตั้งงบแล้ว หมูจะช่วยดูให้"
-3. กด "ตั้งงบแยกหมวด" ใส่จำนวนแต่ไม่เลือกหมวดแล้วกด "ตั้งงบนี้": ขึ้น "กรุณาเลือกหมวด" แตะหมวดแล้วแป้นตัวเลขหุบ ปุ่มบันทึกไม่ถูกแป้นบัง
-4. ตั้งงบหมวดที่มีรายจ่ายอยู่แล้ว ให้วงเงินเท่ายอดใช้จ่ายพอดี: แถวขึ้น "ใกล้ครบงบ" และ "เหลือ 0 ฿" ไม่ขึ้นเกินงบ จากนั้นจดรายจ่ายหมวดนั้นเพิ่ม 1 บาท: แถวเปลี่ยนเป็น "เกินงบ" สีแดง "เกิน 1 ฿"
-5. กด "ตั้งงบแยกหมวด" แล้วเลือกหมวดเดิมอีกครั้ง: ขึ้น "มีงบนี้อยู่แล้ว … ฿ บันทึกแล้วจะใช้วงเงินใหม่แทน" บันทึกแล้วยังมีงบของหมวดนั้นแถวเดียว วงเงินเป็นค่าใหม่
-6. แตะแถวงบ → เปลี่ยนเป็นหมวดอื่นหรือ "รวมทุกหมวด" แล้ว "บันทึก": งบย้ายไปเป้าหมายใหม่ ไม่มีแถวเก่าค้าง
-7. แตะแถวงบ → "ลบงบนี้": กลับหน้าวางแผนทันที แถวหาย มี toast "ลบงบแล้ว · เอากลับคืน" ประมาณ 5 วินาที กด "เอากลับคืน": งบเดิมกลับมา วงเงิน % เตือน และยอดใช้ไปถูกต้อง (ลองลบรายการจ่ายหนึ่งรายการระหว่างที่งบหายไปก็ได้ ยอดหลังเอากลับคืนต้องนับเฉพาะรายการที่ยังอยู่)
-8. ลบงบแล้วรอ toast หายไป: งบยังหายอยู่ ไม่กลับมาเอง
-9. ปิด Wi-Fi/เน็ตแล้วกด "ตั้งงบนี้": ขึ้น "บันทึกงบไม่สำเร็จ เชื่อมต่อไม่ได้ ลองอีกครั้ง" ฟอร์มยังเปิดอยู่ ไม่มี toast สำเร็จ เปิดเน็ตแล้วกดอีกครั้ง: บันทึกได้ และในหน้าวางแผนกดเดือนก่อนตอนไม่มีเน็ต: ขึ้น "โหลดแผนไม่สำเร็จ" เปิดเน็ตแล้วกด "ลองอีกครั้ง" ครั้งเดียว: โหลดขึ้น
-10. กลับไปหน้าสรุป: แถว "วางแผนงบ" บอกจำนวนงบและสถานะตรงกับหน้าวางแผน
-11. ดูทั้งธีมสว่างและมืด ว่าตัวอักษร สี แถบ และไอคอนสถานะอ่านง่าย
+1. Open Home → Summary → scroll down → “วางแผนงบ” (plan budget).
+   Plan opens the same month as Summary. Buttons ‹ › change months. The current month disables ›.
+2. Tap “ตั้งงบรวม” (set overall budget). Enter 5,000. Select 70%.
+   The warning line says “ใช้ไปถึง 3,500 ฿ หมูจะเตือนว่าใกล้ครบงบ” (warn at spending of 3,500 baht).
 
-ข้อสังเกตสำหรับคนตรวจ: ฐานข้อมูล dev สร้าง collection `finance_deletion` เองตอนลบงบครั้งแรก แต่ index ของมันจะมาเมื่อรัน `vp run db:push` กับฐานนั้นครั้งถัดไป (งานนี้ไม่ได้รัน)
+   Tap “ตั้งงบนี้” (set this budget). The orange card shows actual monthly spending.
+   The toast says “ตั้งงบแล้ว หมูจะช่วยดูให้” (budget set, Moo will help monitor it).
 
-2026-10-03: ผู้ใช้ลองบน iPhone แล้วบอกว่าโอเค แต่ยังไม่ได้ไล่ทุกข้อในรายการด้านบน (1–11) อย่างละเอียด จึงปิดตั๋วเป็น `done` ตามที่ผู้ใช้ตกลง สิ่งที่ยังไม่เคยเห็นบนเครื่องจริง ควรดูอีกครั้งตอนตรวจรวมในตั๋ว 22: งบแท็ก, วันเริ่มเดือนแบบกำหนดเอง, การเอากลับคืนที่ถูกปฏิเสธ, ข้อ 9 (ปิดเน็ตแล้วลองอีกครั้ง), Dynamic Type/VoiceOver และการแก้หลังรีวิว (c0dc775: แก้งบไปทับงบอื่นแล้วเอากลับคืนได้, ข้อความเมื่อชนกัน) ยังต้องรัน `vp run db:push` กับฐาน dev เพื่อสร้าง index ของ `finance_deletion`
+3. Tap “ตั้งงบแยกหมวด” (set category budget). Enter an amount without selecting a category. Tap “ตั้งงบนี้” (set this budget).
+   The error says “กรุณาเลือกหมวด” (select a category). Category selection closes the number pad.
+   The keypad does not cover Save.
+4. Set a category budget equal to that category's existing spending.
+   Its row shows “ใกล้ครบงบ” (near budget limit) and “เหลือ 0 ฿” (0 baht remaining), without an over-budget status.
+   Record another 1-baht expense in that category.
+   The row changes to “เกินงบ” (over budget), with red “เกิน 1 ฿” (1 baht over).
+5. Tap “ตั้งงบแยกหมวด” (set category budget). Select the same category again.
+   The notice says “มีงบนี้อยู่แล้ว … ฿ บันทึกแล้วจะใช้วงเงินใหม่แทน” (saving replaces the existing allowance).
+   Saving leaves one row for that category, with the new allowance.
+6. Open a budget row. Change its target to another category or “รวมทุกหมวด” (all categories). Tap “บันทึก” (save).
+   The budget moves to the new target. The old row does not remain.
+7. Open a budget row. Tap “ลบงบนี้” (delete this budget).
+   Return immediately to Plan. The row disappears.
+   “ลบงบแล้ว · เอากลับคืน” (budget deleted · undo) appears for about 5 seconds.
+
+   Tap “เอากลับคืน” (undo). The original budget returns with its allowance, warning percentage, and accurate spending.
+   Optionally delete one expense while the budget is absent.
+   Spending after restoration counts only the remaining entries.
+
+8. Delete a budget. Wait for the toast to disappear.
+   The budget remains absent. It does not return automatically.
+9. Disconnect Wi-Fi/network. Tap “ตั้งงบนี้” (set this budget).
+   The error says “บันทึกงบไม่สำเร็จ เชื่อมต่อไม่ได้ ลองอีกครั้ง” (budget save failed, cannot connect, retry).
+   The form remains open without a success toast.
+
+   Restore the network. Tap again. Saving succeeds.
+
+   On Plan, open the previous month while offline.
+   “โหลดแผนไม่สำเร็จ” (plan load failed) appears.
+   Restore the network. Tap “ลองอีกครั้ง” (retry) once. The plan loads.
+
+10. Return to Summary. Its “วางแผนงบ” (plan budget) row shows counts and statuses consistent with Plan.
+11. Check readable text, colors, bars, and status icons in light/dark.
+
+Device-check note: The development database creates `finance_deletion` on the first budget deletion.
+Its indexes appear after the next `vp run db:push` against that database.
+This implementation session did not run that command.
+
+2026-10-03: The user tried iPhone and said it was acceptable, without checking every item 1–11 in detail.
+By agreement, the ticket became `done`.
+Recheck these unobserved physical-device cases in integrated acceptance ticket 22:
+
+- Tag budgets.
+- Custom month start.
+- Rejected restoration.
+- Item 9: offline recovery through Retry.
+- Dynamic Type and VoiceOver.
+- Review changes from c0dc775: replacing another budget during editing, undoing that replacement, and conflict messages.
+
+`vp run db:push` against the development database remains necessary to create the `finance_deletion` indexes.

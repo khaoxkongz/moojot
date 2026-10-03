@@ -1,15 +1,15 @@
-# 04: จำกัดงาน Gemini คิว และเวลาให้ผลลัพธ์เชื่อถือได้
+# 04: Bound Gemini work, queue length, and deadlines
 
-**What to build:** API รับงานอ่านสลิปได้ตามกำลัง server ที่กำหนด ตอบ `BUSY` เมื่อคิวเต็มหรือรอนาน และยกเลิกงานที่ยังไม่เริ่มเขียนเมื่อผู้เรียกหายไป โดยไม่รายงาน timeout เท็จหลังฐานข้อมูลเริ่มบันทึก
+**What to build:** The slip API respects the server's configured capacity. It returns `BUSY` when the queue fills or waiting exceeds the limit. Caller disconnection cancels work before persistence starts. After database creation starts, the API waits for the real result instead of reporting a misleading timeout.
 
-**Blocked by:** 03 — API แยกผลข้ามและข้อผิดพลาดอย่างถูกต้อง
+**Blocked by:** 03 — Distinguish skipped outcomes from errors
 
 **Status:** done
 
 **Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
-- [ ] Effect Semaphore หนึ่งชุดต่อ server instance จำกัด Gemini สอง calls และคิว FIFO อีกสองคำขอหลัง input/dedupe preflight; คิวเต็มหรือรอเกิน 10 วินาทีได้ `BUSY` 429 กับ `Retry-After: 30`
-- [ ] Permit และที่คิวคืนเมื่อสำเร็จ, error, timeout หรือยกเลิก; client disconnect ระหว่างคิว/Gemini ยกเลิกงานและไม่เริ่มสร้างรายการใหม่
-- [ ] Gemini timeout 110 วินาทีได้ `AI_TIMEOUT` 504; deadline 140 วินาทีก่อนเริ่มเขียนได้ `IMPORT_TIMEOUT` 504; Gemini 429 ได้ `AI_RATE_LIMITED` 429 พร้อม `Retry-After` ที่ใช้ได้; network/5xx/upstream 4xx อื่นแยก code ตาม spec
-- [ ] เมื่อเริ่ม Ledger creation แล้วรอผล commit จริงแม้ผู้เรียก disconnect หรือ deadline ก่อนเขียนผ่านไป; server ไม่ retry Gemini หรือ Ledger เอง
-- [ ] Tests ที่ควบคุมเวลาและ fake Gemini พิสูจน์ active 2/waiting 2, FIFO, request ที่ 5, queue timeout, cancellation cleanup, deadlines, no SDK retry และ no false timeout after write
+- [ ] One Effect Semaphore per server instance permits two Gemini calls and two FIFO waiters. Enter after input checks and the initial duplicate check. A full queue or a wait over 10 seconds returns `BUSY` 429 with `Retry-After: 30`.
+- [ ] Success, error, timeout, and cancellation release the permit or queue space. Client disconnection during queuing/Gemini cancels work and prevents new transaction creation.
+- [ ] Gemini timeout after 110 seconds returns `AI_TIMEOUT` 504. The 140-second deadline before persistence returns `IMPORT_TIMEOUT` 504. Gemini 429 returns `AI_RATE_LIMITED` 429 with a valid `Retry-After`. Distinguish network/5xx/other upstream 4xx codes according to the spec.
+- [ ] After Ledger creation starts, await its real commit result despite disconnection or expiry of the deadline before persistence. The server does not retry Gemini or Ledger automatically.
+- [ ] Controlled time and fake Gemini tests prove active 2/waiting 2, FIFO, the fifth request, queue timeout, and cancellation cleanup. They also prove deadlines, disabled SDK retries, and no misleading timeout after persistence starts.

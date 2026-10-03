@@ -1,33 +1,38 @@
-# กำหนดผลเมื่อเปิดจดซ้ำหลังหยุดไว้
+# Define recurring behavior after an intentional pause
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-หากผู้ใช้หยุดกฎจดซ้ำไว้หลายเดือนแล้วเปิดกลับมา ต้องเริ่มจดในวันครบกำหนดครั้งถัดไป หรือจดย้อนหลังในช่วงที่หยุดด้วย? แยกกรณีนี้จากการสร้างกฎใหม่ซึ่ง handoff กำหนดให้จดย้อนถึงวันนี้แล้ว และจากการแก้กฎซึ่ง handoff กำหนดให้มีผลกับครั้งถัดไป
-
-## Comments
-
-Handoff มี switch หยุด/เปิดกฎและข้อความ “หยุดไว้ · หมูยังไม่จดให้” แต่ต้นแบบไม่ได้จำลองเวลาผ่านระหว่างหยุด ระบบเดิมมีเพียง isActive และ generateDueRecurringTransactions ย้อนตั้งแต่ startsOn จึงต้องตกลงผลเมื่อเปิดกลับมาก่อนเลือกข้อมูลช่วงที่มีผล คำแนะนำตั้งต้นคือเริ่มจดครั้งถัดไป และคงรายการที่เคยจดแล้วไว้
-
-### การแยกสถานการณ์ก่อนตอบ
-
-ผู้ใช้ถามถึงการตั้งจดล่วงหน้าแล้วไม่ได้เข้าแอปหลายเดือน Agent อธิบายว่าไม่ได้เปิดแอปเป็นคนละเหตุการณ์กับการกดปิด switch จดซ้ำ ผู้ใช้จึงยืนยันว่า “ถ้ากดหยุดไว้ 2 เดือน พอผ่านไป 2 เดือนแล้วผมว่าให้จดใหม่ได้นะครับ แต่ 2 เดือนที่หยุดไปไม่ต้องจด”
+After pausing a recurring rule for months, should resume start at the next due date or fill the paused period? Distinguish this from new rules, which backfill through today under the handoff. Also distinguish edits, which affect the next occurrence.
 
 ## Answer
 
-- เมื่อผู้ใช้เปิดกฎจดซ้ำกลับมาหลังหยุดไว้ ให้เริ่มจดตามวันครบกำหนดครั้งถัดไป ข้ามวันครบกำหนดในช่วงที่ตั้งใจหยุด ไม่จดย้อนช่วงนั้น
-- คงรายการที่จดไว้ก่อนหยุดครบตามเดิม การหยุดกฎไม่ลบประวัติ
-- แยกการหยุดด้วย switch ออกจากการไม่ได้เปิดแอป กฎที่ยังเปิดอยู่ไม่ได้กลายเป็นกฎหยุดเพราะผู้ใช้ไม่ได้เข้าแอป
-- คำตอบนี้ตัดสินใจผลเมื่อเปิดกฎกลับมาตามสถานการณ์ที่ถาม ยังไม่ได้เพิ่ม control ตั้งจำนวนเดือนเพื่อเปิดกลับอัตโนมัติ
+- Resuming starts at the next due date. Skip due dates during the intentional pause. Do not backfill that period.
+- Preserve all entries recorded before the pause. Pausing does not delete history.
+- A rule that remains active does not become paused because the user stops opening the app.
+- This answer covers user-triggered resume. It adds no control for automatically resuming after a chosen number of months.
 
-### ผลต่อระบบ
+### System consequences
 
-ต้องปรับการมีผลของกฎหรือข้อมูลช่วงหยุดให้ generator ข้ามวันที่ตกอยู่ในช่วงนั้นจริง การเก็บเพียง isActive และย้อนตั้งแต่ startsOn ด้วยค่าปัจจุบันยังไม่พอ การเลือก representation เป็นงานวิศวกรรมใน spec และต้องครอบคลุมทั้งการเปลี่ยนวันจดซ้ำที่มีผลครั้งถัดไปกับการ pause/resume หลายครั้ง
+Effective-period or pause data must let the generator skip actual paused dates. isActive plus backfilling from startsOn using current values is insufficient. Choose representation during spec engineering. Cover next-occurrence schedule edits and repeated pause/resume cycles.
 
-ตรวจรับด้วยกรณีหยุดสองเดือนแล้วเปิดกลับมา: ไม่สร้างรายการสำหรับสองเดือนที่หยุด, สร้างเฉพาะวันครบกำหนดที่กลับมามีผล, รักษารายการก่อนหยุด และเรียก generator ซ้ำแล้วไม่สร้างรายการซ้ำ
+Acceptance uses a two-month pause followed by resume:
+
+- Create no entries for paused dates.
+- Create entries only for dates that become effective again.
+- Preserve entries before the pause.
+- Repeated generator calls create no duplicates.
+
+## Comments
+
+The handoff has a pause/resume switch and “หยุดไว้ · หมูยังไม่จดให้” (paused · no recording). The prototype does not simulate time during a pause. Existing isActive and generateDueRecurringTransactions backfill from startsOn. Decide resume behavior before choosing effective-period data. The initial recommendation starts at the next occurrence and preserves recorded entries.
+
+### Clarifying the scenario
+
+The user asked about scheduling ahead, then not opening the app for months. The agent explained that inactivity differs from switching the rule off. The user confirmed that after a two-month pause, recording may resume without filling those two months.

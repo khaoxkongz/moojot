@@ -1,23 +1,23 @@
-# 03: เริ่มใช้งานสี่ขั้น
+# 03: Four-step onboarding
 
-**What to build:** ผู้ใช้ใหม่ตั้งค่าข้อตกลง สิทธิ์รูป เป้าหมาย และข้อมูลเพิ่มเติม แล้วดู recap ก่อนเข้า Home โดยใช้ค่าจริงร่วมกับโปรไฟล์
+**What to build:** New users set terms, photo access, goals, and optional information. Recap precedes Home. Values remain shared with profile.
 
-**Blocked by:** 02 — [สมัครและเข้าสู่ระบบ](02-auth-flow.md)
+**Blocked by:** 02 — [Signup and sign-in](02-auth-flow.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 20–27
 
-**Why blocked:** ต้องอาศัย signup/session/guard ที่เสร็จในงานสมัครและเข้าสู่ระบบ
+**Why blocked:** This needs completed signup/session/guards from ticket 02.
 
-- [ ] Splash แตะข้ามหรือไปต่อเมื่อสองวินาที Greeting/progress/back และสี่ขั้นตรง handoff (story 20)
-- [ ] ข้อตกลงมีสรุป/ฉบับเต็ม ต้องยอมรับก่อนผ่าน; เป้าหมาย multi-select ต้องอย่างน้อยหนึ่งข้อ พร้อม error ที่เข้าใจได้ (stories 21, 25)
-- [ ] ขอสิทธิ์ผ่าน OS และแสดง all/limited/denied/skipped ตามจริง ไป Settings แล้วกลับมาตรวจใหม่ และข้ามได้ (stories 22, 23)
-- [ ] ก่อนขอสิทธิ์รูปอธิบายว่าหมูอ่านสลิปจากรูปอย่างไร แล้วเลือกให้สิทธิ์หรือข้ามได้ (story 22)
-- [ ] ค้นและนับ metadata รูปต่ออัลบั้มโดยยังไม่ส่ง GenAI จนเข้า Home; recap ไม่เรียกจำนวนรูปที่พบว่าจดสำเร็จแล้ว (story 24)
-- [ ] Recap แสดงเป้าหมายที่เลือกและสถานะสิทธิ์รูปจริงก่อนเริ่มใช้ (story 27)
-- [ ] วันเกิด optional ผ่านคอลัมน์วัน/เดือน/ปี พ.ศ. ตรวจวันจริง consent สองข้อใช้ค่าร่วม profile (story 26)
-- [ ] บันทึก completion หลังข้อมูลที่จำเป็นสำเร็จเท่านั้น partial failure คงข้อมูลให้ลองต่อและไม่แสดงว่าพร้อมแล้ว
-- [ ] ตรวจ sign-up→ready→Home, skip permission, กลับจาก Settings และ partial save/recovery บน iOS
+- [ ] Splash advances after two seconds or a tap. Greeting/progress/back and four steps match handoff. (story 20)
+- [ ] Terms provide summary/full text and require acceptance. Multiple goals require at least one choice, with clear errors. (stories 21, 25)
+- [ ] Request OS access. Show all/limited/denied/skipped accurately. Allow skipping and recheck after Settings. (stories 22, 23)
+- [ ] Explain slip reading before permission. Let the user grant access or skip. (story 22)
+- [ ] Discover/count metadata per album without GenAI until Home. Recap describes found photos rather than saved transactions. (story 24)
+- [ ] Recap shows selected goals and actual photo access before use. (story 27)
+- [ ] Optional birthday uses valid day/month/Buddhist-year columns. Profile uses the same two consent values. (story 26)
+- [ ] Persist completion only after required data succeeds. Partial failure retains data for retry and leaves setup incomplete.
+- [ ] Check signup→ready→Home, skipped permission, Settings return, and partial-save recovery on iOS.

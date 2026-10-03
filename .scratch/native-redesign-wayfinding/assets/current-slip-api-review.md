@@ -1,65 +1,65 @@
-# API อ่านสลิปปัจจุบันและสถานะที่แอปเก็บเอง
+# Current slip API and mobile outcome memory
 
-ตรวจเมื่อ 1 ตุลาคม 2569 จาก codebase ตามคำขอผู้ใช้ ก่อนตัดสินใจเรื่องรายการ “ต้องช่วยหมู” ค้างข้ามรอบอ่าน
+Inspected the codebase on 1 October 2569 (2026), at the user's request. Pending “ต้องช่วยหมู” (needs help) retention across rounds was still undecided.
 
-## ผลที่ยืนยันจากโค้ด
+## Findings from code
 
-ระบบอ่านและบันทึกสลิปทีละรูปมีอยู่แล้ว ส่วนความจำผลอ่านอยู่ในมือถือแยกตามบัญชีผู้ใช้ ปัจจุบันไม่มี endpoint ดึงรายการงานอ่านสลิปที่ค้างหรือล้มเหลวจาก server
+The system already reads and saves one slip image at a time. Mobile outcome memory is separate per account. The server currently has no endpoint listing pending or failed slip-reading work.
 
-| หน้าที่                | Endpoint ที่แอปใช้                  | สิ่งที่ทำ                                                                  |
-| ---------------------- | ----------------------------------- | -------------------------------------------------------------------------- |
-| อ่านและบันทึกสลิป      | `POST /rpc/import/slip/auto-import` | รับรูปหนึ่งรูป ตรวจข้อมูล อ่านด้วย AI และสร้างรายการเมื่อมีข้อมูลจำเป็นครบ |
-| ดึงรายการที่บันทึกแล้ว | `POST /rpc/ledger/listTransactions` | อ่านรายการบัญชี เช่นกรอง `source: slip` และแบ่งหน้าด้วย `limit`/`offset`   |
-| ตรวจ server            | `GET /`, `POST /rpc/healthCheck`    | คืน `OK`                                                                   |
-| ดูเอกสาร API           | `GET /api-reference/spec.json`      | สร้าง OpenAPI ของ router ส่วนที่เปิดเผย; import ถูกยกเว้นจากเอกสารนี้      |
+| Function             | App endpoint                        | Behavior                                                                                                             |
+| -------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Read and save a slip | `POST /rpc/import/slip/auto-import` | The API accepts one image. It checks input and reads through AI. It creates an entry when required data is complete. |
+| Read saved entries   | `POST /rpc/ledger/listTransactions` | Read ledger entries, including `source: slip` filters and `limit`/`offset` pages.                                    |
+| Check server         | `GET /`, `POST /rpc/healthCheck`    | Return `OK`.                                                                                                         |
+| API reference        | `GET /api-reference/spec.json`      | Generate OpenAPI for exposed router routes. The reference excludes import.                                           |
 
-เส้นทาง RPC สำหรับ import ถูก mount ด้วย object keys พิเศษใน server และ native transport ใช้ keys เดียวกัน ให้ใช้ path ข้างต้น ไม่อนุมานเป็น `/rpc/import/autoImportSlip` จากชื่อ method
+The server mounts import RPC through special object keys. Native transport uses the same keys. Use the path above. Do not infer `/rpc/import/autoImportSlip` from the method name.
 
-หลักฐาน: [server app](../../../apps/server/src/app.ts), [native transport](../../../apps/native/features/slips/auto-import/transport.ts), [import route](../../../packages/api/src/features/import/import.route.ts), [ledger routes](../../../packages/api/src/features/ledger/ledger.route.ts)
+Evidence: [server app](../../../apps/server/src/app.ts), [native transport](../../../apps/native/features/slips/auto-import/transport.ts), [import route](../../../packages/api/src/features/import/import.route.ts), [ledger routes](../../../packages/api/src/features/ledger/ledger.route.ts).
 
-## ข้อมูลเข้าและผลอ่านสลิป
+## Input and outcomes
 
-Input มี `assetId`, `fileBase64` และ `mimeType` ซึ่งรองรับ JPEG/PNG ต้องใช้ session ของผู้ใช้ที่เข้าสู่ระบบ
+Input contains `assetId`, `fileBase64`, and `mimeType`, supporting JPEG/PNG. It requires the signed-in user's session.
 
-ผลสำเร็จของคำขอมีสองชนิด:
+Successful requests have two outcomes:
 
-- `created`: บันทึกแล้ว คืน `transactionId` และ `warnings`
-- `skipped`: ไม่สร้างรายการ คืน `reason`, `reasons`, `warnings` โดย reason เป็น `duplicate`, `no_candidate` หรือ `incomplete_candidate`
+- `created`: saved entry, with `transactionId` and `warnings`.
+- `skipped`: no new entry, with `reason`, `reasons`, and `warnings`. Reasons are `duplicate`, `no_candidate`, or `incomplete_candidate`.
 
-`incomplete_candidate` เป็นผลข้ามเมื่อจำนวนเงินหรือวันรายการไม่ครบ/ไม่ผ่าน validation ไม่ใช่ network error แอปปัจจุบันจำเป็น `skipped` และไม่อ่านรูปเดิมซ้ำตามปกติ เว้นแต่ตัวรูปเปลี่ยน จึงต้องจัดเข้ากลุ่มช่วยจดเองให้ตรงดีไซน์ใหม่ แทนการแสดงทุก skipped ว่าไม่ต้องทำอะไร
+`incomplete_candidate` means missing or invalid amount/date. It is not a network error. The current app remembers it as `skipped`. It normally avoids rereading the image unless the image changes. The redesign must classify it as needing manual help. Other skipped outcomes can require no action.
 
-ข้อผิดพลาด เช่น `BUSY`/`AI_RATE_LIMITED` ใช้ 429 พร้อม `Retry-After`; upstream/timeout/persistence มีรหัสแยกต่างหาก ฝั่งมือถือใช้รหัสเพื่อแยก retry กับ rejected
+`BUSY`/`AI_RATE_LIMITED` errors use 429 and `Retry-After`. Upstream, timeout, and persistence errors have separate codes. Mobile code uses these codes to distinguish retry from rejected outcomes.
 
-Server กันซ้ำด้วย `slip:${assetId}` ภายในบัญชีผู้ใช้ ตรวจ identity ก่อนอ่านและตรวจ conflict ตอนเขียนอีกครั้ง การส่งรูปซ้ำจึงไม่ควรสร้างรายการใหม่จากรูปเดียวกัน
+The server deduplicates `slip:${assetId}` within each account. It checks identity before reading and conflicts again during writes. Resending an image should not create another entry.
 
-หลักฐาน: [input/outcome schema](../../../packages/api/src/features/import/import.schema.ts), [import errors](../../../packages/api/src/features/import/import.error.ts), [import service](../../../packages/api/src/features/import/import.service.ts), [candidate qualification](../../../packages/api/src/features/import/candidate.ts)
+Evidence: [input/outcome schema](../../../packages/api/src/features/import/import.schema.ts), [import errors](../../../packages/api/src/features/import/import.error.ts), [import service](../../../packages/api/src/features/import/import.service.ts), [candidate qualification](../../../packages/api/src/features/import/candidate.ts).
 
-## ความจำของมือถือและข้อจำกัดปัจจุบัน
+## Mobile memory and current limits
 
-- เก็บ `saved`, `duplicate`, `skipped`, `rejected`, `retry` ต่อ asset ID ในไฟล์ `moojot-slip-scan-v1.<account>.json` ของมือถือ แยกตามบัญชีผู้ใช้
-- ไม่เก็บภาพ session หรือผลข้อความจาก AI ในไฟล์ความจำนี้
-- Retry จำจำนวนครั้ง เวลาอ่านครั้งถัดไป และรหัสผิดพลาด โดยกลับมาอ่านในรอบที่มีสิทธิ์ทำงานและเลยเวลา retry แล้ว
-- ค้นหารูปจากอัลบั้มที่รองรับย้อนหลัง 30 วัน ความจำล้าง records ที่ discovery ไม่พบแล้ว ยกเว้น retry ที่ยังรอเวลาครั้งถัดไป จึงไม่ใช่รายการงานค้างแบบเก็บจนผู้ใช้จัดการเสร็จ
-- `lastRound` เป็นผลสรุปรอบล่าสุดในหน่วยความจำและถูกแทนที่เมื่อรอบใหม่จบ ส่วน Home แสดง reading/animation/access ยังไม่มีหน้ารายการค้างตามดีไซน์ใหม่
-- ต้องให้ Home อยู่ด้านหน้าและแอป active จึงส่งรูปใหม่ได้ เมื่อเปลี่ยนหน้าหรือพักแอปจะหยุด scheduling คำขอที่ส่งแล้วจบได้
+- Store `saved`, `duplicate`, `skipped`, `rejected`, and `retry` per asset ID in `moojot-slip-scan-v1.<account>.json`. Keep accounts separate.
+- This memory file contains no image, session, or AI text result.
+- Retry stores attempt count, next reading time, and error code. Reading resumes in an eligible round after the retry time.
+- Discovery scans supported albums for 30 days. It deletes memory records absent from discovery, except retries still awaiting their next time. This is not work retention until user completion.
+- `lastRound` is an in-memory summary. A finished new round replaces it. Home shows reading/animation/access, without the redesign's pending-work screen.
+- New images require Home focus and an active app. Navigation or suspension stops scheduling. Already-sent requests can finish.
 
-หลักฐาน: [native adapter/storage](../../../apps/native/features/slips/auto-import/index.ts), [scan memory](../../../apps/native/features/slips/auto-import/scan-memory.ts), [scan session](../../../apps/native/features/slips/auto-import/scan-session.ts), [discovery](../../../apps/native/features/slips/auto-import/discovery.ts), [Home eligibility](../../../apps/native/features/slips/auto-import/home-scan.ts)
+Evidence: [native adapter/storage](../../../apps/native/features/slips/auto-import/index.ts), [scan memory](../../../apps/native/features/slips/auto-import/scan-memory.ts), [scan session](../../../apps/native/features/slips/auto-import/scan-session.ts), [discovery](../../../apps/native/features/slips/auto-import/discovery.ts), [Home eligibility](../../../apps/native/features/slips/auto-import/home-scan.ts).
 
-## ผลต่อดีไซน์ใหม่และคำถามที่ยังเปิด
+## Redesign consequences and questions open at inspection
 
-- ใช้ระบบอ่าน บันทึก และกันซ้ำเดิมเป็นฐานได้
-- ต้องเพิ่มการเปิดผลอ่านให้ UI ใช้งาน และแยก skipped แต่ละเหตุผลให้ตรงกลุ่ม “ต้องช่วยหมู”/“ข้ามไป”
-- การจดเองจากผลอ่านที่ไม่ครบต้องผูกรูปกับรายการและสถานะจัดการแล้ว เพื่อไม่กลับมาเป็นงานค้างหรือถูกจดซ้ำ
-- ถ้าเลือกให้คงงานค้างจนจัดการเสร็จ ต้องกำหนดการเก็บงานค้างแยกจากการล้างความจำตามช่วงค้นรูป 30 วัน รวมกรณีไม่พบรูปหรือสิทธิ์เข้าถึงเปลี่ยน
-- ยังไม่ตัดสินใจว่าจะคงงานค้างข้ามรอบหรือเก็บบนมือถือ/server ผู้ใช้ขอให้ตรวจระบบก่อนตอบเรื่องนี้
+- Reuse existing reading, saving, and deduplication.
+- Expose reading outcomes to UI. Separate skip reasons into “ต้องช่วยหมู” (needs help) and “ข้ามไป” (skipped).
+- Manual entry from incomplete results must link the image and completion state. Prevent renewed pending work or duplicate recording.
+- If retaining unresolved work, store it separately from the 30-day discovery cleanup. Include missing-image and changed-permission cases.
+- Cross-round retention and mobile/server storage remained undecided. The user requested system inspection before answering.
 
-## ขอบเขตหลักฐาน runtime ที่มีเพิ่มเติม
+## Additional runtime evidence
 
-ก่อนผู้ใช้เปลี่ยนมาตรวจจากโค้ด ได้เปิด development server ของ checkout นี้และตรวจแบบไม่มี session:
+Before the user chose code inspection, this checkout's development server ran without a session:
 
-- health ทั้งสองทางตอบ 200/OK
-- `ledger/listTransactions` และ import ตอบ 401/UNAUTHORIZED
-- OpenAPI spec ตอบ 200 มี 52 documented paths และยกเว้น import ตามโค้ด
-- path ทดลอง `/rpc/import/listResults` ตอบ 404; ข้อสรุปว่าไม่มีรายการผลอ่านใช้การตรวจ router เป็นหลัก ไม่อนุมานจาก 404 ของชื่อที่ลองเพียงอย่างเดียว
+- Both health routes returned 200/OK.
+- `ledger/listTransactions` and import returned 401/UNAUTHORIZED.
+- OpenAPI returned 200 with 52 documented paths. It excluded import, matching code.
+- Trial path `/rpc/import/listResults` returned 404. Router inspection primarily established the missing results endpoint. A guessed path's 404 alone did not establish it.
 
-หลักฐานเหล่านี้ยืนยันการเปิด route/การบังคับ session และเอกสาร API แต่ไม่ใช่ผลทดสอบอ่านสลิปสำเร็จหรือ query รายการของผู้ใช้ที่เข้าสู่ระบบ ไม่ได้ทดสอบ flow ของแอปครบผ่าน Device Hub การตรวจครั้งนี้จบด้วยการใช้ codebase ตามที่ผู้ใช้เลือก
+These checks establish exposed routes, session enforcement, and API documentation. They do not establish successful slip reading or signed-in entry queries. No complete Device Hub app flow ran. Inspection finished through the codebase, as the user chose.

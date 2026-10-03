@@ -1,20 +1,20 @@
-# 19: ดูรายการและยอดของบัตร
+# 19: Card totals and transactions
 
-**What to build:** จากหน้าบัตรดูยอดเดือนนี้และสามรายการล่าสุด เปิดดูทั้งหมดหรือจดเพิ่มโดยคงบัตรใบที่เลือก
+**What to build:** Cards show current-month totals and three latest transactions. View all/Add entry retain the selected card.
 
-**Blocked by:** 09 — [ค้นหาทุกเดือนและจำนวนเงิน](09-search.md); 11 — [เพิ่มและเลือกบัตร](11-first-card.md)
+**Blocked by:** 09 — [Search all months and amounts](09-search.md); 11 — [Add and select the first card](11-first-card.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 105–106
 
-**Why blocked:** ต้องมีบัตรจริงที่เลือกได้และ search ที่รับ exact card scope/prefill ได้
+**Why blocked:** This needs actual selectable cards and search accepting exact identity/prefill.
 
-- [ ] แสดงบัตรจากรายการจริงตามชื่อ+last4 พร้อม empty state ไม่สร้างบัตร seed ให้ผู้ใช้
-- [ ] ยอด/จำนวนรายจ่ายเดือนบัญชีครบทุกหน้าตาม custom bounds และสามรายการล่าสุดทุกชนิดจากทุกเดือน (story 105)
-- [ ] ดูทั้งหมดเข้า search พร้อม query ที่เกี่ยวข้องและ exact card identity ไม่รวมอีกใบชื่อเดียวกัน (story 106)
-- [ ] Pending row เปิด queue/other เปิด editor; จดเพิ่ม prefill card ที่เลือก ไม่ hardcode ใบแรกเมื่อมีหลายใบ (story 106)
-- [ ] Profile ใช้ข้อมูล/สถานะบัตรชุดเดียวกันได้ และ loading/error/empty ไม่แสดงยอด seed
-- [ ] ตรวจ query totals กับหลายใบชื่อเดียวกัน/>1,000 rows และ dashboard→search/editor บน iOS
+- [ ] Show cards from actual entries by name+last4, with an empty state rather than user-owned seed cards.
+- [ ] Accounting-month expense totals/counts cover every page within custom boundaries. Show three latest entries of all kinds across months. (story 105)
+- [ ] View all opens relevant search with exact card identity. Same-name cards stay separate. (story 106)
+- [ ] Pending rows open queue and others open editor. Add entry prefills the selected card rather than the first card. (story 106)
+- [ ] Profile can reuse the same card data/status. Loading/error/empty states avoid seed totals.
+- [ ] Check same-name cards, >1,000-row totals, and dashboard→search/editor on iOS.

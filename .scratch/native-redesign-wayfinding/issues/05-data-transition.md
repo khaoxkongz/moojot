@@ -1,4 +1,4 @@
-# กำหนดวิธีพาข้อมูลทดลองไปสู่ระบบใหม่
+# Define the transition from experimental data
 
 Label: wayfinder:grilling
 Type: grilling
@@ -6,45 +6,51 @@ Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
 Blocked by: 02, 03, 07, 08, 09, 10
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-หลังทราบความต้องการเก็บข้อมูลจาก “กำหนดข้อมูลเดิมที่ต้องเก็บ” และช่องว่างของข้อมูล/API แล้ว จะเปลี่ยนไปใช้โครงสร้างใหม่อย่างไรให้รักษาข้อมูลตามข้อตกลงและตรวจสอบผลได้? ใช้รายการเปลี่ยนแปลงที่ตรวจพบเพื่อเสนอทางเลือกการย้ายหรือเริ่มชุดข้อมูลทดลองใหม่ ข้อนี้กำหนดวิธีดำเนินการตามความต้องการเก็บข้อมูลที่ตัดสินไว้แล้ว
-
-## Comments
-
-### เตรียมทางเลือกตามคำตอบเรื่องข้อมูลทดลอง
-
-ผู้ใช้เลือกเริ่มข้อมูลใหม่ได้ใน “กำหนดข้อมูลเดิมที่ต้องเก็บ” จึงตรวจ resetUserData/schema และจัด [ทางเลือกเริ่มข้อมูลทดลองใหม่](../assets/data-transition-options.md) เป็นข้อมูลเตรียมการ ทางเลือกนี้ยังรอผล API coverage และการตกลงวิธีเริ่มใหม่ก่อน resolve ticket หรือดำเนินการใด
-
-### ข้อเสนอพร้อมคุยหลังตรวจข้อมูล/API
-
-ผลตรวจ coverage เสร็จแล้ว และคำถามเรื่อง pause/resume กับบัตรใบแรกมีคำตอบ Agent เสนอให้ใช้บัญชีเข้าสู่ระบบและอีเมลเดิมต่อ แต่เริ่มข้อมูลการเงินทดลองและการตั้งค่าการใช้งานเป็นชุดใหม่เมื่อแอปโฉมใหม่พร้อมทดสอบ ให้ผู้ใช้ผ่าน onboarding ใหม่เพื่อทดสอบ flow 4 ขั้นตามดีไซน์
-
-ก่อนเปลี่ยนระบบจริงต้องระบุบัญชีและ environment ที่กระทบ, หยุด scan/คำขอเดิมให้จบ, เตรียม schema/ดัชนีและ client ที่เข้ากัน, ล้างข้อมูลการเงินทดลองกับ scan memory/ภาพที่ผูกในมือถือของบัญชีเดียวกัน, ล้างหรือ invalidate queries ที่เกี่ยวข้องครบ และตรวจ onboarding/อ่านรูป/จด/ยอดสรุป/CSV ของชุดใหม่ ไม่มีการรีเซ็ตในขั้นวางแผนนี้
-
-รอความต้องการผู้ใช้ว่าใช้อีเมล/บัญชีเข้าสู่ระบบเดิมกับชุดข้อมูลใหม่เป็นแนวทางที่ต้องการหรือไม่ จึงค่อยบันทึกวิธีเป็นคำตอบ
-
-### ผู้ใช้ยอมรับและมอบหมายการเลือกวิธี
-
-ผู้ใช้เห็นด้วยกับการใช้อีเมลเดิมและเริ่มข้อมูลทดลองใหม่ ระบุว่าเดิมตั้งใจลบฐานข้อมูลทั้งหมด แต่ให้ agent ตัดสินใจวิธีที่เหมาะสมแทน
+How should the new structure preserve agreed data and provide inspectable results? Use existing-data preferences and API gaps to propose migration or a fresh experimental dataset. This decision defines the method for the previously chosen retention needs.
 
 ## Answer
 
-เลือกเริ่มข้อมูลการเงินทดลองและการตั้งค่าการใช้งานใหม่ภายในบัญชีเข้าสู่ระบบเดิม เก็บบัญชี auth ไว้ ไม่เลือก drop ฐานข้อมูลทั้งหมดเป็นวิธีเปลี่ยนระบบรอบนี้
+Start finance data and preferences fresh inside the existing login account. Keep auth data. Do not drop the whole database for this transition.
 
-- ใช้อีเมลเดิมเข้าสู่ระบบและผ่าน onboarding 4 ขั้นใหม่เมื่อชุดแอป/API ที่เปลี่ยนพร้อมทดสอบ
-- ล้างเฉพาะข้อมูลการเงินทดลองของบัญชีที่ระบุ ได้แก่รายการ กฎจดซ้ำ งบ แท็ก หมวดที่สร้างเอง และ preferences สำหรับเริ่มใช้งานใหม่ คงข้อมูลบัญชี auth และหมวดพื้นฐาน
-- ข้อมูลบนมือถือของบัญชีเดียวกันต้องเริ่มใหม่ด้วย: scan outcome memory, งานสลิปค้างถ้ามี, ภาพที่ผูกกับรายการ และ query cache ที่เกี่ยวข้อง
-- เมื่อชุดใหม่ค้นรูปย้อนหลังตามขอบเขตที่รองรับ รูปเดิมที่เคยอ่านในชุดเก่าอาจถูกอ่านและสร้างรายการในชุดใหม่ได้ เป็นการเติมสมุดข้อมูลใหม่ ไม่ใช่การสร้างซ้ำในสมุดเดิม
+- Sign in with the same email. Repeat four-step onboarding when the revised app/API is ready for testing.
+- Clear only the identified account's experimental entries, recurring rules, budgets, tags, user-created categories, and startup preferences. Preserve auth data and base categories.
+- Reset that account's mobile scan outcome memory, any pending slip work, linked transaction images, and related query cache.
+- Fresh discovery may reread old images within the supported window and create entries. This fills a fresh ledger, rather than duplicating the old ledger.
 
-### ลำดับเปลี่ยนระบบที่ส่งต่อไป spec
+### Cutover sequence for the spec
 
-1. ระบุบัญชี/environment และชุดแอป/API ที่จะใช้ทดสอบจริงก่อนเริ่ม ไม่ล้างข้อมูลบัญชีอื่นโดยอาศัยเพียงคำว่าเป็นข้อมูลทดลอง
-2. หยุดการส่งรูปและ mutation ใหม่ จัดการคำขอที่กำลังทำงานให้มีผลแน่นอนก่อนล้างข้อมูล ไม่ถือว่าการปิด client พิสูจน์แล้วว่า server ไม่กำลังบันทึก
-3. เตรียม schema/ดัชนี/generated client กับสัญญา API และ native client ให้เข้ากัน ทดสอบสัญญาใหม่ในฐานข้อมูลทดสอบแยกก่อน cutover
-4. ดำเนินการ reset ของบัญชีที่เลือกและข้อมูลมือถือ แล้ว refresh/invalidate consumer ที่เกี่ยวข้องทั้งหมดตาม schema/contract ที่ใช้จริง
-5. ตรวจ auth เดิม, onboarding ใหม่, จดเอง, อ่านรูปเดิม, เลือกหมวด, ยอดสรุป, จดซ้ำและ CSV ด้วยข้อมูลชุดใหม่ ใช้ fixture สำหรับการตรวจที่ต้องได้ผลแน่นอน
+1. Identify the actual account/environment and app/API versions before starting. Experimental status alone does not authorize clearing other accounts.
+2. Stop new image sends and mutations. Establish definite outcomes for active requests before clearing data. Closing the client does not prove that server writes stopped.
+3. Prepare compatible schema/indexes/generated client, API contracts, and native client. Test new contracts in an isolated test database before cutover.
+4. Reset the selected account and its mobile data. Refresh/invalidate every related consumer according to the actual schema/contract.
+5. Check existing auth, fresh onboarding, manual entry, old-image reading, category selection, summaries, recurring entries, and CSV. Use fixtures where checks require definite outcomes.
 
-ข้อนี้เป็นคำตอบของแผน ไม่มีการลบหรือรีเซ็ตข้อมูลจริงใน session นี้ คำสั่ง schema/reset และขอบเขตจริงต้องอยู่ในงาน cutover ที่ review ได้ก่อนดำเนินการ
+This is a planning answer. No actual data deletion or reset occurred in this session. Put exact schema/reset commands and scope in reviewable cutover work before execution.
+
+## Comments
+
+### Preparation after the experimental-data decision
+
+The user accepted a fresh dataset in the existing-data ticket. The agent inspected resetUserData/schema and prepared [reset options](../assets/data-transition-options.md). These options still awaited API coverage and a reset agreement. Preparation did not resolve the ticket or execute a reset.
+
+### Proposal after data/API inspection
+
+Coverage finished, and pause/resume and first-card questions had answers. The agent proposed keeping the login account and email. Finance data and preferences would start fresh when the redesign was ready. The user would repeat the design's four-step onboarding.
+
+Before cutover, identify the account/environment and complete these preparations:
+
+1. Stop scans and settle existing requests.
+2. Prepare compatible schema/indexes and clients.
+3. Clear that account's experimental finance data, mobile scan memory, and linked images.
+4. Clear or invalidate all related queries.
+5. Check onboarding, image reading, entries, summaries, and CSV in the fresh dataset.
+
+No reset occurred during planning. The proposal awaited agreement to keep the existing login/email with a fresh dataset.
+
+### User approval and delegated choice
+
+The user approved the existing email and fresh experimental data. The user originally intended to delete the entire database, but authorized the agent to choose an appropriate method.

@@ -1,0 +1,30 @@
+[
+  {
+    "file": ".scratch/native-redesign-ios/notes/01-theme-foundation.md",
+    "rule": "passive-voice",
+    "text": "- `raisedRing(theme)` / `accentRing(theme)` create inset `boxShadow` rings. Cards have no shadow. `shadow.card` is deprecated.",
+    "match": "is deprecated",
+    "reason": "Deprecated describes the token status. The actor is irrelevant to this historical reference."
+  },
+  {
+    "file": ".scratch/native-slip-auto-import/notes.md",
+    "rule": "synonym-rotation",
+    "text": "- Retain permission checks, the 30-day window, and duplicate protection from existing decisions.",
+    "match": "checks",
+    "reason": "Confirm refers to the user agreement in this file. Check refers to inspecting permission. These are different actions."
+  },
+  {
+    "file": ".scratch/native-slip-auto-import/spec.md",
+    "rule": "synonym-rotation",
+    "text": "Verification scope: The user agreed to automated tests and UI checks on a device or emulator.",
+    "match": "checks",
+    "reason": "Confirm refers to user agreement. UI checks inspect behavior. These are different actions."
+  },
+  {
+    "file": ".scratch/native-slip-auto-import/spec.md",
+    "rule": "synonym-rotation",
+    "text": "4. Check busy text/animation throughout the round and normal display afterward.",
+    "match": "display",
+    "reason": "Display is a noun for the visible screen state. Show is a verb for presenting text. These are different uses."
+  }
+]

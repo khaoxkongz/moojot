@@ -1,8 +1,8 @@
-# 03: จัดการสิทธิ์รูปและเส้นทางเข้าใช้งาน
+# 03: Handle photo access and entry routing
 
-**What to build:** ผู้ใช้ใหม่สมัครและเข้าสู่ระบบ ผ่าน onboarding ที่ค้นหาและนับรูป แล้วเริ่มอ่านที่ Home ส่วนผู้ใช้ที่ทำ onboarding แล้วเข้า Home ได้เลย หากสิทธิ์รูปไม่ครบยังดูรายการและจดเองได้ พร้อมข้อความและปุ่มไปตั้งค่าที่ช่วยให้กลับมาอ่านสลิปอัตโนมัติได้
+**What to build:** New users register/sign in, then complete onboarding discovery/counts before Home starts reading. Returning users enter Home directly. Incomplete access preserves transaction viewing/manual entry. Explain the permission and offer settings so automatic reading can resume.
 
-**Blocked by:** 01 — [ให้ Home อ่านและบันทึกผ่านระบบใหม่](01-home-auto-import-cutover.md).
+**Blocked by:** 01 — [Read and save Home slips through the new API](01-home-auto-import-cutover.md).
 
 **Status:** done
 
@@ -10,60 +10,66 @@
 
 ## Acceptance criteria
 
-- [ ] ใช้ routing และสถานะ onboarding เดิมตาม [Spec มือถือ](../spec.md) ผู้ใช้ใหม่เข้าสู่ระบบก่อน onboarding ผู้ใช้ที่ทำ onboarding เสร็จแล้วเข้า Home โดยไม่ต้องทำซ้ำ
-- [ ] ขั้นค้นหารูปใน onboarding ขอสิทธิ์เข้าถึงคลังรูปทั้งหมด ค้นหาเฉพาะอัลบั้มที่รองรับและช่วง 30 วันเดิม แสดงจำนวนแยกตามแหล่งและจำนวนรวมที่ไม่ซ้ำ asset ID การนับนี้ไม่ส่งรูปให้ AI และไม่สร้าง FinanceTransaction
-- [ ] ข้อความแยกการค้นหาและนับรูปออกจากการอ่านและบันทึกที่ Home ให้เข้าใจได้ จำนวนรูปที่พบไม่ถูกอ้างว่าเป็นจำนวนธุรกรรมที่ AI ยืนยันหรือบันทึกสำเร็จแล้ว
-- [ ] การไม่ให้สิทธิ์ ให้เพียงบางรูป หรือถอนสิทธิ์ภายหลัง ไม่ขวางการจบ onboarding ตามเงื่อนไขบัญชีเดิมและไม่ขวางการใช้งาน ledger ด้วยมือ Home พักการส่งรูปจนกว่าจะได้สิทธิ์ทั้งหมด
-- [ ] Home มีข้อความว่าเปิดสิทธิ์เข้าถึงรูปเพื่ออ่านสลิปอัตโนมัติ พร้อมปุ่มไปตั้งค่าที่ใช้ได้จริงสำหรับสถานะนั้น คำขอสิทธิ์หรือการเปิดตั้งค่าเกิดจากการกระทำของผู้ใช้ ไม่เด้งซ้ำทุกครั้งที่เริ่มค้นหา
-- [ ] ตรวจ permission ปัจจุบันเมื่อเริ่มการใช้งาน Home และเมื่อกลับจากหน้าตั้งค่า คืน full access แล้วเริ่มรอบสแกนผ่าน coordinator ของงาน 01 ได้ ไม่ต้องทำ onboarding ใหม่หรือเพิ่มปุ่มเปิด auto-import แยกอีกครั้ง
-- [ ] แยกกรณีสิทธิ์ไม่ครบออกจากกรณีสิทธิ์ครบแต่ไม่พบอัลบั้มหรือรูปใหม่ กรณีไม่มีงานจบเป็นสถานะปกติโดยไม่แสดงคำเตือนสิทธิ์ผิดหรือค้างสถานะกำลังอ่าน
-- [ ] ปรับ consent, onboarding, FAQ, settings และ help ที่เกี่ยวข้องให้บอกตรงกันว่า onboarding นับรูปในเครื่อง ส่วน Home ส่งภาพที่เข้าเงื่อนไขให้ AI อ่านและบันทึกอัตโนมัติ ถอนข้อความเดิมที่สัญญาว่าจะส่งเฉพาะรูปที่เลือกเองหรือต้องตรวจทานก่อนบันทึกทุกครั้ง
-- [ ] ข้อความและลิงก์ไม่พากลับไป manual slip/statement import ที่งาน 01 ถอดออก คงคำอธิบายและทางใช้การจดเอง เลือกหมวดหมู่ และดูข้อมูลเก่า
-- [ ] ทดสอบ flow ผู้ใช้ใหม่/เดิมร่วมกับรอบสแกน โดยควบคุม permission และ photo metadata พิสูจน์ว่า onboarding ไม่เรียก import, limited/denied ไม่ส่งภาพ, full access อ่านได้ และ restore permission แล้วกลับมาสแกนได้
-- [ ] ตรวจการตั้งค่าสิทธิ์และ Home บนเครื่องหรือเครื่องจำลอง รวมการไม่ให้สิทธิ์ limited access ถอนสิทธิ์ และกลับมาเปิดใหม่ ตรวจว่า manual entry และข้อมูลเดิมยังใช้ได้ โดยรายงานแพลตฟอร์มและข้อจำกัดที่ตรวจจริง
-- [ ] รัน vp check, vp test และ native type check รักษาชุดทดสอบจากงาน 01 ให้ผ่าน โดยไม่ต้องรอระบบ retry ในงาน 02 เพื่อยืนยันพฤติกรรมสิทธิ์
+- [ ] Retain existing routing/onboarding state under the [native spec](../spec.md). New users sign in before onboarding. Users who completed onboarding enter Home without repeating it.
+- [ ] Onboarding requests full photo access. Discover only supported albums within the existing 30-day window. Show counts by source and total unique asset IDs. Counting sends no images to AI and creates no `FinanceTransaction`.
+- [ ] Explain onboarding discovery/counting separately from Home reading/persistence. Photo counts represent discovery. They do not count transactions that AI identifies or the API saves.
+- [ ] Denied, limited, or later revoked access preserves onboarding completion under existing account conditions and manual Ledger use. Home pauses sending until full access returns.
+- [ ] Home explains that automatic reading needs photo access. Provide a working settings action for that state. Permission prompts/settings opening require user action rather than repeated automatic prompts during discovery.
+- [ ] Recheck permission at Home activation and after settings. Restored full access starts ticket 01's coordinator. Preserve completed onboarding without adding another automatic-import activation button.
+- [ ] Distinguish incomplete access from full access with no albums/new images. Empty work ends normally, without an incorrect permission warning or stuck reading state.
+- [ ] Align consent, onboarding, FAQ, settings, and help. Onboarding counts locally, while Home sends eligible images to AI and saves automatically. Retire promises of manual selection or mandatory review before every save.
+- [ ] Text/links exclude the old manual slip/statement flows retired by ticket 01. Preserve explanations and access for manual entry, category selection, and historical data.
+- [ ] Test new/returning-user flows and scan rounds with controlled permissions/photo metadata. Prove onboarding never imports, limited/denied access sends nothing, full access reads, and restoration resumes scans.
+- [ ] Check denied/limited/revoked/restored permissions and Home on a device/emulator. Check manual entry and historical data remain usable. Record the actual platform and verification limits.
+- [ ] Run `vp check`, `vp test`, and native type checks. Keep ticket 01's tests passing. Permission behavior can be proved independently of ticket 02 retry work.
 
 ## Scope and handoff
 
-งานนี้เป็นเจ้าของการตัดสินว่า permission พร้อมหรือไม่ และการอธิบายต่อผู้ใช้ โดยต่อถึงการนำเข้าจริงที่ Home งาน 04 จะรวม gate นี้กับสถานะ focus/foreground และการดึงรีเฟรชทั้งหมด การแบ่งงานไม่เพิ่มแหล่งอัลบั้ม รูปแบบภาพ หรือขั้นตอนยินยอมแยกจาก flow ที่ยืนยันไว้
+This ticket owns permission eligibility and user explanations through actual Home import. Ticket 04 combines this gate with focus/foreground and refresh gestures. Scope retains existing sources, formats, and the agreed consent sequence.
 
 ## Comments
 
 ### 2026-09-29 — implementation evidence
 
-Automated gates, run at the repository root:
+Automated gates ran at the repository root:
 
-- `vp check`: pass (formatting and lint)
-- `vp test`: pass, 162 tests across 7 files. New or changed:
-  - `discovery.test.ts` (3 tests): onboarding counts per source, the unique asset-ID total, the 30-day window, all pages, and no matched album.
-  - `photo-access.test.ts` (3 tests): which Home action fits each permission state.
-  - `scan-session.test.ts` (6 changed or new): no request, no library query and no reading state under limited, denied, undetermined or unsupported access. Restored access reads on the next request, and narrowed access pauses again. Full access with nothing new is an ordinary completed round.
-  - `native-slip-auto-import.test.ts` (1 new): against the real route and MongoDB. Onboarding counting sends no request. Denied, limited and undetermined access send nothing to the server or Gemini and save no row. Restored access saves both slips.
-- `vp run check-types`: pass, 11/11 including native
-- Mutation check: making the session ignore photo access fails 6 tests, 5 unit and 1 integration.
+- `vp check`: passed formatting/lint.
+- `vp test`: passed 162 tests across 7 files.
+- `discovery.test.ts`: 3 tests cover per-source counts, unique asset totals, the 30-day window, all pages, and no matched album.
+- `photo-access.test.ts`: 3 tests cover the Home action for each permission state.
+- `scan-session.test.ts`: 6 new/changed tests cover limited, denied, undetermined, and unsupported access. These states send/query nothing and show no reading state. Restored access reads next request. Narrowed access pauses again. Full access without new images completes normally.
+- `native-slip-auto-import.test.ts`: 1 new real-route/MongoDB test. Onboarding counting sends no requests. Denied/limited/undetermined access sends nothing to the server/Gemini and saves no rows. Restoration saves both slips.
+- `vp run check-types`: passed 11/11, including native.
+- Ignoring photo access fails 6 mutation checks: 5 unit tests and 1 integration test.
 
-What changed:
+### Implemented behavior
 
-- Onboarding and Home now share one album discovery (`discovery.ts`). Onboarding counts only metadata and has no path to import. Counts are labelled as photos, not slips.
-- Home shows the reading state only after the permission and sign-in gates pass. A round without access never flashes "หมูกำลังอ่านสลิปใหม่".
-- When access is not full, the Home speech bubble explains that automatic reading is paused and that manual entry still works. It offers one action:
-  - "อนุญาตเข้าถึงรูปภาพ" while undetermined, which shows the system prompt.
-  - "ไปที่การตั้งค่า" when denied or limited.
+Onboarding and Home share `discovery.ts`. Onboarding only counts metadata and has no import path. Labels identify photos, rather than slips.
 
-  Prompts and Settings open only when that button is tapped. Rounds read the permission without prompting.
+Home shows reading only after permission/sign-in gates pass. No-access rounds never flash "หมูกำลังอ่านสลิปใหม่" (Moo is reading new slips).
 
-- While Home is focused and the last known access was not full, returning to the active app starts a Home round, which checks the permission again. This covers returning from Settings.
-- Consent, account privacy, FAQ, the slip settings page, slip help and the credit card page now say the same thing:
-  - Onboarding counts on the device.
-  - Home sends eligible photos through the server to Gemini and saves automatically, uncategorised.
+Without full access, Home explains paused reading and continued manual use. It offers one action:
 
-  Promises of selecting or reviewing before saving, and of PDF statement import, are gone.
+- "อนุญาตเข้าถึงรูปภาพ" (allow photo access) when undetermined, opening the system prompt.
+- "ไปที่การตั้งค่า" (go to settings) when denied/limited.
 
-- Routing is unchanged. `Stack.Protected` still sends signed-in users to onboarding until `onboarding_complete_v1`, then to the app. The onboarding "ต่อไป" button never depends on photo permission.
+Only button taps open prompts/Settings. Rounds inspect permissions without prompting.
 
-Not verified: **on a device or simulator.** Permission prompts, Settings round trips, limited access, revoking access and the Home notice were not checked on screen, on either platform. The onboarding screen's `scanSlipAlbums` wrapper and the new/returning routing are not covered by automated tests. Only the shared counting and session they call are tested.
+If Home has focus and last-known access is incomplete, returning to the active app requests a round. It rechecks permission, including settings return.
 
-Handoff to 04:
+Consent, account privacy, FAQ, slip settings/help, and the card page now share these facts:
 
-- The `AppState` listener on Home only re-requests when access is not `"all"`. 04's general foreground trigger should replace it, and should recheck on every activation. That also covers access narrowed while the app stayed alive.
-- Pull-to-refresh still shows the reading bubble while `refreshing` is set, even when the round ends immediately with `no-access`.
+- Onboarding counts on the device.
+- Home sends eligible photos through the server to Gemini and saves automatically, without categories.
+
+Copy no longer promises selection/review before saves or PDF statement import.
+
+Routing remains unchanged. `Stack.Protected` routes signed-in users to onboarding until `onboarding_complete_v1`, then the app. Onboarding "ต่อไป" (next) never requires photo permission.
+
+### Verification limits and handoff
+
+Neither platform had device/simulator screen checks. Permission prompts, settings returns, limited/revoked access, and the Home notice remain unchecked. Automated tests do not cover onboarding's `scanSlipAlbums` wrapper or new/returning routing. They cover shared counting and the session those paths call.
+
+Ticket 04 must replace Home's `AppState` listener, which currently re-requests only when access is not `"all"`. Its general foreground trigger must recheck every activation, including narrowed access while the app remains alive.
+
+Pull-to-refresh still shows reading while `refreshing` equals true, even after immediate `no-access` completion.

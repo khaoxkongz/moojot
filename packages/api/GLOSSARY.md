@@ -1,17 +1,20 @@
 # Finance Import
 
-ภาษาร่วมสำหรับรายการที่อ่านจากเอกสารและรายการที่บันทึกในบัญชีของผู้ใช้
+Shared terms for document candidates and transactions in the user's ledger.
 
 ## Language
 
 **Import Candidate**:
-ข้อเสนอรายการการเงินที่อ่านจากสลิปหรือ statement แต่ยังไม่ได้บันทึกในบัญชีของผู้ใช้
+A proposed finance entry read from a slip or statement.
+The candidate remains unsaved.
 
-**รายการพร้อมบันทึก**:
-Import Candidate ที่มีข้อมูลจำเป็นครบสำหรับสร้างรายการบัญชี แต่ยังไม่ได้บันทึก
+**Ready candidate** (`รายการพร้อมบันทึก`):
+An Import Candidate with all required data for a FinanceTransaction.
+The candidate remains unsaved.
 
 **FinanceTransaction**:
-รายการการเงินที่บันทึกในบัญชีของผู้ใช้แล้ว
+A financial transaction saved in the user's ledger.
 
-**นำเข้าสลิปอัตโนมัติ**:
-การอ่านภาพสลิปและบันทึกรายการพร้อมบันทึกลงบัญชีของผู้ใช้ทันทีโดยไม่ผ่านการตรวจทาน candidate; หากภาพนั้นไม่ก่อให้เกิดรายการ จะรายงานว่าเป็นรายการที่ข้าม
+**Automatic slip import** (`นำเข้าสลิปอัตโนมัติ`):
+Automatic slip import reads a slip image and immediately saves its ready candidate without candidate review.
+An image without a transaction produces a skipped outcome.

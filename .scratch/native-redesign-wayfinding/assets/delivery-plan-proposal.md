@@ -1,90 +1,114 @@
-# ข้อเสนอลำดับพัฒนาและเกณฑ์ตรวจรับหมูจดโฉมใหม่
+# Proposed delivery order and redesign acceptance
 
-สำหรับ [กำหนดลำดับงานและเกณฑ์ตรวจรับการปรับโฉม](../issues/06-delivery-sequence.md) ใช้ข้อตกลงใน [แผนที่](../map.md) และ [ผลตรวจข้อมูล/API](data-api-coverage.md) เป็นฐาน เอกสารนี้เป็นข้อเสนอสำหรับทบทวนก่อนส่งต่อ spec ยังไม่มีการแก้ implementation
+For [delivery planning](../issues/06-delivery-sequence.md), using [the map](../map.md) and [data/API coverage](data-api-coverage.md). This proposal supports review before spec handoff. No implementation changed.
 
-## เป้าหมายและลำดับที่ผู้ใช้เลือก
+## User-selected goal and order
 
-ปรับแอปเดิมให้ตรง handoff ทั้งหน้าตาและพฤติกรรม มีเป้าหมายรองรับ iPhone/Android โดยรอบนี้ตรวจและรับงานบน iOS ก่อน แล้วตรวจ Android ภายหลังตามคำสั่งล่าสุด ให้การจดรายการและอ่านสลิปที่ผู้ใช้ใช้อยู่มาก่อน แล้วทำส่วนอื่นจนครบ รวมบัตรเครดิตซึ่งเป็น flow เสริม ทุกช่วงต้องดูหน้าจอและลองงานหลักได้กับระบบจริง ไม่รับเฉพาะภาพที่ใช้ข้อมูลตัวอย่างแล้วกดบันทึกไม่ได้
+Adapt the existing app to the handoff's appearance and behavior. Target iPhone/Android, with iOS acceptance now and Android verification later under the latest instruction. Prioritize the user's entry/slip flows, then complete the design, including optional credit cards.
 
-## สี่ช่วงงาน
+Every phase must offer inspectable screens and primary tasks using the actual system. Sample-data images without working saves do not establish acceptance.
 
-| ช่วง                        | ผลที่ผู้ใช้เห็นและลองได้                                                                        | งานข้อมูล/ระบบที่ต้องพร้อม                                                                                                                                                                                     | จุดตรวจรับของช่วง                                                                                                                                                                                          |
-| --------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **เตรียมฐานร่วม**           | ตัวอย่างหน้าที่แสดงข้อความ ปุ่ม ยอดเงิน และ sheets ตรงดีไซน์ทั้งสองธีม                          | ตั้ง typography/theme/components/navigation ร่วม; วาง schema/API สำหรับ undo, เวลาจริงและหลักฐานสลิป, บัตร/กฎจดซ้ำ และงานค้าง; เตรียม fixture/ทางรันตรวจ iOS                                                   | ข้อความไทย Regular; ตัวเลข font ระบบ 500/tabular; safe areas/keyboard; โครงสัญญาใหม่ผ่านตรวจด้วยฐานข้อมูลทดสอบแยก ไม่เปลี่ยนข้อมูลผู้ใช้เพื่อทดสอบ contract                                                |
-| **ทำการใช้งานหลัก**         | เข้าแอป/ตั้งค่า 4 ขั้น → Home → จดเอง/แก้/เลือกหมวด → อ่านสลิป/ช่วยจดรายการค้าง                 | auth error mapping และ onboarding/shared consent; bank/filter identity; app-level scan coordinator; persistent work rows/targeted retry/manual resolution; delete/restore ของ entry; เวลาบันทึกแยกเวลาทำรายการ | จดและอ่านจริงได้; สลิปค้างข้ามรอบ/restart; incomplete ไม่ส่งซ้ำรูปเดิม; temporary error retry; manual-vs-inflight ไม่สร้างซ้ำ; เปลี่ยนหน้าอ่านต่อ/พักแอปหยุดส่งใหม่; validation/save failure รักษา draft   |
-| **ทำสรุปและการวางแผน**      | Summary → Search ทุกเดือน → งบ/จดซ้ำ → จัดการหมวด/แท็ก/ปฏิทิน                                   | amount matching และ pagination/counts; custom-period consistency; cascade delete/full undo; recurring card/link/effective schedule/pause history; settings immediate persistence                               | ยอดทุกหน้าตรงกันกับข้อมูลเกิน 1,000 แถว; spent เท่างบ; month start 29–31; undo คืนความสัมพันธ์; new-rule backfill, edit next-only, ข้ามช่วงที่หยุด; ปฏิทินใช้ทันทีและกู้ค่าก่อน reset ได้                  |
-| **เก็บส่วนเสริมและตรวจครบ** | Profile พร้อมสถานะจริง → แครอต/tutorial/help → บัตรเครดิต/เพิ่มบัตร → CSV และทดสอบ flow ทั้งชุด | queries/status aggregation, optional card choices ที่ใช้ร่วม editor/rules/cards, formatter 10 columns และ known/unknown time, cutover ชุดข้อมูลใหม่                                                            | ไม่มีบัตรก็ใช้ core ได้; card name+last4 ตรงกันทุกหน้า; CSV ไทย/BOM/ยอดครบ; help อธิบายพฤติกรรมจริง; light/dark และ error/recovery ครบ; ตรวจ iPhone จริงและ iPhone จำลองครบตามแผน iOS; Android ตรวจภายหลัง |
+## Four phases
 
-ภายในช่วงเตรียมฐานร่วมและการใช้งานหลัก ให้เริ่มงาน UI ที่ไม่ติด schema ได้ก่อน แต่ flow ที่ต้องใช้ contract ใหม่ต้องรอ owner ของสัญญานั้นพร้อม ใช้ feature branch ตาม repo workflow และแตก issue ลงมือทำใน feature directory ใหม่ตอนส่งต่อ spec
+| Phase                                   | Visible and usable result                                                                              | Required data/system work                                                                                                                                                              | Acceptance                                                                                                                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Shared foundations                      | Sample screens match text, buttons, amounts, and sheets in both themes.                                | Shared typography/theme/components/navigation. Contracts for undo, actual time/slip evidence, cards/recurring rules, and pending work. Fixtures and iOS run methods.                   | Thai Regular text, system numbers at 500/tabular, safe areas, and keyboard. Check contracts in an isolated test database. Preserve user data during contract tests.                                          |
+| Core use                                | Login/four-step onboarding → Home → manual entry/edit/category queue → slip reading/manual resolution. | Auth errors, shared consent, bank/filter identity, app-level scanning, persisted work, targeted retry, manual resolution, entry deletion/restore, separate recording/transaction time. | Follow [core use acceptance](#core-use-acceptance).                                                                                                                                                          |
+| Summaries and planning                  | Summary → all-month Search → budgets/recurring rules → category/tag/calendar management.               | Amount matching, pagination/counts, custom-period consistency, cascade/full undo, recurring cards/link/effective periods/pause history, immediate settings persistence.                | Consistent totals beyond 1,000 entries, exact budget equality, month starts 29–31, restored relationships. New-rule backfill, next-only edits, skipped pauses. Immediate calendar settings and reset undo.   |
+| Additional features and complete checks | Live Profile → carrots/tutorial/help → cards/add card → CSV and complete flows.                        | Queries/status aggregation, optional card choices shared by editor/rules/cards, 10-column CSV with known/unknown time, fresh-data cutover.                                             | Core use without cards, consistent name/last-four identity, complete Thai/BOM CSV. Accurate help, both themes, failure/recovery. Physical/simulated iPhone checks under the iOS plan. Android follows later. |
 
-## แนวทางทางเทคนิคสำหรับส่งต่อ spec
+### Core use acceptance
 
-### รักษาฐานแอปและสัญญาที่ใช้ได้
+- Use actual read/write flows.
+- Retain pending work across rounds and restart.
+- Keep remembered incomplete images outside automatic resends.
+- Retry temporary failures under the agreed policy.
+- Prevent duplicate entries from manual resolution and active import requests.
+- Continue reading across app screens.
+- Suspend new images when the app becomes inactive.
+- Preserve drafts after validation or save failures.
 
-คง Expo Router, TanStack Query/Form, useAppTheme และ wrappers typography ที่มีอยู่ ใช้ palette/assets/font/copy ของ handoff เป็นค่าตรวจรับ กฎ UI ทั่วไปใน skills ไม่เปลี่ยนหน้าตาที่ผู้ใช้เลือก เช่นสีแบรนด์ รูปแบบปุ่ม “จดเพิ่ม” หรือ MDI icons มีค่า geometry/timing ที่ต้นแบบกำหนดให้ตรวจจากต้นแบบจริง ไม่คัดลอก HTML runtime มาเป็น production app
+Within foundations/core phases, independent UI work can start before schema work. Flows requiring new contracts must wait for their owner. Use the repository's feature-branch workflow. Create build issues in a new feature directory at spec handoff.
 
-คง satang เป็นจำนวนเต็มและวันบัญชีเป็น ISO calendar strings เก็บเวลาทำรายการเป็นข้อมูล optional จากหลักฐานเท่านั้น createdAt ใช้เป็นเวลาบันทึก ห้ามแปลงวันรายการให้เลื่อนด้วย timezone หรือเติมเวลาใน CSV จาก createdAt
+## Technical approach for the spec
 
-ค้นหาทุกเดือน หน้าบัตร และสถานะหลายหน้าสามารถใช้ operations เดิมได้ เพิ่ม amount predicate/normalized bank names ในเจ้าของการค้นหา และกำหนดวิธีได้ counts/totals ครบทุกหน้า ไม่ดึง 1,000 แถวแล้วเรียกว่าข้อมูลครบทั้งหมด
+### Existing app and contracts
 
-### การลบและเอากลับคืน
+Retain Expo Router, TanStack Query/Form, useAppTheme, and typography wrappers. Use handoff palette/assets/fonts/copy as acceptance values. General UI skill rules do not replace the chosen appearance, including brand colors, MDI icons, or “จดเพิ่ม” (add entry).
 
-ให้ server เป็นเจ้าของการลบ/คืน entity ที่อยู่บน server และบันทึกผลของ operation เฉพาะนั้นเพื่อคืน identity/relationships เดิมได้ native แสดง toast ล่าสุด 5 วินาทีตามข้อตกลง ระบบคืนต้องทำงานกับข้อมูลจริง ไม่สร้าง entity ใหม่โดยใช้ชื่อเดียวกันแทน ID เดิม
+Inspect actual prototype geometry/timing. Do not copy its HTML runtime into the production app.
 
-สำหรับหมวด/แท็ก/งบ/กฎจดซ้ำ ให้เลือก schema การลบที่รักษาข้อมูลที่ต้องคืนกับผลกระทบของ cascade ภายใน operation เดียว ก่อน implementation ระบุ owner ของ receipt/snapshot กับทาง restore ให้ครบ เพิ่ม validation ownership/การเรียกซ้ำ และทำการคืนเป็น transaction ที่ไม่ทับการแก้ข้อมูลอื่น หากมี conflict ให้คืน error ที่แอปอธิบายได้แทนรายงานว่าคืนครบทั้งที่คืนเพียงบางส่วน
+Keep integer satang and ISO calendar-day strings. Actual transaction time is optional and requires evidence. createdAt means recording time. Timezones must not shift transaction dates. CSV time must not come from createdAt.
 
-การปิด toast ไม่หมายถึงคำขอ server สำเร็จ ต้องมี pending/failure/recovery จริง ระยะเก็บข้อมูลสำหรับรับมือคำขอซ้ำ/ล้มเหลวเป็นรายละเอียด implementation แต่ UI action window ยังคงตามดีไซน์
+All-month search, cards, and many statuses can reuse existing operations. Add amount predicates and normalized bank names in the search owner. Obtain complete counts/totals across pages. A 1,000-row read cannot represent all data.
 
-### งานสลิปและหลักฐาน
+### Deletion and undo
 
-ใช้ความจำงานค้างบนมือถือแยกตามบัญชีเป็นฐานของรอบนี้ เนื่องจากยังไม่มีข้อกำหนด sync งานค้างข้ามอุปกรณ์ แยก work-item persistence ออกจาก discovery/outcome cache ที่ล้างตาม 30 วัน ให้ record มี asset ID, วันที่รูปที่ใช้ prefill, สาเหตุ/สถานะ, retry metadata ที่จำเป็น, transaction binding และการจัดการเสร็จ
+The server owns deletion/restoration of server entities. Record the specific operation's effects to restore original identities and relationships. Native UI shows the latest 5-second toast. Restore actual data, rather than creating new entities with the same names.
 
-ใช้เจ้าของ scan ระดับ signed-in app เพื่ออ่านต่อเมื่อเปลี่ยน route ใช้ app activity/permission/account เป็นเงื่อนไขส่งใหม่ เมื่อไม่ active พักการส่งใหม่ และเมื่อกลับมามีสิทธิ์ทำงานให้ทำต่อ โดยไม่เพิ่มคำสัญญาทำงานขณะปิดแอป
+Choose deletion schemas for categories, tags, budgets, and recurring rules that preserve restoration data and cascades in one operation. Before implementation, identify receipt/snapshot ownership and every restoration path. Check ownership and repeated calls. Restore transactionally without overwriting other edits. Conflicts return explainable errors. Partial restoration cannot report full success.
 
-คง asset identity `slip:<assetId>` และการกันซ้ำบน server ให้การจดเองจากงานค้างใช้ identity ของรูปเดียวกันและ reconcile ข้อขัดแย้งกับคำขอที่ส่งไว้แล้ว สำเร็จแล้วผูกรูปกับรายการและปิดงาน ไม่เอาเวลารูปหรือชื่ออัลบั้มไปอ้างว่าเป็นเวลาทำรายการหรือธนาคารในธุรกรรมโดยไม่มีหลักฐาน
+Closing a toast does not prove server success. Provide real pending/failure/recovery states. Retention for repeated/failed requests is an implementation detail. The UI action window remains as designed.
 
-เพิ่ม schema/prompt/extraction/mapping ของหลักฐานที่ UI ใช้จริง โดยคง unknown เป็น unknown และ qualify ชุดข้อมูลก่อนสร้างรายการ Generic skipped ต้องแยกเหตุผล: incomplete เข้าต้องช่วย; duplicate/no-candidate เข้าข้าม เมื่อหาไฟล์รูปไม่พบหรือสิทธิ์ถูกจำกัด รักษางานและแจ้งข้อจำกัดจริง
+### Slip work and evidence
 
-### จดซ้ำ บัตร และ settings
+Use per-account mobile pending-work memory for this round. Cross-device synchronization is not a requirement. Separate persisted work items from discovery/outcome cleanup after 30 days.
 
-กฎจดซ้ำต้องเก็บบัตรที่เลือกได้และผูกรายการเดิมกับกฎจาก editor ให้ครบ เลือกการเก็บช่วงที่มีผลหรือ version ของกฎเพื่อให้ generator เข้าใจประวัติ ไม่ใช้ isActive ปัจจุบันกับ startsOn เดิมแล้วสร้างย้อนหลังด้วยวัน/ยอดที่แก้ใหม่ทั้งหมด
+Records need:
 
-สร้างกฎใหม่จดย้อนเฉพาะช่วงที่ handoff กำหนด; แก้กฎมีผลครั้งถัดไป; pause interval ไม่ถูก backfill หลัง resume การไม่ได้เปิดแอปไม่ใช่ pause และต้องกำหนด trigger ของ due-generation เมื่อเข้าแอปให้ยังเคารพช่วงสิ้นสุดและ identity กันซ้ำ
+- Asset ID.
+- Photo date for prefill.
+- Cause/status.
+- Necessary retry metadata.
+- Transaction binding.
+- Completion state.
 
-เพิ่มบัตรครั้งแรกด้วยชื่อ+เลขท้าย 4 หลักเป็น optional flow ใช้ตัวเลือกเดียวกันใน editor/rule/cards การเลือก representation ของรายการตัวเลือกต้องให้เลือกใช้ครั้งต่อไปได้จริงโดยไม่พึ่งข้อมูลตัวอย่าง คงการดูรวมธนาคารและ card identity ตามข้อตกลง
+The signed-in app owns scanning across routes. New sends require app activity, permission, and the correct account. Pause new sends while inactive. Continue when eligible again. Add no closed-app execution promise.
 
-calendar/theme/consent ใช้ persistence ที่มีได้ แต่ต้องให้ UI consumer ทุกจุด refresh ตามค่าเดียวกัน Save button ที่กดได้ไม่หมายถึง submit ซ้ำได้ระหว่าง mutation ให้ป้องกัน duplicate submit และรักษา draft เมื่อคำขอผิดพลาด
+Preserve `slip:<assetId>` and server deduplication. Manual resolution shares the image identity and reconciles conflicts with active requests. Success binds the image and completes work. Photo time and album names do not prove transaction time or bank identity without evidence.
 
-### Auth และ onboarding
+Extend schema/prompt/extraction/mapping for actual UI evidence. Preserve unknown values. Qualify candidates before entry creation. Separate generic skipped reasons: incomplete needs help, while duplicate/no-candidate skip. Missing files or limited access retain work and show actual limits.
 
-ใช้ auth service เดิม แต่ต้องแสดง unknown-email/wrong-password ตามข้อมูลที่ contract ให้ได้จริง ไม่เดาจาก INVALID_EMAIL_OR_PASSWORD เดียว ตรวจวิธีปรับ contract กับ library ที่ติดตั้งก่อนเสนอ implementation และบันทึกข้อจำกัดจริงหาก flow ใดทำตาม handoff ไม่ได้
+### Recurring rules, cards, and settings
 
-ผู้ที่ onboarding ยังไม่ครบต้องมีทางทำให้ครบผ่าน guard เดิม; signin→Home ใน README ใช้กับบัญชีที่พร้อมแล้ว การตั้งค่า 4 ขั้นและ profile แชร์ key/value ความยินยอมเดียวกัน ตรวจ loading/error/partial save แล้วคงข้อกำหนด terms ที่มีอยู่
+Recurring rules must retain selected cards and support complete editor-to-rule links. Choose effective periods or rule versions so generation understands history. Current isActive plus old startsOn cannot backfill everything using edited dates/amounts.
 
-## การเริ่มข้อมูลใหม่และการตรวจงาน
+New rules backfill only the handoff-defined period. Edits affect the next occurrence. Resume skips intentional pauses. App inactivity is not a pause. Define app-entry generation triggers that respect end dates and deduplication.
 
-ใช้วิธีตาม [กำหนดวิธีพาข้อมูลทดลองไปสู่ระบบใหม่](../issues/05-data-transition.md#answer) หลังชุด schema/API/client เข้ากันและ contract tests ผ่าน ระบุ account/environment ให้ชัด หยุด writes เดิมก่อน reset ข้อมูลการเงินและ local memories ของบัญชีเดียวกัน รักษา auth และทดสอบ onboarding ใหม่
+First-card input uses name and four final digits as an optional flow. Share choices across editor/rules/cards. Its representation must support later selection without sample data. Preserve bank-wide views and agreed card identity.
 
-ตรวจในช่วงพัฒนาด้วย iPhone 13 Pro/Expo Go และ iPhone 11/Device Hub ที่ผู้ใช้มีอยู่ ใช้ Expo Go เป็นทางเริ่มที่มีหลักฐานเดิม ถ้ามี capability ที่ต้อง development build ให้ระบุเหตุที่ตรวจพบและเตรียม build ใน issue ของงานนั้น รายงาน iPhone เครื่องจริง/เครื่องจำลองและสิ่งที่ตรวจแยกกันเสมอ
+Calendar/theme/consent can use existing persistence. All consumers must refresh from the same value. An enabled Save button does not authorize repeated mutation submissions. Prevent duplicates and preserve drafts after failures.
 
-ตามคำสั่งล่าสุด การเตรียม Android SDK/AVD และการตรวจ runtime/UI ของ Android เลื่อนไปภายหลัง ไม่เป็นเงื่อนไขรับงานรอบ iOS นี้ เมื่อกลับมาทำ Android ให้ตรวจเครื่องจำลองและเครื่องจริง โดยเฉพาะ permissions/คลังรูป/keyboard/back/layout และบันทึกผลแยกจาก iOS โค้ดร่วมยังคงเป็นฐาน แต่ผลผ่าน iOS ไม่รับรอง Android
+### Auth and onboarding
 
-### ความพร้อมที่ตรวจจากเครื่องในรอบวางแผน
+Reuse auth services. Distinguish unknown email/wrong password only when actual contract data supports it. Do not guess from INVALID_EMAIL_OR_PASSWORD. Inspect installed-library contract options before implementation. Record actual limitations if any flow cannot match the handoff.
 
-- มี Xcode 27.0 build 27A266a และ Device Hub bundle ที่ `/Applications/Xcode.app/Contents/Applications/DeviceHub.app` พร้อม configuration iPhone 11 / iOS 27.0
-- ตรวจตำแหน่ง bundle ของแอปที่ติดตั้งใน iPhone 11 จำลองแล้วยังไม่พบ Expo Go หรือหมูจด จึงต้องเตรียมทาง launch ของแอปบน simulator ก่อนใช้เป็นผลตรวจงาน
-- ไม่พบ adb/emulator ใน PATH และไม่พบ SDK/AVD ในตำแหน่งมาตรฐานที่ตรวจ ข้อนี้ไม่ตัดความเป็นไปได้ว่ามี SDK ใน custom path ให้ตรวจหรือเตรียม environment จริงในงานช่วงแรก
-- เวอร์ชัน dependency ที่ติดตั้งตรง manifest: Expo 57.0.25, React Native 0.86.3 และ package Expo ที่เกี่ยวข้อง ไม่ใช่หลักฐานว่ารันใน Expo Go/build สำเร็จแล้ว
-- การตรวจนี้อ่าน filesystem/config เท่านั้น ไม่มีการ boot simulator, เปิดแอป, ติดตั้ง SDK หรือทดลอง native build
+Unfinished onboarding must continue through the existing guard. README signin→Home applies to ready accounts. Four-step onboarding and Profile share consent keys/values. Check loading/errors/partial saves and preserve existing terms requirements.
 
-แต่ละช่วงมีภาพ/การเดิน primary task พร้อมหนึ่งกรณีผิดพลาดและกลับมาทำสำเร็จของ flow ที่อ่านหรือบันทึกข้อมูล ตรวจภาษาไทย/ข้อความยาว/จำนวนเงินยาว/large system text/light-dark/keyboard/close-back/permission โดยรักษาขนาด touch targets และข้อมูลที่กรอก
+## Fresh data and validation
 
-รัน Review Checklist ของ repo และ scripts check-types ของ workspace ที่แก้ `vp check` ปัจจุบันตั้ง typeCheck:false จึงไม่ใช้แทน type checks รัน tests ของผลลัพธ์ที่เปลี่ยน รวม contract/database/scanner boundaries ที่สำคัญ ไม่มีการเพิ่ม tests ที่เพียงทวน style constants
+Follow [the transition decision](../issues/05-data-transition.md#answer) after compatible schema/API/client and passing contract tests. Identify account/environment. Stop old writes before resetting that account's finance data and local memory. Preserve auth and check fresh onboarding.
 
-## การใช้ต้นแบบที่ต้องตัดสินใจตามระบบจริง
+Use the available iPhone 13 Pro/Expo Go and iPhone 11/Device Hub during development. Expo Go is the initial method supported by earlier evidence. If a capability requires a development build, document the actual reason. Prepare that build in its issue. Always report physical/simulator checks and their coverage separately.
 
-network timers และ seed data ไม่ใช่ SLA หรือสัญญา API ให้ใช้ data fetching states จริง: กำลังโหลด ผิดพลาด ว่าง และมีข้อมูล รวมสถานะกำลังบันทึกกับ draft recovery ส่วนข้อความ onboarding/help/profile ต้องทบทวนพร้อม scanner flow ที่เปลี่ยน แทนคำแนะนำที่ย้อนแย้งกับการอ่านอัตโนมัติ
+Defer Android SDK/AVD preparation and Android runtime/UI verification under the latest instruction. They do not gate this iOS round. Later checks cover Android simulators and physical devices, especially permission/photo-library/keyboard/back/layout. Shared code remains the base. iOS success does not establish Android results.
 
-ใช้ภาพ 29 ภาพเป็นรายการอ้างอิงการตรวจตามหน้าจอ แต่การไม่มี screenshot ของบาง sheet/error ไม่ตัด flow นั้นออก ใช้ HTML/README สำหรับรายละเอียดที่ภาพไม่ครอบคลุม เก็บ handoff ที่ผูก version ไว้ใน repo เมื่อเริ่ม implementation เพื่อให้ agent คนถัดไปใช้ reference ชุดเดียวกัน
+### Machine readiness during planning
 
-เอกสารนี้พร้อมทบทวนลำดับและขอบเขตกับผู้ใช้ รายละเอียด representation/receipt/effective scheduling ใน spec เป็นการตัดสินใจวิศวกรรมตามเงื่อนไขข้างต้น ผู้ใช้ไม่ต้องเลือกชนิดฐานข้อมูลหรือชื่อ endpoint แทนผู้พัฒนา
+- Xcode 27.0 build 27A266a and `/Applications/Xcode.app/Contents/Applications/DeviceHub.app` exist. Configuration includes iPhone 11 / iOS 27.0.
+- Installed-bundle inspection found neither Expo Go nor Moojot in that simulator. Prepare app startup before citing simulator evidence.
+- PATH lacked adb/emulator. Checked standard locations lacked SDK/AVD. Custom paths remain possible. Inspect or prepare the actual environment in early work.
+- Installed dependencies matched manifests: Expo 57.0.25, React Native 0.86.3, and related Expo packages. This does not establish successful Expo Go/build runs.
+- Inspection read filesystem/config only. It did not boot simulators, open apps, install SDKs, or try native builds.
+
+Every phase needs images and a primary-task walkthrough. For each read/write flow, check one failure and successful recovery. Check Thai, long text/amounts, large system text, light/dark, keyboard, closing/back navigation, and permissions. Preserve touch targets and entered data.
+
+Run the repository Review Checklist and changed-workspace check-types scripts. Current `vp check` sets typeCheck:false. It does not replace type checks. Test changed results and important contract/database/scanner boundaries. Do not add tests that only repeat style constants.
+
+## Prototype details requiring actual-system decisions
+
+Network timers and seeds do not define an SLA or API contract. Use actual loading/error/empty/data states, mutation states, and draft recovery. Review onboarding/help/Profile alongside scanner changes. Their instructions must match automatic reading.
+
+Use the 29 images as a screen-reference checklist. Missing sheet/error screenshots do not remove those flows. Inspect HTML/README for uncovered details. Store a versioned handoff in the repository when implementation starts. Later agents need the same reference set.
+
+This document supports user review of order and scope. Representation, receipts, and effective scheduling are engineering decisions under these requirements. The user need not choose database types or endpoint names for developers.

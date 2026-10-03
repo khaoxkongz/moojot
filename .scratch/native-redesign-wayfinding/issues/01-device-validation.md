@@ -1,59 +1,60 @@
-# กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่
+# Define platforms and redesign validation
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-ผู้ใช้จะทดลองแอปโฉมใหม่บน iPhone, Android หรือทั้งสองอย่าง และต้องมีหลักฐานการใช้งานบนแพลตฟอร์มใดก่อนรับงานแต่ละช่วง? แยกแพลตฟอร์มที่แอปต้องรองรับออกจากอุปกรณ์ที่ผู้ใช้มีพร้อมทดลอง ตรวจวิธีรันแอปที่มีอยู่ใน repo ก่อนเสนอทางเลือก
-
-## Comments
-
-### อุปกรณ์ที่มีพร้อมทดลอง
-
-- ผู้ใช้ระบุว่ามี iPhone 13 Pro เป็นอุปกรณ์ทดลอง
-- ผู้ใช้เลือกให้แอปโฉมใหม่รองรับทั้ง iPhone และ Android แล้ว
-- ข้อความในส่วนนี้บันทึกลำดับการสนทนา ข้อตกลงปัจจุบันอยู่ใน Answer ด้านล่าง
-
-### ข้อสงสัยเรื่องขอบเขตสองแพลตฟอร์ม
-
-- ผู้ใช้ถามว่าสองแพลตฟอร์มต่างกันอย่างไร และการเลือกเฉพาะ iPhone จะลดขอบเขตส่วนใด
-- คำอธิบาย: ใช้โค้ดแอปส่วนหลักและระบบหลังบ้านร่วมกัน ส่วนที่เพิ่มสำหรับ Android คือการปรับพฤติกรรมเฉพาะระบบ การตรวจหน้าจอ/สิทธิ์/คีย์บอร์ด/การย้อนกลับ และการสร้างกับทดลองแอป Android การเริ่มเฉพาะ iPhone จึงเลื่อนงาน Android เหล่านี้ออกไป แต่ข้อกำหนดหลังบ้านจากดีไซน์ใหม่ยังคงอยู่
-- แหล่งอ้างอิงสำหรับความสามารถแชร์โค้ดและแยกเฉพาะแพลตฟอร์ม: [React Native: Platform-Specific Code](https://reactnative.dev/docs/0.86/platform-specific-code)
-
-### ทางทดลองที่ตรวจพบใน repo
-
-- [บันทึกตรวจสลิปบนอุปกรณ์](../../native-slip-auto-import/issues/05-device-check.md) ระบุว่าเคยทดลองบน iPhone จริงผ่าน Expo Go และ LAN เมื่อ 29 กันยายน 2569 แต่ไม่ได้ระบุรุ่นเครื่องและยังไม่ได้ยืนยันภาพ/พฤติกรรมทุกหน้าจอ
-- `apps/native/package.json` มีคำสั่งเริ่ม Expo, `expo run:ios`, `expo run:android` และ dependency `expo-dev-client`; การมีคำสั่งเหล่านี้ยังไม่ใช่หลักฐานว่าทดลองด้วยแต่ละวิธีสำเร็จแล้ว
-- บันทึกตรวจอุปกรณ์เดิมระบุว่า Android tooling ไม่ได้ติดตั้ง และยังไม่มีหลักฐานตรวจ Android ในงานนั้น ต้องกำหนดวิธีตรวจ Android หากเลือกเป็นแพลตฟอร์มที่รองรับ
-
-### รายละเอียดที่ผู้ใช้เพิ่มเติม
-
-- ผู้ใช้ยืนยันว่าในช่วงพัฒนาใช้ iPhone 13 Pro ผ่าน Expo Go และมีทดสอบ iPhone 11 ผ่าน Device Hub.app อยู่บ้าง
-- ตรวจ metadata ในเครื่องพบ macOS 27.0.1, Xcode 27.0 และ `/Applications/Xcode.app/Contents/Applications/DeviceHub.app` (bundle identifier `com.apple.dt.Devices`)
-- CoreSimulator มีอุปกรณ์จำลองชื่อ iPhone 11 ที่ตั้งค่าไว้ ใช้ runtime iOS 27.0 การมี configuration นี้ยังไม่ยืนยันว่าการทดสอบที่ผู้ใช้กล่าวถึงใช้เครื่องจำลองหรืออุปกรณ์จริง และยังไม่ใช่ผลตรวจแอปโฉมใหม่
-- [Apple: Device Hub](https://developer.apple.com/documentation/xcode/device-hub) ระบุว่าเครื่องมือนี้จัดการทั้งอุปกรณ์จำลองและอุปกรณ์จริง ให้ใช้ชื่อเครื่องมือตาม Xcode ที่ติดตั้งเมื่อเขียนวิธีทดลอง
-
-### ปรับขอบเขตการตรวจตามคำสั่งล่าสุด
-
-ผู้ใช้ระบุว่า “ตอนนี้ตรวจเฉพาะ iOS ก็พอครับ Android ไว้ทำทีหลังเอาครับ” จึงแทนที่แนวทางตั้งต้นที่กำหนดตรวจ Android ในรอบนี้ ขอบเขตปัจจุบันอยู่ใน Answer ด้านล่าง
+Will the user try the redesign on iPhone, Android, or both? Which platforms need runtime evidence before accepting each phase? Distinguish supported platforms from available test devices. Inspect repository run methods before proposing options.
 
 ## Answer
 
-### ข้อตกลงปัจจุบัน
+### Current agreement
 
-- เป้าหมายแอปยังมี iPhone และ Android แต่รอบปรับโฉมนี้ตรวจและรับงานบน iOS ก่อนตามคำสั่งล่าสุด
-- ใช้ iPhone 13 Pro ของผู้ใช้ผ่าน Expo Go ทดลองบนเครื่องจริงระหว่างพัฒนา และตรวจหน้าตากับพฤติกรรมของงานแต่ละช่วง
-- ใช้ iPhone 11 จำลองผ่าน Device Hub เป็นทางตรวจ iOS เพิ่มเติม โดยรายงานการตรวจเครื่องจริงและเครื่องจำลองแยกกัน
-- เลื่อนการเตรียม Android SDK/AVD การรัน Android และการตรวจ Android จริงไปงานภายหลัง ไม่ใช้เป็นเงื่อนไขรับงานรอบ iOS นี้
-- คงแนวทางโค้ดร่วมของแอปเดิมและจดข้อจำกัดเฉพาะแพลตฟอร์มไว้ เพื่อให้กลับมาตรวจ Android ต่อได้ การผ่าน iOS ไม่ถือเป็นผลรับรอง Android
+- The app still targets iPhone and Android. This redesign round checks and accepts iOS first.
+- Use the user's physical iPhone 13 Pro through Expo Go during development. Check each phase's appearance and behavior.
+- Use an iPhone 11 simulator through Device Hub for additional iOS checks. Report physical-device and simulator results separately.
+- Defer Android SDK/AVD preparation, Android runs, and Android runtime checks. They are not acceptance conditions for this iOS round.
+- Retain shared app code. Record platform-specific limitations for later Android work. Passing iOS checks does not establish Android results.
 
-### ผลต่อแผน
+### Effect on the plan
 
-- Spec รอบนี้กำหนดหลักฐาน runtime/UI บน iOS และแยก Android verification เป็นงานภายหลัง การตัดสินใจนี้เป็นแผนตรวจงาน ไม่ใช่รายงานว่าได้ทดลองแอปโฉมใหม่แล้ว
-- เมื่อทำ Android ภายหลัง ต้องเตรียม environment และตรวจ permissions/คลังรูป/keyboard/back/layout ตามการทำงานจริง โดยไม่อ้างว่าผล iOS ครอบคลุมส่วนนี้แล้ว
-- การสนทนาถัดไปต้องอธิบายคำที่จำเป็นด้วยสถานการณ์จริงและถามทีละเรื่อง เปิดให้ผู้ใช้กลับมาถามรายละเอียดของแนวทางนี้ได้
+- The spec requires iOS runtime/UI evidence. Android verification is later work. This decision defines validation, rather than reporting completed redesign checks.
+- Later Android work requires its environment and real permission, photo-library, keyboard, back-navigation, and layout checks. iOS results do not cover them.
+- Future discussions explain terms through real scenarios and ask about one topic at a time. The user can revisit this approach.
+
+## Comments
+
+### Available devices
+
+- The user reported an iPhone 13 Pro for testing.
+- The user initially chose support for iPhone and Android.
+- These comments record the discussion sequence. The current agreement appears in Answer below.
+
+### Questions about two platforms
+
+- The user asked how platforms differ and which work an iPhone-only start would reduce.
+- The explanation described shared core app code and backend code. Android adds platform-specific behavior and screen, permission, keyboard, and back-navigation checks. It also adds Android builds and runtime checks.
+- Starting with iPhone defers these Android tasks. The redesign's backend requirements remain.
+- Reference: [React Native: Platform-Specific Code](https://reactnative.dev/docs/0.86/platform-specific-code).
+
+### Run methods found in the repository
+
+- [Earlier slip device checks](../../native-slip-auto-import/issues/05-device-check.md) report physical-iPhone testing through Expo Go and LAN on 29 September 2569 (2026). They omit the model and do not establish checks of every screen or behavior.
+- `apps/native/package.json` provides Expo startup, `expo run:ios`, `expo run:android`, and `expo-dev-client`. These commands alone do not prove successful runtime checks.
+- Earlier notes report no installed Android tooling or Android evidence. Define Android validation if Android is a supported platform.
+
+### Additional user details
+
+- The user specified development through Expo Go on iPhone 13 Pro. Some iPhone 11 checks used Device Hub.app.
+- Machine metadata showed macOS 27.0.1 and Xcode 27.0. Device Hub path: `/Applications/Xcode.app/Contents/Applications/DeviceHub.app`. Bundle identifier: `com.apple.dt.Devices`.
+- CoreSimulator contained an iPhone 11 configuration with iOS 27.0. This did not establish whether the reported checks used a simulator or physical device. It also did not establish runtime checks of the redesign.
+- [Apple: Device Hub](https://developer.apple.com/documentation/xcode/device-hub) covers physical devices and simulators. Use the installed Xcode tool's name in run instructions.
+
+### Latest scope change
+
+The user requested iOS-only checks now and Android checks later. This replaces the initial plan to check Android in this round. The current scope appears below.

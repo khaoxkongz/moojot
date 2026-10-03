@@ -1,10 +1,10 @@
-# 01: เปิด CI บน GitHub Actions กลับมา
+# 01: Restore GitHub Actions CI
 
 **Status:** ready-for-human
 
-**Blocked by:** บัญชี GitHub ถูกล็อกเพราะการชำระเงินไม่ผ่าน (Actions ขึ้น "account is locked due to a billing issue" ทั้งตอน repo เป็น private และ public)
+**Blocked by:** GitHub locked the account after a payment failed. Actions reports "account is locked due to a billing issue" for both private and public repositories.
 
-**What to build:** ใส่ `.github/workflows/ci.yml` กลับเมื่อบัญชีปลดล็อก ไฟล์เดิมอยู่ใน commit 57ea9a9 และถูกเอาออกเพื่อไม่ให้ทุก PR ขึ้นว่าล้มโดยที่โค้ดไม่ผิด
+**What to build:** Restore `.github/workflows/ci.yml` after GitHub unlocks the account. Commit 57ea9a9 contains the original file. Its removal prevented misleading PR failures during the account lock.
 
-- [ ] คืนไฟล์ด้วย `git checkout 57ea9a9 -- .github/workflows/ci.yml` และอัปเดต `voidzero-dev/setup-vp` เป็น release ล่าสุด
-- [ ] PR แรกหลังคืนไฟล์ต้องผ่าน `vp check`, `vp test` และ `vp run check-types` บน GitHub
+- [ ] Restore the file with `git checkout 57ea9a9 -- .github/workflows/ci.yml`. Update `voidzero-dev/setup-vp` to the latest release.
+- [ ] The first PR after restoration passes `vp check`, `vp test`, and `vp run check-types` on GitHub.

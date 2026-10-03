@@ -1,22 +1,22 @@
-# 07: ผลอ่านสลิปและงานต้องช่วยหมู
+# 07: Slip results and needs-help work
 
-**What to build:** ดูผลสามกลุ่ม ไปหน้าอื่นขณะอ่านได้ และกลับมาจัดการสลิปค้างด้วยจดเองหรือลองใหม่ตามสาเหตุจนเสร็จ โดยไม่สร้างรายการซ้ำ
+**What to build:** Show three result groups. Allow navigation during reading. Resolve pending slips manually or retry according to their cause, without duplicate transactions.
 
-**Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md); 06 — [อ่านสลิปและดูหลักฐานจริง](06-slip-evidence.md)
+**Blocked by:** 05 — [Home, filters, and category queue](05-home-filter-queue.md); 06 — [Read slips and show actual evidence](06-slip-evidence.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 47–59
 
-**Why blocked:** ใช้ Home navigation/status ที่เสร็จและผลอ่านพร้อมหลักฐาน/transaction binding จากงานอ่านสลิป
+**Why blocked:** This needs completed Home navigation/status and slip evidence/transaction binding from ticket 06.
 
-- [ ] Owner รอบอ่านระดับ signed-in app อ่านต่อเมื่อเปลี่ยน route; background/lock/permission loss หยุดส่งรูปใหม่ และ resume เมื่อ eligible; account switch/logout แยกผล (stories 47, 48, 49)
-- [ ] หน้าผลแยก created→จดให้แล้ว, duplicate/no-candidate→ข้ามไป, incomplete→ต้องช่วย พร้อม actions ที่ทำงานจริง (stories 50, 57)
-- [ ] เก็บงานค้างตามบัญชีบนมือถือข้ามรอบ/วัน/restart และเกินช่วงค้นรูป 30 วันจนจัดการเสร็จ ไม่ใช้ lastRound แทน durable queue (story 51)
-- [ ] Incomplete รูปเดิมที่จำผลไว้ไม่ส่ง GenAI ซ้ำอัตโนมัติ; transient failures ใช้ backoff/Retry-After/eligibility และ targeted retry ที่เลือกงานได้ (stories 52, 53)
-- [ ] จดเองจากงานค้างเติมวันรูป เก็บ handled state และผูกภาพกับ transaction ID ที่สำเร็จ (stories 54, 55)
-- [ ] Manual-vs-inflight/ตอบกลับสูญหาย/คำขอซ้ำใช้ identity ของรูปเดียวกันและ reconcile conflict จนมีรายการเดียว ไม่มี successful-toast เทียม (story 56)
-- [ ] รูปหายหรือสิทธิ์เปลี่ยนยังคงงานและแจ้งข้อจำกัด; ค่าจาก user เก่าไม่เข้าสถานะ user ใหม่ (stories 58, 59)
-- [ ] พิสูจน์ session+native transport+server+ฐานทดสอบด้วย clock/photo/storage/provider ที่ควบคุมได้ และเดินผลอ่าน→จดเอง/ลองใหม่บน iOS
+- [ ] Authenticated-app scan ownership continues across routes. Background/lock/permission loss pauses scheduling, and eligibility resumes it. Logout/account switching isolates results. (stories 47, 48, 49)
+- [ ] Results map created→“จดให้แล้ว” (recorded), duplicate/no-candidate→“ข้ามไป” (skipped), and incomplete→“ต้องช่วยหมู” (needs help). Provide working actions. (stories 50, 57)
+- [ ] Device work persists per account across rounds/days/restarts and beyond the 30-day discovery window until handled. Use durable storage rather than only lastRound. (story 51)
+- [ ] Remembered incomplete images are not automatically resent to GenAI. Transient failures honor backoff/Retry-After/eligibility, with targeted retry of selected work. (stories 52, 53)
+- [ ] Manual resolution prefills photo date, retains handled state, and binds the image to the successful transaction ID. (stories 54, 55)
+- [ ] Manual/in-flight races, lost responses, and repeated requests share image identity. Reconcile conflicts to one transaction and factual success feedback. (story 56)
+- [ ] Missing images/changed access preserve work with limitations. Old-account data cannot change the new account's state. (stories 58, 59)
+- [ ] Prove session/native transport/server/test-database behavior with controlled clock/photo/storage/provider. Check results→manual resolution/retry on iOS.

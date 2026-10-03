@@ -1,18 +1,18 @@
-# 23: ปุ่มคีย์บอร์ดจริงกับ keypad จำนวนเงินบน iOS
+# 23: iOS hardware keyboard support for the amount keypad
 
-**What to build:** ต่อคีย์บอร์ดจริง (Bluetooth/iPad keyboard) กับ keypad จำนวนเงินในหน้าจดรายการบน iOS ให้กดตัวเลข เครื่องหมาย ⌫ และ Enter ได้เหมือนบนเว็บ
+**What to build:** Connect Bluetooth/iPad hardware keyboards to the iOS amount keypad. Digits, operators, ⌫, and Enter match web behavior.
 
-**Blocked by:** 04 — [จดเองและแก้รายการ](04-manual-entry.md)
+**Blocked by:** 04 — [Manual entry and transaction editing](04-manual-entry.md)
 
 **Status:** needs-triage
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md) (Keypad “พร้อม hardware keys”)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md) (Keypad hardware-key requirement)
 
-**Why blocked:** ใช้ calculator และ keypad จากงานจดเอง ซึ่งรับปุ่มคีย์บอร์ดบนเว็บแล้ว
+**Why blocked:** This uses ticket 04's calculator/keypad, whose web hardware input already works.
 
-**Why deferred from 04:** บน iOS (Expo Go) React Native ไม่ส่ง key event ถ้าไม่มีช่องพิมพ์ที่ focus อยู่ จึงต้องใช้ native module (เช่น `UIKeyCommand`) ซึ่งต้องใช้ dev build แทน Expo Go หรือหาทางที่ไม่ต้องเปิดคีย์บอร์ดบนจอ
+**Why deferred from 04:** iOS Expo Go does not provide React Native key events without a focused text input. A native module such as `UIKeyCommand` needs a development build. Another possible approach avoids opening the onscreen keyboard.
 
-- [ ] เลือกวิธีรับปุ่มบน iOS (native module/dev build หรือช่องพิมพ์ซ่อน) และบอกผลต่อการทดสอบด้วย Expo Go
-- [ ] ใช้ `calculatorKeyForHardware` เดิม ให้ปุ่มตรงกับเว็บ (ตัวเลข + − \* x / % , . Backspace Delete Enter =)
-- [ ] keypad บนจอยังใช้ได้ตามเดิม และคีย์บอร์ดบนจอไม่เด้งขึ้นเอง
-- [ ] ตรวจบน iPhone/iPad ที่ต่อคีย์บอร์ดจริง
+- [ ] Choose iOS input through native module/development build or hidden text input. Explain the effect on Expo Go testing.
+- [ ] Reuse `calculatorKeyForHardware` for web-equivalent keys: digits + − \* x / % , . Backspace Delete Enter =.
+- [ ] Preserve onscreen keypad behavior without automatically opening the software keyboard.
+- [ ] Check iPhone/iPad with an actual hardware keyboard.

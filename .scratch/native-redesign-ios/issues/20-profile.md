@@ -1,21 +1,21 @@
-# 20: หน้า พี่มนุษย์ และคำแนะนำ
+# 20: Human profile and guidance
 
-**What to build:** ใช้โปรไฟล์ที่รวมเครื่องมือพร้อมสถานะจริง การตั้งค่า/consent และความช่วยเหลือ โดยทุกลิงก์หลักพาไป flow ที่ทำงานแล้ว
+**What to build:** “พี่มนุษย์” (Human profile) combines tools/current status, settings/consent, and help. Every primary link reaches a working flow.
 
-**Blocked by:** 07 — [ผลอ่านสลิปและงานต้องช่วยหมู](07-slip-work-queue.md)
+**Blocked by:** 07 — [Slip results and needs-help work](07-slip-work-queue.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 95–98
 
-**Why blocked:** ใช้ route/สถานะผลอ่านสลิปแบบใหม่จากงานผลอ่านสลิป ส่วน auth, consent, planning, calendar, streak และ card queries/routes เดิมเป็นฐานที่ยังใช้งานได้ จึงเริ่มปรับหน้าโปรไฟล์ได้ก่อนเปลี่ยนหน้าตาของปลายทางทั้งหมด
+**Why blocked:** This needs ticket 07's new slip routes/status. Existing auth, consent, planning, calendar, streak, and card operations remain usable. Profile can start before every destination redesign finishes.
 
-- [ ] Sections/copy/assets ตรง handoff เครื่องมืออยู่ก่อนพร้อม budget/over/rule/streak/import/card status จริง (story 95)
-- [ ] Email จาก session และสอง consent switches ใช้ค่าเดียวกับ onboarding จัดการ pending/failure ไม่กลับค่าเก่าผิดลำดับ (story 96)
-- [ ] ทุก row ไปหน้าหรือ sheet ที่ทำงานแล้ว: หมวด/แท็ก ปฏิทิน ธีม งบ/กฎ แครอต สลิป บัตร และ CSV
-- [ ] FAQ accordion/guide/terms/slip help เปิดเป็น sheets และข้อความตรงการอ่านอัตโนมัติ/งานค้าง/พักแอปจริง (story 97)
-- [ ] ภาษาเป็น info ไทย Version จริง social links ที่ยังไม่พร้อมเป็น caption ตามแบบ ไม่เป็นปุ่มไม่มี handler
-- [ ] Signout confirm ไป auth พร้อม email ล่าสุด และยกเลิก/แยก scan/query/attachments ของบัญชีที่ออก (story 98)
-- [ ] ตรวจ dynamic states/consent contracts และเดิน profile→เครื่องมือ/help/logout บน iOS ทั้ง light/dark
+- [ ] Match handoff sections/text/assets. Tools come first with actual budget/over-budget/rule/streak/import/card status. (story 95)
+- [ ] Session supplies email. Two consent switches share onboarding values. Coordinate pending/failure and response ordering to avoid stale values. (story 96)
+- [ ] Every row opens working category/tag, calendar, theme, budget/rule, carrot, slip, card, or CSV screens/sheets.
+- [ ] FAQ accordions/guide/terms/slip help use sheets. Explain actual automatic reading, pending work, and app pauses. (story 97)
+- [ ] Language is Thai information. Use actual version data. Unavailable social links remain captions rather than buttons without handlers.
+- [ ] Logout confirmation returns the user to auth with the latest email. Cancel/isolate the outgoing account's scan/query/attachments. (story 98)
+- [ ] Check dynamic states/consent contracts and profile→tools/help/logout in iOS light/dark.

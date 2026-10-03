@@ -1,20 +1,20 @@
-# 06: อ่านสลิปและดูหลักฐานจริง
+# 06: Read slips and show actual evidence
 
-**What to build:** รายการที่อ่านจากสลิปแสดงรูป วัน เวลาทำรายการ คู่โอน และข้อมูลธนาคาร/บัตรที่มีหลักฐานจริงใน editor โดยไม่เดาข้อมูลที่อ่านไม่ได้
+**What to build:** The editor shows slip image, date, transaction time, counterparties, and bank/card evidence. Unreadable information remains unknown.
 
-**Blocked by:** 04 — [จดเองและแก้รายการ](04-manual-entry.md)
+**Blocked by:** 04 — [Manual entry and transaction editing](04-manual-entry.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 43, 59
 
-**Why blocked:** ต้องแสดงและแก้รายการผ่าน editor ที่เสร็จแล้ว และขยายข้อมูล transaction โดยรักษาผู้เรียกเดิม
+**Why blocked:** This needs the completed editor and a backward-compatible transaction-data extension.
 
-- [ ] ส่งรูปหนึ่งรูปผ่าน authenticated import และเก็บเฉพาะข้อมูลจริงที่ qualify เป็นรายการตาม contract; optional evidence ที่ไม่ทราบคง unknown
-- [ ] Schema/prompt/provider/mapping/storage/output ส่งหลักฐานที่ UI ใช้ครบ รวม actual time เมื่ออ่านได้ และยังรับ missing optional fields ได้
-- [ ] วันที่รูป ชื่ออัลบั้ม และ createdAt ไม่ถูกแทนเป็นเวลาทำรายการ/ธนาคาร/คู่โอนโดยไม่มีหลักฐาน
-- [ ] Editor เปิด thumbnail/viewer กับรายละเอียดจริง; ภาพหายแสดงข้อจำกัด ไม่ใช้ชื่อ fallback เป็นหลักฐาน payer/merchant (story 43)
-- [ ] Asset identity ต่อผู้ใช้และ unique/conflict handling กันซ้ำอยู่ครบ รวม soft-deleted imported entry (story 59)
-- [ ] ตรวจ transport→route→provider fake→ledger→detail กับ fixture known/unknown evidence และ viewer บน iOS; caller เดิมยังทำงานกับการขยายแบบข้อมูลได้
+- [ ] Send one image through authenticated import. Retain only factual data that qualifies under the contract. Unknown optional evidence remains unknown.
+- [ ] Schema/prompt/provider/mapping/storage/output supply all UI evidence, including actual time when readable. Missing optional fields remain acceptable.
+- [ ] Photo date, album name, and `createdAt` cannot substitute for transaction time, bank, or counterparties without evidence.
+- [ ] The editor opens thumbnails/viewer with actual details. Missing images show limitations. Fallback titles cannot prove payer/merchant. (story 43)
+- [ ] Preserve per-user asset identity, unique/conflict handling, and duplicate protection after soft deletion. (story 59)
+- [ ] Test transport→route→fake provider→Ledger→detail with known/unknown evidence fixtures. Check the viewer on iOS. Existing callers remain compatible with extended data.

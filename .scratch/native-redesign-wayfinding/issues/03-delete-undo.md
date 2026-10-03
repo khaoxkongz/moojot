@@ -1,53 +1,53 @@
-# กำหนดขอบเขตการเอากลับคืนหลังลบ
+# Define delete and undo behavior
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-การลบแล้วกด “เอากลับคืน” ตามดีไซน์ต้องคืนสิ่งใดบ้างสำหรับรายการ งบ กฎจดซ้ำ หมวดหมู่ และแท็ก โดยเฉพาะความสัมพันธ์กับรายการหรืองบที่ได้รับผล? เมื่อ toast หมดเวลา ลบหลายอย่างต่อกัน การบันทึกล้มเหลว หรือปิดแอปกลางทาง ผู้ใช้ควรเห็นผลแบบใด? ตรวจความสามารถ delete/restore ที่มีอยู่ก่อนเสนอวิธีเก็บข้อมูลให้ตรงกับพฤติกรรมที่เลือก
-
-## Comments
-
-### พฤติกรรมที่ตรวจพบก่อนถาม
-
-- README และต้นแบบกำหนดลบทันทีพร้อม action “เอากลับคืน” อยู่แล้ว toast มี action อยู่ 5 วินาที และ toast ใหม่แทน action เดิม (`showToast` ใน HTML) ให้รับพฤติกรรมนี้จากดีไซน์ที่ผู้ใช้เลือก
-- Undo รายการและงบคืน object เดิม; undo หมวด/แท็กคืนตัวหมวด/แท็กและความสัมพันธ์กับรายการที่ได้รับผล ส่วนการลบกฎจดซ้ำคงรายการที่จดแล้วไว้ และ undo คืนกฎ ตามต้นแบบ
-- `deleteMg` ใน HTML ไม่จัดการ budgets/rules ที่อ้างหมวดหรือแท็กที่ถูกลบ ทำให้งบแสดงชื่อ fallback และยอดใช้เปลี่ยนเป็นศูนย์ เป็นช่องว่างที่ต้องตัดสินใจ ไม่ถือเป็นพฤติกรรมที่ยืนยันจากการเลือกดีไซน์
-- `packages/api/src/features/ledger/ledger.service.ts` เดิมลบงบที่ผูกกับหมวด/แท็กด้วย และถอดความสัมพันธ์จากรายการกับกฎจดซ้ำ ต่างจากต้นแบบ
-- Backend มี restore สำหรับรายการ แต่ยังไม่มี restore สำหรับงบ กฎ หมวด และแท็ก ต้องกำหนดการคืนความสัมพันธ์ให้ครบตามข้อตกลงที่จะส่งต่อเป็น spec
-
-### คำถามแรกที่เสนอ
-
-สมมติผู้ใช้สร้างหมวด “กาแฟ” และตั้งงบไว้ 1,000 บาท เมื่อลบหมวดนั้น ต้องลบงบที่ผูกอยู่ด้วยหรือไม่? Agent แนะนำลบงบด้วย และถ้ากด “เอากลับคืน” ให้คืนทั้งหมวดกับงบพร้อมกัน รอคำตอบผู้ใช้ก่อนใช้เป็นข้อตกลง
-
-### การอธิบายความหมายของงบ
-
-ผู้ใช้ถามว่า “งบที่ผูกอยู่” หมายถึงอะไร Agent อธิบายว่าแผนวงเงินกาแฟ 1,000 บาทเป็นคนละข้อมูลกับรายการซื้อกาแฟ 60 บาทที่เกิดขึ้นแล้ว การลบงบเอาแผนวงเงินออก ส่วนรายการใช้จ่ายเดิมยังอยู่และกลับไปรอเลือกหมวดใหม่เมื่อลบหมวด ผู้ใช้ตอบว่าเห็นด้วยตามนี้
+What does “เอากลับคืน” (undo) restore after deleting an entry, budget, recurring rule, category, or tag? Include relationships with affected entries and budgets. What happens after toast expiry, consecutive deletions, failed saves, or app closure? Inspect existing delete/restore capabilities before proposing storage for the chosen behavior.
 
 ## Answer
 
-### ข้อตกลงกับผู้ใช้
+### User agreements
 
-- ลบหมวดที่ผู้ใช้สร้างเองแล้วลบงบที่ผูกกับหมวดนั้นด้วย
-- รายการใช้จ่ายที่เคยอยู่ในหมวดยังคงอยู่ครบ และกลับไปรอเลือกหมวดใหม่ตามดีไซน์
-- กด “เอากลับคืน” แล้วคืนหมวด งบที่ถูกลบไปด้วย และการจัดหมวดของรายการเดิมที่ได้รับผล
+- Deleting a user-created category also deletes linked budgets.
+- Existing expense entries remain complete and await a new category, following the design.
+- “เอากลับคืน” (undo) restores the category, deleted linked budgets, and affected entries' original category relationships.
 
-### พฤติกรรมที่รับตามดีไซน์
+### Approved design behavior
 
-- ลบทันทีพร้อม toast “เอากลับคืน” 5 วินาที toast ใหม่แทน action เดิม เป็นการคืนการกระทำล่าสุดที่ยังมีปุ่มแสดงอยู่
-- ลบงบแล้วคืนงบเดิมได้ ลบรายการแล้วคืนรายการพร้อมรายละเอียดเดิมได้
-- ลบกฎจดซ้ำคงรายการที่จดไปแล้วไว้ และการเอากลับคืนคืนกฎ
-- ลบแท็กเอาแท็กออกจากรายการ และการเอากลับคืนคืนแท็กกับความสัมพันธ์ที่ได้รับผล โดยรักษาข้อมูลรายการส่วนอื่นไว้
-- คืนค่าปฏิทินแล้วเอากลับคืนได้ตามต้นแบบ เมื่อปุ่มหมดเวลาหรือถูก toast ใหม่แทน ให้คงการกระทำที่เสร็จแล้วตามพฤติกรรม UI นี้
+- Delete immediately with a 5-second “เอากลับคืน” (undo) toast. A new toast replaces the previous action. Undo applies to the latest action whose button remains visible.
+- Budget undo restores the original budget. Entry undo restores the entry and its original details.
+- Deleting a recurring rule preserves recorded entries. Undo restores the rule.
+- Deleting a tag unlinks it from entries. Undo restores the tag and affected relationships while preserving other entry data.
+- Calendar reset supports undo, following the prototype. After expiry or replacement of the button, retain the completed action.
 
-### ผลต่อ spec และระบบหลังบ้าน
+### Spec and backend consequences
 
-- การเอากลับคืนต้องคืนความสัมพันธ์ที่การลบนั้นเปลี่ยนไปครบถ้วน รวมงบที่ลบตามหมวด; ใช้หลักความสัมพันธ์เดียวกันกับงบที่ผูกแท็ก เพื่อให้การลบและคืนเป้าหมายของงบสอดคล้องกัน
-- ตรวจและกำหนดทางคืนความสัมพันธ์ของกฎจดซ้ำที่อ้างหมวด/แท็กด้วย เพื่อคงความสมบูรณ์ของข้อมูล ส่วนงบที่อ้างเป้าหมายที่ลบแล้วไม่ใช้ชื่อ fallback ค้างแบบต้นแบบ
-- งานตรวจช่องว่าง API ต้องเลือกทางเก็บข้อมูลที่ทำให้คืนได้สำหรับทุกชนิด รองรับความล้มเหลวของการลบ/คืน และรักษาการเปลี่ยนแปลงอื่นที่เกิดขึ้นระหว่างนั้น การคืนรายการหนึ่งไม่ย้อนข้อมูลทั้งชุด
-- ข้อตกลงนี้เป็นพฤติกรรมที่ต้องทำให้ได้ การเลือกโครงสร้างการเก็บข้อมูลและสัญญา delete/restore เป็นขั้นวางแผนทางเทคนิคต่อไป
+- Undo restores every relationship changed by that deletion, including budgets deleted with a category. Apply the same relationship rule to tag-linked budgets. Deletion and restoration must keep budget targets consistent.
+- Inspect and define restoration for recurring rules referencing categories/tags. Preserve data integrity. Avoid prototype-style budgets with deleted targets and persistent fallback names.
+- API planning must choose storage that supports restoration for every object type and delete/restore failures. Preserve other changes made meanwhile. Restoring one entry must not revert the entire dataset.
+- This agreement defines required behavior. Storage structures and delete/restore contracts belong to the next technical planning step.
+
+## Comments
+
+### Behavior found before discussion
+
+- README and the prototype already specify immediate deletion and “เอากลับคืน” (undo). The action lasts 5 seconds. A new toast replaces the previous action through HTML `showToast`. Accept this chosen design behavior.
+- Undo restores the original entry or budget. Category/tag undo restores the object and affected entry relationships. Deleting recurring rules preserves recorded entries. Undo restores the rule.
+- HTML `deleteMg` ignores budgets/rules referencing deleted categories or tags. Budgets then show fallback names and zero spending. This gap requires a decision. Choosing the design does not confirm it.
+- Existing `packages/api/src/features/ledger/ledger.service.ts` also deletes linked budgets. It unlinks entries and recurring rules. This differs from the prototype.
+- The backend restores entries, but not budgets, rules, categories, or tags. Define complete relationship restoration in the spec.
+
+### Initial proposed scenario
+
+Suppose the user creates “กาแฟ” (coffee) and a 1,000-baht budget. Should deleting that category delete its budget too? The agent recommended deleting both and restoring both through “เอากลับคืน” (undo). This proposal awaited the user.
+
+### Budget explanation
+
+The user asked what a linked budget meant. The agent distinguished a 1,000-baht coffee spending limit from an existing 60-baht coffee entry. Deleting the budget deletes the plan. Existing expenses remain and await another category after category deletion. The user agreed.

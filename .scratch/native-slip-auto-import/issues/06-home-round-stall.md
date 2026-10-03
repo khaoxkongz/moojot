@@ -1,8 +1,8 @@
 # 06: Find why Home reading stalled on the iPhone
 
-**What to build:** Nothing yet. During the first device session in [05](05-device-check.md), a Home round kept reading and never ended, three times in one long Expo Go session. Swift-async Expo calls (`Album.getAll`, `Query`) stopped resolving, while Promise-callback calls (`getPermissionsAsync`, `copyAsync`) and fetch kept working. One round also never finished its final ledger refresh.
+**What to build:** No implementation yet. During [ticket 05's first device session](05-device-check.md), Home reading never ended 3 times in one long Expo Go session. Swift-async `Album.getAll`/`Query` stopped resolving. Promise-callback `getPermissionsAsync`/`copyAsync` and fetch continued. One round also stalled in final ledger refresh.
 
-`ScanDeadlines` in the scan session is a safety net, not a fix: a stalled step now ends the round instead of keeping Home reading. The cause is unknown.
+Session `ScanDeadlines` is a safety measure. A stalled step now ends the round instead of keeping Home busy. It does not fix the unknown cause.
 
 **Blocked by:** None.
 
@@ -10,12 +10,12 @@
 
 ## Why it is waiting
 
-The stall has not happened again in fresh Expo Go processes (see the table in 05's first device session), so there is no feedback loop to diagnose against. Pick this up again with `/diagnosing-bugs` once one of these exists:
+Fresh Expo Go processes did not reproduce the stall. See ticket 05's condition table. Diagnosis lacks a reproducible feedback loop. Resume with `/diagnosing-bugs` when either source of evidence becomes available:
 
-- A round log showing `DeadlineError` or `refresh-timeout`. Keep the process alive and capture a native thread sample (Xcode → Debug → Attach to Process → pause) or Console.app logs.
-- A development build run long enough to show whether the stall is specific to Expo Go.
+- A round log reports `DeadlineError` or `refresh-timeout`. Keep the process alive. Capture native threads through Xcode → Debug → Attach to Process → pause, or Console.app logs.
+- A development build runs long enough to assess whether the stall is specific to Expo Go.
 
-Keep images, session tokens and the Gemini key out of any notes.
+Keep images, session tokens, and the Gemini key outside notes.
 
-- [ ] The stall is reproduced, or shown to be specific to Expo Go
-- [ ] The cause is stated, and either fixed with a regression test or recorded as a limit
+- [ ] Reproduce the stall or establish that it is specific to Expo Go.
+- [ ] State the cause. Fix it with a regression test or record it as a limit.

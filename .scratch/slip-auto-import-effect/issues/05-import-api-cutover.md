@@ -1,16 +1,16 @@
-# 05: ตัด Import API เดิมและยืนยันการย้ายครบ
+# 05: Retire the old Import API and prove the migration
 
-**What to build:** server เปิด import operation ใหม่เพียงตัวเดียวและถอดทางอ่านสลิป/statement/PDF เดิมออก โดยรักษาข้อมูล statement ที่เคยบันทึกไว้และยืนยันว่า API ใหม่ทำงานครบผ่าน HTTP, ฐานข้อมูลทดสอบ และ build ของ API/server
+**What to build:** The server exposes only the new import operation. Retire the old slip/statement/PDF paths. Preserve saved statement data. Prove the new API through HTTP, a test database, and API/server builds.
 
-**Blocked by:** 04 — จำกัดงาน Gemini คิว และเวลาให้ผลลัพธ์เชื่อถือได้
+**Blocked by:** 04 — Bound Gemini work, queue length, and deadlines
 
 **Status:** done
 
 **Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect; `304de8a` Document slip import validation and native follow-up
 
-- [ ] Import router ชี้ไป operation ใหม่เท่านั้น; old slip และ statement RPC URLs ได้ 404; ถอดโค้ด PDF, password/model override และ dependency ที่ไม่มีผู้ใช้ใน API/server แล้ว
-- [ ] server เลิก bypass session และ user identification สำหรับ import, ย้าย 14 MiB body guard ไป path ใหม่, เอา statement 28 MiB guard ออก และคง native development CORS กับ `no-store`/`nosniff`
-- [ ] ประวัติ `FinanceTransaction` ที่มี `source = statement` ยังอ่านได้ตามเดิม; ไม่ลบข้อมูลหรือ source value จาก Ledger/schema
-- [ ] HTTP integration suite พิสูจน์ 401/413, created/skipped/error, 404 ของทางเก่า และหลายรูปที่เป็นคำขออิสระ: created ยังคงอยู่เมื่อรูปอื่น skipped หรือ failed; error/log ไม่เปิดเผยข้อมูลลับ
-- [ ] ผ่าน `vp check`, `vp test`, API/server type checks, server build และ MongoDB integration tests; เตรียมขั้นตอน live Gemini smoke ด้วยข้อมูลทดสอบและที่บันทึกผลหลัง deploy แยกจาก automated gate
-- [ ] บันทึกให้ชัดว่า native caller เวอร์ชันเดิมยังเรียก operation ที่ถูกถอด จึงมี native/repo-wide type failures และใช้ import ไม่ได้จนกว่าจะทำ native follow-up; ห้ามรายงานว่าแอปทั้งชุดเข้ากันได้แล้ว
+- [ ] The Import router points only to the new operation. Old slip and statement RPC URLs return 404. Delete unused PDF code, password/model overrides, and dependencies from API/server.
+- [ ] The server requires session loading and user identification for import. Move the 14 MiB body guard to the new path. Delete the 28 MiB statement guard. Preserve native development CORS and `no-store`/`nosniff`.
+- [ ] Historical `FinanceTransaction` rows with `source = statement` remain readable. Preserve their data and source value in Ledger/schema.
+- [ ] HTTP integration tests prove 401/413, created/skipped/error, and 404 on old routes. Multiple images use independent requests. A created transaction remains when another image returns skipped or failed. Errors/logs exclude secrets.
+- [ ] Pass `vp check`, `vp test`, API/server type checks, server build, and MongoDB integration tests. Prepare a live Gemini smoke procedure with test data and a place to record results after deployment. Keep that record separate from the automated gate.
+- [ ] Record that the old native caller still calls retired operations. Native/repository type checks fail, and import remains unavailable until the native update. Report this incompatibility accurately when assessing the application as a whole.

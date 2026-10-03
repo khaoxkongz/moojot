@@ -1,4 +1,4 @@
-# กำหนดลำดับงานและเกณฑ์ตรวจรับการปรับโฉม
+# Define delivery order and redesign acceptance
 
 Label: wayfinder:grilling
 Type: grilling
@@ -6,38 +6,38 @@ Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
 Blocked by: 01, 02, 03, 04, 05, 07, 09, 10
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-จะจัดลำดับการปรับระบบและหน้าจออย่างไรให้แต่ละช่วงตรวจดูหน้าตาและลองใช้งานกับข้อมูลจริงจากระบบได้ และใช้เกณฑ์ใดรับงานจนตรงกับ handoff ทั้งหมด? รวมหน้าจอและพฤติกรรมตามดีไซน์ การเชื่อม API ความสอดคล้องของข้อมูล และการตรวจบนแพลตฟอร์มที่ตกลง ให้คำตอบนำไปเขียน spec และแตกงานลงมือทำได้
-
-## Comments
-
-### ข้อเสนอสำหรับทบทวน
-
-ผู้ใช้เห็นด้วยกับการให้การจดรายการ/อ่านสลิปที่ใช้อยู่มาก่อน แล้วทำส่วนอื่นจนครบดีไซน์ จัด [ข้อเสนอลำดับพัฒนาและเกณฑ์ตรวจรับหมูจดโฉมใหม่](../assets/delivery-plan-proposal.md) เป็นสี่ช่วง: ฐานร่วม, การใช้งานหลัก, สรุป/วางแผน, ส่วนเสริม/ตรวจครบ รวมเกณฑ์ข้อมูลและทางตรวจบนสองแพลตฟอร์ม
-
-การเริ่มข้อมูลใหม่มีคำตอบแล้วใน ticket ของตน ข้อนี้ยังรอทบทวนภาพรวมก่อนส่งต่อ spec และยังไม่มีการแก้ implementation
-
-### Fog ที่ระบุแผนได้แล้ว
-
-จากตาราง coverage และการตรวจ environment ระบุคำตอบตั้งต้นสำหรับองค์ประกอบร่วม, data fetching/recovery, onboarding/help ที่ตรง scanner, และทางเตรียมสองแพลตฟอร์มได้แล้ว รายละเอียดอยู่ในข้อเสนอที่ลิงก์ไว้ ให้ทบทวนเป็นส่วนหนึ่งของคำตอบ ticket นี้ ไม่มีการสร้างหัวข้อรอที่ซ้ำกับแผน
-
-การค้นคว้าเฉพาะ library/API เพิ่มเติมก่อนเขียน implementation เป็นงาน validation ใน spec ตาม package ที่เลือกจริง ไม่เหลือคำถามผลิตภัณฑ์เกี่ยวกับ library ที่ต้องให้ผู้ใช้ตัดสินใจใน map นี้ หากพบข้อจำกัดจริงที่เปลี่ยนพฤติกรรมที่ตกลง ต้องนำกลับมาคุยก่อนเปลี่ยนขอบเขต
-
-### ปรับเกณฑ์ตรวจเป็น iOS ก่อน
-
-ผู้ใช้ทบทวนข้อเสนอสี่ช่วงแล้วขอให้ตรวจเฉพาะ iOS ในรอบนี้ โดยทำ Android ภายหลัง แก้ข้อเสนอให้รับงานจากหลักฐาน iPhone 13 Pro/Expo Go และ iPhone 11/Device Hub และเลื่อนงานเตรียม SDK/AVD กับการตรวจ Android ออก ไม่ใช้ผล iOS ไปอ้างว่า Android ตรวจผ่านแล้ว
+How should backend and screen changes form phases with inspectable appearance and actual data? Which criteria establish full handoff acceptance? Include design behavior, API integration, data consistency, and agreed platform checks. The answer must support a spec and implementation tickets.
 
 ## Answer
 
-ใช้ [ลำดับพัฒนาและเกณฑ์ตรวจรับหมูจดโฉมใหม่](../assets/delivery-plan-proposal.md) ที่ปรับตามคำสั่งล่าสุด เป็นแผนส่งต่อ: เตรียมฐานร่วม → การจดรายการ/อ่านสลิป → สรุป/ค้นหา/วางแผน/จัดการ → ส่วนเสริมและตรวจครบ
+Use [the updated delivery and acceptance plan](../assets/delivery-plan-proposal.md) for handoff. Sequence: foundations → entry/slip flows → summaries/search/planning/management → additional features and complete checks.
 
-- แต่ละช่วงต้องมี flow ที่อ่านและบันทึกข้อมูลจริงพร้อมตรวจความผิดพลาด/กลับมาทำสำเร็จ และเชื่อมสัญญาที่เป็น dependency ก่อนรับช่วงนั้น
-- รอบนี้ตรวจ runtime/UI บน iOS ด้วย iPhone 13 Pro/Expo Go และ iPhone 11 จำลอง/Device Hub Android verification ทำภายหลังและไม่ขวางการรับงานรอบนี้
-- ใช้ฐานโค้ดร่วมและระบบเดิมที่รองรับแล้ว ปรับช่องว่างจากตาราง coverage ตามแนวทางทางเทคนิคในแผน โดยคงหน้าตาและ controls ของ handoff กับข้อยกเว้นที่ตัดสินร่วมกัน
-- เริ่มข้อมูลทดลองใหม่ในบัญชี auth เดิมเมื่อชุด schema/API/client พร้อมตามคำตอบวิธีเปลี่ยนระบบ ไม่มีการลบข้อมูลในขั้นวางแผน
-- ส่งต่อ spec ใน feature directory ใหม่พร้อม build issues และเกณฑ์ตรวจของผลลัพธ์ ไม่ใช้ decision tickets ใน map เป็น build tickets
+- Every phase needs actual read/write flows and failure/recovery checks. Integrate dependency contracts before accepting that phase.
+- Check runtime/UI on physical iPhone 13 Pro/Expo Go and simulated iPhone 11/Device Hub. Android verification follows later and does not block this round.
+- Reuse shared code and supported existing capabilities. Address coverage gaps through the plan's technical approach. Preserve handoff appearance and controls, including jointly agreed exceptions.
+- Start fresh experimental data in the existing auth account when schema/API/client are ready. Follow the transition decision. Planning does not delete data.
+- Hand off the spec in a new feature directory with build issues and outcome criteria. Map decision tickets are not build tickets.
 
-ไม่มีคำถามผลิตภัณฑ์ที่ต้องตัดสินก่อนแตก spec เหลืออยู่ใน map นี้ การตรวจ version-specific APIs และรายละเอียด representation ที่มีผลตามข้อกำหนดเป็นงานของผู้พัฒนาใน spec/implementation หากเจอข้อจำกัดจริงที่เปลี่ยนสิ่งที่ผู้ใช้ได้รับ ต้องนำกลับมาคุยก่อนแก้ขอบเขต
+No product question remained before spec creation. Version-specific APIs and data representation belong to spec/implementation work. Return to discussion if an actual limitation changes user-visible results before changing scope.
+
+## Comments
+
+### Proposal for review
+
+The user agreed to prioritize frequently used entry/slip flows, then complete the remaining design. [The delivery proposal](../assets/delivery-plan-proposal.md) defined four phases: foundations, core use, summaries/planning, and additional features/full checks. It initially included data criteria and both platforms.
+
+The separate transition ticket already defined a fresh dataset. This ticket awaited overall review before spec handoff. No implementation changed.
+
+### Previously uncertain topics with initial plans
+
+Coverage and environment inspection provided initial answers for shared components, data fetching/recovery, scanner-aligned onboarding/help, and platform preparation. Details appear in the proposal. Review them within this decision instead of creating duplicate open topics.
+
+Additional library/API research before implementation is spec validation for the selected packages. No library-related product decision remained for the user in this map. Return to discussion if an actual limitation changes agreed behavior.
+
+### iOS-first acceptance change
+
+After reviewing four phases, the user requested iOS-only validation now and Android later. The proposal now requires iPhone 13 Pro/Expo Go and iPhone 11/Device Hub evidence. Defer SDK/AVD preparation and Android checks. iOS evidence cannot establish Android acceptance.

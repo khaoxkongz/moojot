@@ -1,6 +1,6 @@
-# 01: ให้ Home อ่านและบันทึกผ่านระบบใหม่
+# 01: Read and save Home slips through the new API
 
-**What to build:** ผู้ใช้ที่เข้าสู่ระบบและให้สิทธิ์รูปครบเปิด Home แล้วได้รายการจากสลิปย้อนหลัง 30 วันผ่าน API ใหม่ โดยยังอยู่ Home เดิม เห็นข้อความและแอนิเมชันระหว่างอ่าน และเปิดดูรูปที่ผูกกับรายการได้ เอาทางเข้านำเข้าแบบเก่าที่ใช้งานไม่ได้ออก พร้อมรักษาการจดเองและประวัติเดิม
+**What to build:** Authenticated users with full photo access open Home and import slips from the past 30 days through the new API. They remain on Home, see activity text/animation, and can open the attached image. Retire unavailable import entry points. Preserve manual entry and history.
 
 **Blocked by:** None (can start immediately).
 
@@ -10,42 +10,42 @@
 
 ## Acceptance criteria
 
-- [ ] ใช้สัญญาจาก [Spec มือถือ](../spec.md) และสัญญา API ที่ spec อ้างอิง โดยคงผู้ใช้ใหม่/เดิมไว้บนเส้นทางปัจจุบัน จัดโครงสร้าง orchestration เท่าที่จำเป็นก่อนเปลี่ยนพฤติกรรมภายในงานนี้ ใช้ขอบเขตรอบสแกนเดียวสำหรับเชื่อม Home, native adapters และ transport เพื่อให้งานต่อไปใช้ทดสอบและต่อยอดได้
-- [ ] เมื่อเข้าหน้า Home ด้วยบัญชีที่เข้าสู่ระบบและสิทธิ์รูปทั้งหมด ค้นหารูปตามเวลา creation ของ asset ย้อนหลัง 30 วันจาก Krungthai NEXT, K PLUS, Paotang และ TrueMoney ตามกฎชื่ออัลบั้มเดิม อ่านครบทุกหน้า ไม่รวมอัลบั้มอื่น และไม่ประมวลผล asset ID ซ้ำจากหลายอัลบั้มในรอบเดียว
-- [ ] ส่งผ่าน operation autoImportSlip ที่ wire route POST /rpc/import/slip/auto-import จริง พร้อม session cookie ตาม transport ของ native และ X-CSRF-Token: orpc ทดสอบเส้นทางจริง ไม่อนุมาน URL จากชื่อ operation แบบ camelCase
-- [ ] ส่งเฉพาะ assetId, fileBase64 และ MIME ของภาพ JPEG/PNG จริง ใช้ asset ID เดิมโดยไม่ดัดแปลง ไม่ส่ง model override, category, user ID, dedupe key หรือ URI ในเครื่อง
-- [ ] ภาพ JPEG/PNG ที่ไม่เกิน 10 MiB ส่ง bytes ต้นฉบับ ย่อหรือบีบอัดเฉพาะภาพที่จำเป็นต้องลดขนาด ภาพที่อ่านไม่ได้หรือชนิดไม่รองรับล้มเหลวเฉพาะรูปนั้นโดยไม่เปลี่ยน MIME หลอกหรือขวางรูปถัดไป
-- [ ] รับ created พร้อม transaction ID และ skipped ทุกเหตุผลตาม schema ปัจจุบัน ซึ่งมีเหตุผลข้อมูลไม่ครบเป็นโครงสร้าง field/code ข้อผิดพลาดยังรักษา machine code, HTTP status และ Retry-After เพื่อให้งาน 02 กำหนดการลองใหม่ได้
-- [ ] ฝั่งมือถือไม่เรียกสร้าง FinanceTransaction ซ้ำหลัง API บันทึกแล้ว ไม่มีการเสนอ category ใน auto-import และไม่มีการแปลงผลใหม่กลับเป็น candidate สำหรับ review
-- [ ] เมื่อได้ created ผูกรูปต้นฉบับในเครื่องกับ transaction ID ภายใต้บัญชีที่เริ่มคำขอ รีเฟรชรายการและข้อมูลสรุป Home ที่ได้รับผลกระทบ ความล้มเหลวของการผูกรูปหรือรีเฟรชข้อมูลไม่ทำให้สร้างรายการอีกครั้ง และไม่เปลี่ยน created เป็นการนำเข้าที่ล้มเหลว
-- [ ] ประมวลผลภาพพร้อมกันไม่เกินสองรูป ภาพที่ถูกข้ามหรือล้มเหลวไม่ขวางรูปอื่น ผลสำเร็จที่บันทึกไว้ไม่ถูกย้อนกลับ นับ created/skipped/failed แยกกันภายในโดยไม่เพิ่มสรุปผลบนหน้าจอ และไม่มีการวนลองใหม่ทันที
-- [ ] ขณะทำงาน Home เดิมแสดง “หมูกำลังอ่านสลิปใหม่” และแอนิเมชันที่มีอยู่ เมื่อรอบจบเปลี่ยนสถานะภายในหน้าเดิมพร้อมข้อมูลที่อัปเดต กรณีไม่มีรูปหรือเกิดข้อผิดพลาดต้องไม่ค้างสถานะกำลังอ่าน
-- [ ] เอา “อ่านสลิป” และ “ใบแจ้งยอด” ออกจากเมนู + รวมถึงทางเข้า “เริ่มนำเข้า” และลิงก์อื่นที่พาไปหน้าที่เลิกใช้งาน ถอน import/review routes และโค้ด client แบบเก่าเมื่อไม่มีผู้เรียกที่รองรับเหลืออยู่ การเรียกสอง operation ที่ถูกถอดออกต้องหมดจาก native
-- [ ] การจดรายการเอง การเลือกหมวดหมู่ การดูรายละเอียดรายการ และรายการ statement/slip ที่เคยบันทึกไว้ยังใช้งานได้ การปรับข้อความอธิบาย onboarding/สิทธิ์/FAQ อย่างครบถ้วนอยู่ในงาน 03
-- [ ] ใช้ขอบเขตทดสอบรอบสแกนที่ขับจากภายนอก เชื่อม native transport เข้ากับ fixture HTTP ที่ยืนยันตัวตนและ MongoDB แยกของโครงการ โดยใช้ภาพสังเคราะห์และ fake Gemini พิสูจน์การสร้างหนึ่งรายการ การข้าม รูปผิดพลาดตามด้วยรูปที่สำเร็จ bytes ต้นฉบับ การผูกรูป และการไม่มี ledger-create คำขอที่สอง
-- [ ] ตรวจ Home และทางเข้าที่ถอดออกบนเครื่องหรือเครื่องจำลอง บันทึกผลที่ตรวจจริง ไม่อ้างว่าผ่านแพลตฟอร์มที่ยังไม่ได้ตรวจ รัน vp check, vp test และ native type check; ความผิดพลาดเดิมจากสอง operation ที่ถูกถอดออกต้องแก้ครบ รายงานความผิดพลาดอื่นแยกตามหลักฐาน
+- [ ] Use the [native spec](../spec.md) and its API contract. Preserve current new/returning-user routes. Prepare only the orchestration necessary before changing behavior. Use one scan-session boundary across Home, native adapters, and transport for later work and tests.
+- [ ] Authenticated Home activation with full access discovers assets by creation time within the past 30 days. Use existing album aliases for Krungthai NEXT, K PLUS, Paotang, and TrueMoney. Read every page. Exclude other albums and duplicate asset IDs across albums within one round.
+- [ ] Call `autoImportSlip` through actual wire route `POST /rpc/import/slip/auto-import`. Use the native transport's session cookie and `X-CSRF-Token: orpc`. Test the actual route rather than deriving a camelCase URL.
+- [ ] Send only `assetId`, `fileBase64`, and actual JPEG/PNG MIME. Preserve the asset ID exactly. Exclude model override, category, user ID, dedupe key, and local URI.
+- [ ] Send original JPEG/PNG bytes within 10 MiB. Resize/compress only when necessary. Unreadable or unsupported images fail individually. Preserve actual MIME and continue with later photos.
+- [ ] Accept created IDs and every skipped reason under the current schema, including structured field/code reasons for incomplete data. Errors retain machine code, HTTP status, and `Retry-After` for ticket 02.
+- [ ] The mobile app delegates `FinanceTransaction` creation to the API alone. Automatic import excludes category suggestions and conversion of new results to review candidates.
+- [ ] Bind created transaction IDs to original local images under the account that started the request. Refresh affected ledger and Home summaries. Binding/cache failure neither creates another transaction nor changes the created import outcome.
+- [ ] Process at most two images concurrently. Skipped/failed images leave other work eligible, and successful persistence remains. Count created/skipped/failed internally without a new summary UI. Retry waits for a later round.
+- [ ] The same Home shows “หมูกำลังอ่านสลิปใหม่” (Moo is reading new slips) and its existing animation during work. Completion updates that screen's state and data. Empty/error rounds release the reading state.
+- [ ] Delete “อ่านสลิป” (read slip) and “ใบแจ้งยอด” (statement) from the + menu. Delete “เริ่มนำเข้า” (start import) and other obsolete import entry points. Retire import/review routes and old client code when no supported caller remains. Eliminate native calls to both retired operations.
+- [ ] Preserve manual entry, category selection, transaction details, and historical statement/slip rows. Ticket 03 completes onboarding/permission/FAQ explanations.
+- [ ] Drive scan sessions externally through native transport and the project's authenticated HTTP/isolated MongoDB fixture. Use synthetic images and fake Gemini. Prove one creation, skipping, recovery after an earlier image failure, original bytes, and local binding. There is no second Ledger creation request.
+- [ ] Check Home and retired entry points on a device/emulator. Record actual platform evidence. Run `vp check`, `vp test`, and native type checks. Resolve existing failures from the two retired operations. Report other failures separately with evidence.
 
 ## Scope and handoff
 
-งานนี้ให้เส้นทางหลักทำงานครบในหนึ่งรอบ ใช้ขอบเขต coordinator และสถานะรอบเดียวเป็นฐานสำหรับงานถัดไป การจำผลข้ามการเปิดแอปและ backoff อยู่ในงาน 02 หน้าจอสิทธิ์และคำอธิบายครบเส้นทางอยู่ในงาน 03 ส่วนจังหวะ foreground/พักงานและท่าทางดึงอย่างละเอียดอยู่ในงาน 04 ทุกงานต่อยอดผ่านพฤติกรรมที่ทดสอบได้ ไม่ต้องสร้าง API ใหม่หรือเปลี่ยน schema ฝั่งเซิร์ฟเวอร์
+This ticket completes the main path in one round. One coordinator and round-state boundary supports later tickets. Ticket 02 owns persistence across app starts and backoff. Ticket 03 owns permissions and explanations across the flow. Ticket 04 owns detailed foreground/pause and pull gestures. All build on observable behavior, without a new API or server schema.
 
-จำกัดการแก้ตาม spec และรักษางานที่มีอยู่ของผู้ใช้ หากต้องเขียน Effect code ให้ทำตามคู่มือ Effect ที่กติกา repository ระบุก่อนเขียน
+Follow the spec and preserve the user's existing work. Read the repository's required Effect guide before writing Effect code.
 
 ## Comments
 
 ### 2026-09-29 — implementation evidence
 
-Automated gates, run at the repository root:
+Automated gates ran at the repository root:
 
-- `vp check`: pass (formatting and lint)
-- `vp test`: pass, 119 tests across 5 files. New: `apps/native/features/slips/auto-import/scan-session.test.ts` (17 tests) and `apps/server/test/native-slip-auto-import.test.ts` (4 tests), which run the actual native transport and scan session against the authenticated route, isolated MongoDB and fake Gemini
-- `vp run check-types`: pass, 11/11, including native. The failures from the two removed operations are resolved
-- Mutation check: pointing the transport at `import.autoImportSlip` (the camelCase path) fails all 4 integration tests
+- `vp check`: passed formatting/lint.
+- `vp test`: passed 119 tests across 5 files. New `apps/native/features/slips/auto-import/scan-session.test.ts` has 17 tests. New `apps/server/test/native-slip-auto-import.test.ts` has 4 tests. They exercise actual native transport/session, authenticated routes, isolated MongoDB, and fake Gemini.
+- `vp run check-types`: passed 11/11, including native. The change resolves failures from both retired operations.
+- Mutation check: transport using `import.autoImportSlip`, the camelCase path, fails all 4 integration tests.
 
-Not verified: **on a device or simulator.** The iOS dev build exists, but seeding bank-named albums and driving sign-in/onboarding/Home needs interactive UI control, which was not done. Android tooling is not installed. Home, the removed + menu items and the removed settings links have not been checked on screen.
+Device/simulator checks did not run. An iOS development build exists. Seeding bank albums and driving sign-in/onboarding/Home require interactive UI control, which did not occur. Android tooling is absent. Home, retired + menu actions, and retired settings links remain unchecked on screen.
 
-Handoff notes:
+Handoff:
 
-- 02: `settled` in `scan-session.ts` is in-memory and per-account. It covers created, skipped, 400/413/415, `UNSUPPORTED_IMAGE` and `IMAGE_TOO_LARGE`. Temporary failures (including `retryAfter`) and `UNREADABLE_IMAGE` are sent again on the next round with no delay. A 401 ends the current round.
-- 03: stale copy remains in `settings/slips.tsx` ("แสดงรายการให้คุณตรวจและเลือกบันทึกทุกครั้ง") and `settings/slip-help.tsx` ("ส่งเฉพาะไฟล์ที่คุณเลือก…ตรวจผลก่อนบันทึกทุกครั้ง"), plus FAQ and onboarding text. The Home idle line switches to the manual-entry hint when `access` is known and not `all`. 03 should replace it with the permission message and settings button.
-- 04: `slipScanSession.stop()` exists but is not yet called on blur or background. Pull-to-refresh still shows the reading bubble while `refreshing` is set.
+- Ticket 02: `settled` in `scan-session.ts` is in-memory and per account. It covers created, skipped, 400/413/415, `UNSUPPORTED_IMAGE`, and `IMAGE_TOO_LARGE`. Temporary failures, including `retryAfter`, and `UNREADABLE_IMAGE` resend next round without delay. A 401 ends the round.
+- Ticket 03: `settings/slips.tsx` retains "แสดงรายการให้คุณตรวจและเลือกบันทึกทุกครั้ง" (shows entries for you to check and choose to save every time). `settings/slip-help.tsx` retains "ส่งเฉพาะไฟล์ที่คุณเลือก…ตรวจผลก่อนบันทึกทุกครั้ง" (send only files you select…check results before saving every time). FAQ/onboarding also retain stale copy. Home shows manual-entry guidance when known `access` is not `all`. Replace it with permission guidance and a settings button.
+- Ticket 04: `slipScanSession.stop()` exists without blur/background calls. Pull-to-refresh still shows the reading bubble while `refreshing` equals true.

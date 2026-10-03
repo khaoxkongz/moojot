@@ -1,4 +1,4 @@
-# กำหนดหลักฐานความถูกต้องและการตัดระบบ Import เดิม
+# Define migration evidence and retirement of the old Import API
 
 Type: grilling
 Label: wayfinder:grilling
@@ -7,26 +7,107 @@ Blocked by: 02, 03, 04, 05
 
 ## Question
 
-จะพิสูจน์พฤติกรรม API สลิปใหม่ด้วยกรณีทดสอบหรือ fixture ใด และยุติ `packages/api/src/import/*` รวมถึง API statement เดิม พร้อมเปลี่ยน router, runtime, auth/session และ server middleware อย่างไร จึงถือว่าการ migrate สำเร็จ? ระบุเกณฑ์สำหรับผลลัพธ์ปกติ, ภาพเสีย, AI ตอบผิดรูป, การส่งรูปซ้ำ, ผลลัพธ์หลายรูปที่สำเร็จบางส่วน และการยืนยันว่าขอบเขต API ทำงานได้โดยไม่ต้องแก้ `apps/native`
+Which tests and fixtures prove the new slip API? How should migration retire `packages/api/src/import/*` and statement import? Define router, runtime, authentication/session, and middleware changes. Include normal results, damaged images, malformed AI output, repeated images, partial scan success, and proof independent of `apps/native` changes.
 
 ## Answer
 
-**นิยามว่าย้ายสำเร็จ:** `import.autoImportSlip` เป็น operation เดียวของ import API ใน `appRouter`; `POST /rpc/import/slip/auto-import` ต้องมี session และคืน `created`/`skipped` หรือ error ตามสัญญาใน tickets ก่อนหน้า. ทาง API เก่า `POST /rpc/import/slip` และ `POST /rpc/import/statement` หายไป (404) และไม่มี route public สำหรับอ่านสลิปหรือ statement. งานรอบนี้ส่งต่อเป็นแผนลงมือ migrate; ยังไม่แก้ implementation.
+### Migration completion
 
-**หลักฐานที่ต้องผ่านก่อนรับ migration implementation**
+`import.autoImportSlip` is the only import operation in `appRouter`. `POST /rpc/import/slip/auto-import` requires a session. It returns created/skipped or errors under the earlier tickets. Old `POST /rpc/import/slip` and `POST /rpc/import/statement` return 404. No public slip/statement reading route remains.
 
-1. เพิ่มชุดทดสอบ deterministic ผ่าน `vp test` โดยใช้ภาพ JPEG/PNG fixture ขนาดเล็กที่ถูกต้อง, ภาพว่าง/เสีย/ผิดชนิด/ผิด MIME, และ Gemini response fixtures ที่ถูกต้อง, ว่าง, ข้อมูลไม่ครบ, JSON หรือ schema ผิด, `kind` ไม่รู้จัก และเกินหนึ่ง candidate. ใช้ fake Gemini แบบควบคุมผลและเวลาได้; ไม่เรียกบริการจริงใน automated gate. ตรวจผล `status`, `reason`, `transactionId`, `reasons`, `warnings`, HTTP status และ machine-readable `code` ตามที่ tickets ก่อนหน้ากำหนด ไม่ยึดข้อความ error ภาษาไทยหรือผล OCR ที่ไม่แน่นอน.
-2. Service tests ต้องพิสูจน์: ภาพและ `assetId` ถูกตรวจ **ก่อน** เรียก Gemini; `created` มีรายการเดียวด้วย `source: "slip"`, `categoryId: null`, `slipImageUri: null` และ `dedupeKey: slip:<assetId>`; ชื่อว่างใช้ชื่อสำรองพร้อม warning; `issues` เป็น warning ไม่กันบันทึก; ไม่มี candidate หรือ candidate ขาดวันที่/ยอดเป็น `skipped` พร้อมเหตุผลและไม่เขียน DB; AI ผิดรูป/ส่งหลาย candidate เป็น `AI_INVALID_RESPONSE` และไม่เขียน DB; AI/DB ล้มเหลวเป็น error ไม่ใช่ `skipped`. ทดสอบ input/error matrix ทั้ง 400, 401, 413, 415, 429, 5xx และ 504 รวม `Retry-After` ของ `BUSY`/`AI_RATE_LIMITED`.
-3. ทดสอบผ่าน Hono → RPC → `protectedProcedure` ด้วย session ผู้ใช้ทดสอบ: ไม่มี session ได้ 401; request ใช้ `userId` จาก session เท่านั้น; old routes ได้ 404; body จริงเกิน 14 MiB ได้ `PAYLOAD_TOO_LARGE` ก่อน parse; header `Cache-Control: no-store` และ `X-Content-Type-Options: nosniff` ยังอยู่; ไม่มี base64, key หรือ raw AI response หลุดไปใน error body/log. ทดสอบ startup ล้มเหลวเมื่อ Gemini config ขาด/ผิดรูป และตรวจว่า runtime ใช้ config จาก Layer ไม่ผ่าน request context.
-4. ใช้ **MongoDB สำหรับทดสอบที่แยกจากข้อมูลจริง** เป็น gate ของ persistence: สร้างครั้งแรกสำเร็จ; ส่ง `assetId` เดิมซ้ำได้ `skipped: duplicate` โดยไม่สร้างเพิ่มหรือเรียก Gemini; แถวที่ soft-delete แล้วยังกันซ้ำ; `assetId` เดียวกันของคนละผู้ใช้เป็นคนละ identity; ต่าง `assetId` แต่ข้อมูลธุรกรรมเหมือนกันไม่ถูกข้ามจากการเดา; คำขอแข่งกันด้วย key เดียวกันสร้างได้เพียงหนึ่งรายการและอีกคำขอได้ duplicate; unique conflict ที่ตรวจแล้วไม่พบ key เดิมเป็น persistence error; เขียนสำเร็จแต่คำตอบสูญหายแล้ว retry ด้วย key เดิมไม่สร้างซ้ำ. Fake Ledger ไม่ใช้แทนหลักฐาน unique constraint/race นี้.
-5. ทดสอบคิวและเวลาแบบควบคุม clock/SDK: Gemini ทำพร้อมกันไม่เกิน 2, รอ FIFO ได้อีก 2, คำขอที่ 5 หรือรอเกิน 10 วินาทีได้ `BUSY`, การยกเลิกคืน permit/ที่คิว, timeout 110/140 วินาทีแยก `AI_TIMEOUT`/`IMPORT_TIMEOUT`, SDK ไม่ retry เอง, และหลังเริ่มเขียน DB แล้วไม่มี timeout ที่ทำให้รายงานผลเท็จ. สำหรับหลายภาพ ให้ยิงคำขออิสระ 3 รูป เช่น `created`, `skipped`, AI/DB error; ยืนยันรายการที่สร้างแล้วคงอยู่, ไม่มี rollback ข้ามรูป และผลต่อรูปใช้คำนวณสร้าง/ข้าม/ล้มเหลวได้. ไม่ต้องเรียก `apps/native` เพื่อพิสูจน์ API นี้.
-6. ผ่าน `vp check`, `vp test`, `vp run --filter @moojot/api check-types`, `vp run --filter server check-types` และ `vp run --filter server build` พร้อมผลทดสอบ MongoDB ข้างต้น. ทำ live smoke กับ Gemini ด้วยบัญชี/ข้อมูลทดสอบเพื่อสังเกตผลและ config หลัง deploy แต่ **ไม่ใช้เป็น gate อัตโนมัติ** เพราะเครือข่าย, quota และผลโมเดลเปลี่ยนได้. บันทึกผล live smoke แยกจาก fixture gate.
+This round hands over a migration plan. Implementation remains unchanged at this point.
 
-**ลำดับตัดระบบเดิมใน implementation รอบถัดไป**
+### Evidence required before accepting implementation
 
-- เปลี่ยน `packages/api/src/features/index.ts` ให้ชี้ `features/import/import.route.ts` และประกอบ Import/Gemini/config Layer ใน `createAppRuntime` ที่ server สร้างครั้งเดียว. ย้าย Gemini key/model จาก oRPC `Context` ไป server configuration ตอน startup; เอา `geminiApiKey` ออกจาก `packages/api/src/context.ts` และ `apps/server/src/context.ts`.
-- เอา session bypass ของ `/rpc/import/slip` และ `/rpc/import/statement` ออกจาก `apps/server/src/context.ts`; เอา `/rpc/import/**` ออกจาก evlog auth-exclusion เพื่อให้ endpoint ใหม่ผูกผู้ใช้ที่เข้าสู่ระบบ. คง CORS สำหรับ native dev, no-store/nosniff สำหรับ import path และย้าย Hono body limit 14 MiB ไป `/rpc/import/slip/auto-import`; เอา limit 28 MiB ของ statement ออก. ตรวจ 401/413 ผ่าน HTTP จริง.
-- ถอด `packages/api/src/import/procedures.ts`, `gemini.ts`, `result.ts`, `types.ts` และ `pdf-parse` เมื่อไม่มี import ที่ใช้อีก; เอา `import.slip`/`import.statement` และ PDF/password/model override contract ออกจาก router/type ที่ server เปิด. คง `source: "statement"` และรายการ statement เดิมใน ledger/schema/DB ไว้เพื่ออ่านข้อมูลย้อนหลัง; การยุติ API ไม่ได้ลบประวัติผู้ใช้. ตรวจ dependency/reference ใน API/server หลังถอด และตรวจ old routes เป็น 404.
-- `apps/native` ยังอ้าง `client.import.slip`/`statement` ใน Home autoScan และหน้า import/review; **ไม่แก้ใน migration นี้** ตามขอบเขต map. จึงคาดว่า `vp run --filter native check-types` และ repo-wide `vp run check-types` ไม่ผ่านหลังถอด operation เก่า และ client ที่ติดตั้งอยู่เรียก import ไม่สำเร็จชั่วคราว. บันทึกเป็น incompatibility ที่ทราบชัดและส่งต่อการปรับ native เป็นงานถัดไป; ห้ามรายงานว่า checks ทั้ง repo ผ่าน. เกณฑ์รับ API migration คือ API/server gates ข้างต้นผ่านโดยไม่แตะ native.
+#### 1. Deterministic fixtures and outcome fields
 
-ไม่มี fog ใหม่ที่ต้องสร้าง ticket เพิ่มก่อนส่งต่อ implementation; การปรับ native และการรองรับ statement/PDF ถูกวางไว้นอกขอบเขตใน map แล้ว.
+Add deterministic tests through `vp test`.
+
+- Use small valid JPEG/PNG fixtures and empty, damaged, unsupported, or mismatched-MIME images.
+- Gemini fixtures cover valid, empty, incomplete, malformed JSON/schema, unknown `kind`, and multiple candidates.
+- Use controllable fake Gemini and time instead of live services in the automated gate.
+- Assert `status`, `reason`, `transactionId`, `reasons`, `warnings`, HTTP status, and machine-readable `code`.
+- Use the earlier contracts rather than Thai messages or uncertain OCR output.
+
+#### 2. Service outcomes and error matrix
+
+Prove image and `assetId` checks occur **before** Gemini.
+
+- A `created` result has one row with `source: "slip"`, `categoryId: null`, `slipImageUri: null`, and `dedupeKey: slip:<assetId>`.
+- Blank titles receive fallback/warning. AI `issues` remain nonblocking warnings.
+- Absent or incomplete candidates return `skipped` with reasons without persistence.
+- Malformed/multiple candidates return `AI_INVALID_RESPONSE` without persistence. AI/database failures remain errors rather than `skipped`.
+- Cover 400, 401, 413, 415, 429, 5xx, and 504.
+- Cover `Retry-After` for `BUSY`/`AI_RATE_LIMITED`.
+
+#### 3. HTTP, authentication, headers, and configuration
+
+Test Hono → RPC → `protectedProcedure` with a test user's session.
+
+- Missing session returns 401. The request uses `userId` only from the session.
+- Old routes return 404.
+- Actual bodies over 14 MiB return `PAYLOAD_TOO_LARGE` before parsing.
+- Retain `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
+- Errors/logs exclude base64, keys, and raw AI output.
+- Missing/malformed Gemini configuration prevents startup.
+- Runtime configuration comes from a Layer rather than request context.
+
+#### 4. Database identity and races
+
+Use **test MongoDB isolated from real data** as the persistence gate.
+
+- Prove first creation.
+- Prove repeated `assetId` values return `skipped: duplicate` without another row/Gemini call.
+- Prove duplicate protection after soft deletion.
+- Identical `assetId` values across users remain separate.
+- Different `assetId` values with identical transaction data remain independent.
+- Concurrent same-key requests create one row. The other request returns duplicate.
+- A unique conflict without the matching key returns persistence error.
+- Retry after a lost post-commit response creates no extra row.
+
+Fake Ledger cannot replace evidence for unique constraints or races.
+
+#### 5. Queue, deadlines, cancellation, and independent images
+
+Control clock/SDK for these cases:
+
+- Gemini permits at most 2 active calls and 2 FIFO waiters.
+- The fifth request or wait over 10 seconds returns `BUSY`.
+- Cancellation releases permit/queue space.
+- The 110/140-second timeouts distinguish `AI_TIMEOUT`/`IMPORT_TIMEOUT`.
+- SDK retries stay disabled.
+- Persistence cannot cause misleading timeout reports.
+
+Send 3 independent images with `created`, `skipped`, and AI/database-error results.
+
+- Saved transactions remain.
+- Rollback never crosses images.
+- Per-image results support created/skipped/failed counts.
+
+This API proof does not require `apps/native`.
+
+#### 6. Acceptance gates and live smoke
+
+Pass these gates:
+
+- `vp check`.
+- `vp test`.
+- `vp run --filter @moojot/api check-types`.
+- `vp run --filter server check-types`.
+- `vp run --filter server build`.
+- The MongoDB evidence above.
+
+After deployment, use a test account/data for live Gemini smoke checks of output and configuration.
+Record live smoke separately from fixture gates.
+Live smoke is not an automated gate because network, quota, and model output vary.
+
+### Retirement sequence for the next implementation round
+
+- Point `packages/api/src/features/index.ts` to `features/import/import.route.ts`. Compose Import/Gemini/configuration Layers in `createAppRuntime` once at server startup. Move Gemini key/model from oRPC `Context` to server startup configuration. Delete `geminiApiKey` from `packages/api/src/context.ts` and `apps/server/src/context.ts`.
+- Delete session bypasses for `/rpc/import/slip` and `/rpc/import/statement` from `apps/server/src/context.ts`. Delete `/rpc/import/**` from evlog authentication exclusions so the new endpoint identifies authenticated users. Preserve native development CORS and import no-store/nosniff. Move the Hono 14 MiB body limit to `/rpc/import/slip/auto-import`. Delete the 28 MiB statement limit. Check 401/413 through actual HTTP.
+- Retire `packages/api/src/import/procedures.ts`, `gemini.ts`, `result.ts`, `types.ts`, and `pdf-parse` when no remaining imports need them. Delete exposed `import.slip`/`import.statement` and PDF/password/model-override contracts from router/types. Preserve `source: "statement"` and historical statement rows in Ledger/schema/database for historical access. Retiring the API preserves user history. Check API/server dependencies and references afterward. Check old routes return 404.
+- Existing `apps/native` Home autoScan and import/review still reference `client.import.slip`/`statement`. Native changes remain outside this migration under the map's scope. Expect `vp run --filter native check-types` and repository-wide `vp run check-types` to fail after old operations retire. Installed clients temporarily cannot import.
+
+  Record the known incompatibility. Assign native adaptation to later work. Report actual repository results. API acceptance requires the API/server gates above without native changes.
+
+No new uncertainty requires another ticket before implementation. Native adaptation and statement/PDF support already fall outside the map's scope.

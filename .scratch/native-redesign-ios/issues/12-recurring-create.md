@@ -1,26 +1,28 @@
-# 12: ตั้งกฎจดซ้ำและจดย้อนตามกำหนด
+# 12: Create recurring rules and generate due entries
 
-**What to build:** ตั้งรายการประจำใหม่จากหน้าแผนหรือ editor แล้วเห็นวันที่แรก/ถัดไป รายการที่ถึงกำหนด และความเชื่อมโยงกับกฎโดยไม่จด original ซ้ำ
+**What to build:** Create recurring transactions from Plan/editor. Show first/next dates, due entries, and rule links without duplicating the original.
 
-**Blocked by:** 11 — [เพิ่มและเลือกบัตร](11-first-card.md)
+**Blocked by:** 11 — [Add and select the first card](11-first-card.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 75–80, 83
 
-**Why blocked:** ใช้ตัวเลือกธนาคาร/บัตรกับ editor ที่ครบจากงานเพิ่มและเลือกบัตร
+**Why blocked:** This needs completed bank/card choices and editor integration from ticket 11.
 
-- [ ] ฟอร์ม type/title/amount/day1–31/end month หรือ forever/category/tags/bank/card/note ใช้ controls และ validation ตามดีไซน์ (story 75)
-- [ ] Day 29–31 capped เดือนสั้นและแสดง first/next due จริง ไม่ใช้ accounting month start เปลี่ยนวันครบกำหนด (stories 76, 77)
-- [ ] สร้างกฎใหม่ backfill เฉพาะช่วง start/end ถึงวันนี้และแสดง created count จากระบบจริง Retry หลัง partial save ไม่สร้างกฎ/รายการซ้ำ (story 78)
-- [ ] สร้างจาก existing entry เริ่มหลังวัน original และผูก ID เดิม; draft ที่ได้รายการจากกฎแล้วไม่ save manual ซ้ำ (story 79)
-- [ ] รายการที่สร้างรักษา bank/card/category/tags/note และ identity ต่อ rule+due date (story 80)
-- [ ] ขยาย schedule representation ให้รองรับผลมีผลครั้งถัดไปและช่วงหยุดในงานถัดไป โดยรักษา callers/กฎเดิมให้ทำงานได้
-- [ ] กฎที่ active สร้างวันที่ถึงกำหนดเมื่อกลับเข้าแอปพร้อมทำงาน ภายใน start/end ไม่ถือ app inactivity เป็น pause (story 83)
-- [ ] ตรวจ API generation/dedupe/fixtures leap month และ editor→rule→generated entry บน iOS
+- [ ] Use designed controls/input rules for type/title/amount/day 1–31/end month or forever/category/tags/bank/card/note. (story 75)
+- [ ] Cap days 29–31 in short months. Show actual first/next dates. Accounting month start must not shift due dates. (stories 76, 77)
+- [ ] New rules generate only due dates within start/end through today. Report actual created count. Retry after partial save creates no duplicate rules/entries. (story 78)
+- [ ] Rules from existing entries start after the original date and retain its ID link. Rule-generated drafts exclude another manual save. (story 79)
+- [ ] Generated entries preserve bank/card/category/tags/note and rule+due-date identity. (story 80)
+- [ ] Extend schedule representation for future effective changes and pause intervals. Preserve existing callers/rules for later lifecycle work.
+- [ ] Active rules generate due dates within start/end on eligible app return. App inactivity is not pause. (story 83)
+- [ ] Check API generation/duplicate protection/leap-month fixtures and editor→rule→generated entry on iOS.
 
 ## Comments
 
-**จากงาน 04 (review):** "จดซ้ำล่วงหน้า" ใน editor ส่ง params `cardName` และ `cardLast4` ไป `/recurring-form` แล้ว (พร้อม kind/amount/title/note/occurredOn/categoryId/tagIds/bank) แต่ฟอร์มและ schema ของกฎยังไม่มีบัตร งานนี้ต้องอ่านสอง params นี้และเก็บในกฎ ธนาคารส่งเป็น identity (เช่น "KBank") ใช้ `bankDisplayName` แสดง
+**From ticket 04 review:** “จดซ้ำล่วงหน้า” (schedule recurring entry) already sends `cardName` and `cardLast4` to `/recurring-form`. Other parameters are kind/amount/title/note/occurredOn/categoryId/tagIds/bank. The form/rule schema still lacks cards.
+
+Read those two parameters. Persist them in the rule. Bank uses identity such as "KBank". Show it through `bankDisplayName`.

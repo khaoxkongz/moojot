@@ -1,30 +1,30 @@
-# ทางเลือกเริ่มข้อมูลทดลองใหม่
+# Options for fresh experimental data
 
-บันทึกทางเลือกสำหรับ [กำหนดวิธีพาข้อมูลทดลองไปสู่ระบบใหม่](../issues/05-data-transition.md) หลังผู้ใช้ยืนยันว่าข้อมูลเดิมเป็นข้อมูลทดลองและเริ่มใหม่ได้ ยังไม่ใช่ข้อตกลงเรื่องวิธีเริ่มใหม่ และยังไม่มีการแก้ฐานข้อมูล
+Preparation for [the transition decision](../issues/05-data-transition.md), after the user accepted a fresh experimental dataset. These options were not yet an agreed method. No database changes occurred.
 
-## ข้อเท็จจริงที่ตรวจพบ
+## Findings
 
-- `FinanceTransaction`, `FinanceRecurringRule`, `FinanceBudget`, `FinanceCategory`, `FinanceTag`, `FinanceSetting` แยกข้อมูลตาม `userId` ใน [finance.prisma](../../../packages/db/prisma/schema/finance.prisma)
-- `resetUserData` ใน [preferences.service.ts](../../../packages/api/src/features/finance-preferences/preferences.service.ts) ลบข้อมูลการเงินของผู้ใช้ที่เข้าสู่ระบบ รวมรายการ กฎจดซ้ำ งบ แท็ก หมวดที่สร้างเอง และ settings ทั้งหมดใน transaction เดียว คงหมวดพื้นฐานและบัญชีเข้าสู่ระบบไว้
-- Settings ที่ถูกลบรวม onboarding flags, วันเริ่มเดือน, ปฏิทิน, consent และ recent searches จึงต้องเขียนขั้นตอนเริ่ม onboarding ใหม่หรือคืนค่าที่ตั้งใจรักษาให้ชัด
-- มือถือมีข้อมูลผลอ่าน รูปที่ผูกกับรายการ และ query cache แยกจาก server; ต้องจัดการเป็นชุดเดียวกับการรีเซ็ตบัญชีที่เลือก ตรวจ caller เดิมที่ `settings/account.tsx` และ `slipScanSession.forget` ก่อนกำหนดวิธี
-- การลบรายการการเงินเก่าจะลบ identity กันซ้ำใน ledger ของชุดนั้นด้วย หากกลับมาอ่านรูปเดิมจะสร้างรายการได้อีก เพราะกำลังเริ่มสมุดข้อมูลใหม่ นี่เป็นผลที่คาดไว้ ไม่ควรใช้ความจำรูปเก่าห้ามนำเข้าชุดข้อมูลใหม่
-- การสร้าง schema/ดัชนีและการตรวจผลของข้อมูลใหม่ต้องใช้ผลจาก “ตรวจช่องว่างข้อมูลและ API ที่ดีไซน์ใหม่ต้องใช้” ก่อนสรุปคำสั่ง cutover
+- `FinanceTransaction`, `FinanceRecurringRule`, `FinanceBudget`, `FinanceCategory`, `FinanceTag`, and `FinanceSetting` separate users through `userId`. See [finance.prisma](../../../packages/db/prisma/schema/finance.prisma).
+- `resetUserData` in [preferences.service.ts](../../../packages/api/src/features/finance-preferences/preferences.service.ts) deletes the signed-in user's finance data in one transaction. It deletes entries, recurring rules, budgets, tags, user-created categories, and all settings. It preserves base categories and login data.
+- Deleted settings include onboarding flags, month start, calendar, consent, and recent searches. Define fresh onboarding or restoration of deliberately retained settings.
+- Mobile outcome memory, linked images, and query cache are separate from the server. Coordinate them with the selected account reset. Inspect existing `settings/account.tsx` callers and `slipScanSession.forget` before choosing the method.
+- Deleting finance entries also deletes their ledger deduplication identities. Rereading old images can create entries in a fresh ledger. This is an expected result. Old image memory should not block filling the fresh dataset.
+- Schema/index preparation and new-data checks need the API coverage findings before final cutover commands.
 
-## ทางเลือกที่ควรเสนอหลังตรวจ API ครบ
+## Options after API coverage
 
-| ทางเลือก                                 | ผลกับผู้ใช้                                                                                  | สิ่งที่ต้องเตรียม                                                                        |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| เริ่มชุดข้อมูลใหม่ในบัญชีเข้าสู่ระบบเดิม | ใช้อีเมลและการเข้าสู่ระบบเดิมได้ รายการทดลองเก่าและ settings ที่เลือกรีเซ็ตถูกแทนด้วยชุดใหม่ | กำหนดข้อมูลที่รีเซ็ตให้ตรง แยกความจำมือถือ/query cache และตรวจ onboarding/การอ่านรูปใหม่ |
-| สร้างชุดทดลองใหม่แยกจากชุดเดิม           | เก็บข้อมูลเก่าแยกไว้ และทดลอง schema ใหม่ในฐานข้อมูลหรือบัญชีทดสอบอีกชุด                     | กำหนด environment/บัญชีที่ตรวจรับให้ชัด ป้องกันแอปชี้ข้ามชุด และวางเวลาสลับกลับ          |
+| Option                                      | User effect                                                                                    | Preparation                                                                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Fresh dataset in the existing login account | Keep the same email/login. Replace experimental entries and selected settings with fresh data. | Specify reset scope. Reset mobile memory/query cache. Check onboarding and image reading.                           |
+| Separate experimental dataset               | Preserve old data separately. Try the schema in another database or test account.              | Define the acceptance environment/account. Prevent connections to the wrong dataset. Plan the return/switch timing. |
 
-คำแนะนำตั้งต้น: เริ่มชุดข้อมูลการเงินใหม่ในบัญชีเข้าสู่ระบบเดิม หากผู้ใช้ต้องการใช้อีเมลเดิมต่อ และระบบที่ปรับสามารถเปลี่ยน schema โดยไม่กระทบชุดอื่น ตรวจขอบเขต database/environment ก่อนเลือกจริง
+Initial recommendation: use fresh finance data in the existing login account if the user wants the same email. The changed schema must not affect other datasets. Inspect database/environment scope before the final choice.
 
-## เกณฑ์ที่แผน cutover ต้องมี
+## Required cutover criteria
 
-- ระบุ account/environment ที่เกี่ยวข้องโดยไม่ใส่ credentials ลงเอกสาร
-- ระบุชนิดข้อมูลและ settings ที่จะเริ่มใหม่ กับข้อมูลบัญชีเข้าสู่ระบบที่รักษา
-- จัดลำดับ server/schema/client ให้ไม่มี client เดิมเรียก contract ใหม่ที่ใช้ไม่ได้ระหว่างทดลอง
-- จัดการ device-local slip memory และ query cache ของบัญชีเดียวกันให้ตรงกับ server
-- ตรวจเริ่ม onboarding, จดรายการใหม่, อ่านรูปซ้ำในชุดใหม่, เลือกหมวด, ยอดสรุป, จดซ้ำ และ CSV หลัง cutover
-- ให้ผู้ใช้เห็นขอบเขตจริงและขั้นตอนที่พร้อมดำเนินการก่อนลงมือรีเซ็ต
+- Identify account/environment without documenting credentials.
+- Specify reset data/settings and preserved login data.
+- Order server/schema/client changes so old clients cannot call incompatible new contracts during testing.
+- Align account-specific mobile slip memory and query cache with the server.
+- Check onboarding, new entries, old-image rereads, category selection, summaries, recurring entries, and CSV after cutover.
+- Show the actual scope and executable steps to the user before resetting.

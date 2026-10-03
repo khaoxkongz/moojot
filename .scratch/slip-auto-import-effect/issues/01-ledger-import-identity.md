@@ -1,6 +1,6 @@
-# 01: Ledger ตรวจอัตลักษณ์สลิปของผู้ใช้
+# 01: Check the user's slip identity through Ledger
 
-**What to build:** ให้ Ledger ตอบได้ว่า `slip:<assetId>` ของผู้ใช้เคยสร้าง `FinanceTransaction` แล้วหรือยัง รวมรายการที่ลบแบบ soft-delete เพื่อให้การส่งภาพซ้ำและคำขอที่แข่งกันไม่สร้างรายการเพิ่ม นี่เป็นการเตรียมทางสร้างรายการเดิมก่อนเปิด API ใหม่
+**What to build:** Let Ledger check whether the user's `slip:<assetId>` already created a `FinanceTransaction`. Include rows that Ledger marks as deleted. Repeated images and concurrent requests must not create extra transactions. Prepare the existing creation path before the new API becomes available.
 
 **Blocked by:** None (can start immediately).
 
@@ -8,7 +8,7 @@
 
 **Done in:** `aa8cc3b` Implement authenticated slip auto-import with Effect
 
-- [ ] Ledger เปิดการตรวจ identity ของผู้ใช้โดยไม่กรอง soft-deleted rows และไม่เปิดการอ่านข้อมูลข้ามผู้ใช้
-- [ ] ทางสร้าง `FinanceTransaction` เดิมยังเป็นเจ้าของการตรวจข้อมูล ผูก `userId` และใช้ unique `(userId, dedupeIdentity)` โดยไม่เปลี่ยนสัญญา Ledger ที่มีอยู่โดยไม่จำเป็น
-- [ ] ทดสอบกับ MongoDB สำหรับทดสอบที่แยกจากข้อมูลจริง: key เดิมพบได้หลัง soft-delete, key เดียวกันของคนละผู้ใช้ไม่ชนกัน, และ unique constraint ป้องกันการสร้างซ้ำเมื่อคำขอแข่งกัน
-- [ ] การเตรียม Ledger นี้ผ่าน type check ของ API และไม่เปลี่ยนพฤติกรรม import route เดิม
+- [ ] Ledger checks identity within the user's account. It includes rows that Ledger marks as deleted. It prevents access across users.
+- [ ] The existing `FinanceTransaction` creation path owns data checks and binds `userId`. It retains the unique `(userId, dedupeIdentity)` constraint. Preserve the existing Ledger contract unless a change is necessary.
+- [ ] Use an isolated test MongoDB. Check that the key remains available after soft deletion. Check that identical keys from different users remain independent. Check that the unique constraint prevents duplicates under concurrent requests.
+- [ ] The Ledger preparation passes the API type check. It preserves the behavior of the existing import routes.

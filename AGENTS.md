@@ -42,6 +42,11 @@ guide doesn't cover, search through the source code in `node_modules/effect/src`
 
 Issues and specs live as local markdown files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
 
+### Agent document workflow
+
+Before writing or reviewing `.scratch/**/*.md`, read [the document workflow](docs/agents/agent-documents.md).
+Apply both named skills and the relevant glossary. Complete the workflow reviews and run `vp run check` before reporting completion.
+
 ### Triage labels
 
 Default five roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), recorded as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.

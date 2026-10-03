@@ -1,75 +1,76 @@
-# กำหนดความหมายของบัญชี บัตร และวันเวลาของรายการ
+# Define banks, cards, dates, and transaction times
 
 Label: wayfinder:grilling
 Type: grilling
 Mode: HITL
 Status: resolved
 Assignee: Codex (/root)
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-รายการที่จดเอง รายการจากสลิป และรายการจดซ้ำจะระบุบัญชี บัตร วัน และเวลาอย่างไร เพื่อให้การเลือกบัญชี การกรอง การค้นหา หน้าบัตรเครดิต และ CSV ตามดีไซน์มีความหมายตรงกัน? ตรวจแบบข้อมูลจริงเทียบกับ `wallet`, `date`, `time` ในต้นแบบ และใช้ตัวอย่างการจ่าย รับ และย้ายเงินให้ผู้ใช้ตัดสินใจ ก่อนเลือกโครงสร้างฐานข้อมูล
-
-## Comments
-
-### ข้อเท็จจริงสำหรับคำถามแรก
-
-- `README.md` ของ handoff และ `WALLET_NAME`/`ALL_WALLETS` ในต้นแบบกำหนดตัวเลือกตามชื่อธนาคาร เช่น กสิกรไทย ไทยพาณิชย์ กรุงไทย พร้อมบัตร KTC และไม่ระบุ ยังไม่มีตัวเลือกแยกสองบัญชีของธนาคารเดียวกัน
-- `packages/db/prisma/schema/finance.prisma` เก็บ `bank` เป็นข้อความ กับ `cardName`/`cardLast4`; `walletWhere` ใน `packages/api/src/features/ledger/ledger.service.ts` กรองตามชื่อธนาคาร การตรวจนี้ยังไม่พบแบบข้อมูลบัญชีธนาคารรายบัญชีหรือยอดเงินคงเหลือ
-- รายการย้ายเงินในต้นแบบมีตัวเลือกบัญชีต้นทางหนึ่งค่า และแยกจากยอดรายรับรายจ่าย ต้องชวนคุยรายละเอียดนี้หลังความหมายของตัวเลือกธนาคารชัดเจน
-- `packages/api/src/features/import/import.schema.ts` ยังไม่มี bank/card ใน SlipCandidate ให้ตรวจเส้นทางข้อมูลจากอัลบั้มและการสร้างรายการเพิ่มเติมก่อนกำหนดว่ารายการจากสลิปจะได้ข้อมูลบัญชีอย่างไร
-
-### คำถามที่เสนอในรอบแรก
-
-สมมติมีบัญชีกสิกรไทยสองบัญชี ต้องการให้รายการรวมกันใต้ชื่อ “กสิกรไทย” ตามดีไซน์ปัจจุบัน หรือเลือกดูแต่ละบัญชีแยกกัน? แนะนำเริ่มจากการแยกตามธนาคารตาม handoff และรอคำตอบของผู้ใช้ก่อนถือเป็นการตัดสินใจ
-
-### คำตอบเรื่องการรวมตามธนาคาร
-
-- ผู้ใช้เลือกให้รวมรายการตามธนาคารไปก่อน เพราะคนในครอบครัวและคนรอบตัวยังไม่มีใครมีสองบัญชีของธนาคารเดียวกัน และถามว่าสามารถเพิ่มการรองรับในอนาคตได้หรือไม่
-- บันทึกคำศัพท์ “ธนาคารของรายการ” ใน `apps/native/GLOSSARY.md` สำหรับกลุ่มธนาคารตามขอบเขตนี้ ความหมายของบัตรและวันเวลายังเป็นคำถามเปิดของ ticket
-- การรองรับบัญชีรายบัญชีในอนาคตสามารถเพิ่มได้ โดยต้องปรับแบบข้อมูล ตัวเลือกในหน้าจอ การกรอง และทางย้ายข้อมูลตามขอบเขตตอนนั้น ให้คงความสามารถดูรวมตามธนาคารได้ด้วย
-- รายการเก่าที่มีข้อมูลธนาคารเพียงอย่างเดียวจะไม่สามารถรู้ได้แน่นอนว่าเป็นบัญชีใดในธนาคารนั้น การขยายภายหลังต้องมีทางสำหรับรายการที่ยังไม่ระบุบัญชี หรือให้ผู้ใช้เลือกจัดรายการเก่าเอง แทนการคาดเดา
-- ก่อนส่งต่อ spec ให้ระบุการรวมตามธนาคารเป็นขอบเขตปัจจุบัน และบันทึกการแยกบัญชีรายบัญชีเป็นทางขยายภายหลัง การตอบเรื่องความเป็นไปได้ไม่ใช่การเพิ่มฟีเจอร์นี้เข้า scope รอบปัจจุบัน
-
-### แก้ความเข้าใจเรื่องช่องกรอกเวลา
-
-- Agent ถามเรื่องการจดย้อนหลังโดย “ไม่ระบุเวลา” ก่อนตรวจรายละเอียดต้นแบบ ผู้ใช้ชี้ว่าดีไซน์ไม่มีให้บันทึกเวลา ข้อเสนอในคำถามนั้นยังไม่ได้รับการยอมรับและไม่ใช้เป็นข้อตกลง
-- ตรวจซ้ำแล้ว `README.md` แถววันที่ และหน้าจดรายการใน HTML มีเพียงปฏิทินเลือกวันที่ draft และ `pickDate` เปลี่ยน `occurredOn` โดยไม่มี control สำหรับเลือกเวลา ให้ยึด UI นี้ตามดีไซน์ที่ผู้ใช้ยอมรับ
-- ต้นแบบใช้ `nextTime` สร้างเวลารายการจดเองสำหรับข้อมูลจำลอง: เริ่ม 12:00 หรือบวก 4 นาทีจากเวลาล่าสุดของวัน ไม่ใช่เวลาทำรายการจริง จึงใช้ logic นี้เป็นข้อกำหนดหลังบ้านไม่ได้
-- เวลาแสดงอยู่ในข้อมูลสลิปและ CSV ให้ตรวจแหล่งข้อมูลจริงและความหมายของเวลาในผลแสดงเหล่านั้นเป็นงานทางเทคนิคก่อนเสนอพฤติกรรมแก่ผู้ใช้ ข้อมูลเวลาในต้นแบบไม่ได้แปลว่าต้องมีช่องให้ผู้ใช้กรอก
-
-### ความหมายที่สืบทอดจากดีไซน์และช่องว่างของระบบเดิม
-
-- วันรายการ: จดเองเลือกวันที่ สลิปใช้วันที่อ่านได้ และจดซ้ำใช้วันครบกำหนด ตาม UI ที่ผู้ใช้ยอมรับ
-- บัตร: ใช้ชื่อบัตรและเลขท้ายสี่หลักตามหน้า “บัตรเครดิตของฉัน” และการค้นพบบัตรจากรายการ ระบบเดิมมีการจัดกลุ่มแบบนี้ใน `analytics.service.ts` อยู่แล้ว
-- จดซ้ำต้องรักษาธนาคารหรือบัตรที่เลือกตามต้นแบบ เช่น Netflix ผ่านบัตร KTC; `planning.service.ts` ปัจจุบันส่ง bank แต่ตั้ง cardName/cardLast4 เป็น null ตอนสร้างรายการ จึงมีงานปรับสัญญาข้อมูลใน spec
-- ย้ายเงินเลือกต้นทางหนึ่งค่าและไม่นับในรายรับรายจ่ายตาม handoff ไม่มีเหตุให้เพิ่มบัญชีปลายทางหรือระบบยอดคงเหลือในรอบนี้
-- “ไม่ระบุ” ในตัวเลือกหมายถึงไม่มีธนาคารหรือบัตรที่เลือก ต้องปรับ filter เดิมที่นำรายการ source manual ทั้งหมดเข้า “อื่น ๆ” แม้มีธนาคารระบุแล้ว
-- `scan-session.ts` ส่งภาพและ asset ID โดยไม่มีชื่ออัลบั้มหรือเวลารูป ส่วน candidate ปัจจุบันไม่มีธนาคาร บัตร หรือเวลาทำรายการจริง ให้ตรวจทางเติมข้อมูลเหล่านี้จากแหล่งที่เชื่อถือได้ใน spec
-- `SlipSourceCard` เดิมรวมวันรายการกับเวลาจาก createdAt ซึ่งเป็นเวลาบันทึกบน server จึงไม่ใช่หลักฐานเวลาทำรายการตามสลิป; CSV ทั้ง native และ server ยังไม่มีคอลัมน์เวลา
-
-### ประเด็นเปิดที่เหลือเรื่องเวลาในไฟล์ส่งออก
-
-Handoff กำหนดคอลัมน์ “เวลา” ใน CSV แต่ไม่กำหนดว่าจะใช้ข้อมูลใดสำหรับรายการจดเองและจดซ้ำที่มีเพียงวันที่ Agent เสนอให้เว้นช่องนี้ว่างเมื่อไม่มีเวลาทำรายการจริง และใช้เวลาบันทึกแยกต่างหากสำหรับข้อความ “จดล่าสุด” รอคำตอบผู้ใช้เรื่องผลในไฟล์ส่งออก โดยคง UI เลือกวันที่ตามเดิม
+How do manual, slip, and recurring entries identify banks, cards, dates, and times? Account selection, filters, search, credit-card screens, and CSV must share these meanings. Compare the actual model with prototype `wallet`, `date`, and `time`. Discuss expense, income, and transfer examples before choosing database structures.
 
 ## Answer
 
-### ข้อตกลงกับผู้ใช้
+### User agreements
 
-- รวมรายการตามธนาคารในรอบนี้ตามคำตอบผู้ใช้ การแยกหลายบัญชีของธนาคารเดียวกันเป็นทางขยายภายหลัง; รายการเก่าที่ไม่มีข้อมูลบัญชีรายบัญชีต้องคงกลุ่มธนาคารหรือให้ผู้ใช้จัดแยกเอง
-- หน้าจดรายการใช้ตัวเลือกวันที่ตามดีไซน์ ไม่มีช่องกรอกเวลาเพิ่มเติม
-- ผู้ใช้เห็นด้วยว่า เมื่อรายการรู้เพียงวันที่ ให้เว้นคอลัมน์ “เวลา” ในไฟล์ส่งออกว่างไว้ ใช้เวลาทำรายการจริงเมื่อมีข้อมูลที่เชื่อถือได้ และไม่ใส่เวลาสมมติจากต้นแบบหรือเวลาบันทึกแทน
+- Group entries by bank in this round. Separate accounts at one bank are a future extension. Old entries without account identity retain bank grouping or require user assignment.
+- Manual entry retains the design's date selector, with no additional time input.
+- The user approved blank CSV “เวลา” (time) for date-only entries. Use actual transaction time when a trusted source provides it. Do not substitute prototype times or recording times.
 
-### ความหมายที่รับตามดีไซน์ที่ผู้ใช้เลือก
+### Meanings inherited from the approved design
 
-- บัตรของรายการระบุด้วยชื่อบัตรและเลขท้ายสี่หลัก การจดซ้ำต้องรักษาธนาคารหรือบัตรที่เลือก
-- วันรายการของรายการจดเองมาจากวันที่เลือก สลิปมาจากวันที่อ่านได้ และจดซ้ำมาจากวันครบกำหนด
-- เวลาบันทึกเป็นคนละความหมายกับเวลาทำรายการ ใช้ข้อมูลการบันทึกสำหรับข้อความ “จดล่าสุด” และจัดการหลักฐานเวลาทำรายการตามแหล่งข้อมูลจริง
-- ย้ายเงินเลือกต้นทางหนึ่งค่าและแยกจากยอดรายรับรายจ่ายตาม handoff
-- “ไม่ระบุ” หมายถึงไม่มีธนาคารหรือบัตรที่ระบุ รายการจดเองที่เลือกธนาคารแล้วต้องอยู่ในกลุ่มธนาคารนั้น
+- A card uses its name and last four. Recurring entries preserve the selected bank/card.
+- Manual transaction dates come from selection, slip dates from extraction, and recurring dates from due dates.
+- Recording time differs from transaction time. Use recording data for “จดล่าสุด” (last recorded). Handle transaction-time evidence according to its actual source.
+- Transfers select one source and stay outside income/expense totals.
+- “ไม่ระบุ” (unspecified) means no identified bank/card. A manual entry with a bank belongs to that bank's group.
 
-### ผลต่อการวางแผน
+### Planning consequences
 
-- ตรวจช่องว่างของ API/ฐานข้อมูลและทางเติมธนาคาร บัตร และเวลาทำรายการจริงก่อนแตกงาน รวมการแก้ข้อมูลบัตรในรายการจดซ้ำ ตัวกรอง “อื่น ๆ” และ CSV ทั้งสองทาง ตามหลักฐานใน Comments
-- การเลือก representation ของข้อมูลและการย้ายข้อมูลเป็นงานวางแผนขั้นถัดไป ข้อนี้กำหนดความหมายและผลที่ผู้ใช้เห็น โดยคง controls ตามดีไซน์
+- Inspect API/database gaps and trusted sources for bank, card, and actual transaction time before creating tickets.
+- Include recurring-card fixes, “อื่น ๆ” (other) filters, and both CSV paths, using the evidence in Comments.
+- Data representation and transition are later planning work. This decision defines meanings and visible results while preserving design controls.
+
+## Comments
+
+### Initial facts
+
+- Handoff `README.md` and prototype `WALLET_NAME`/`ALL_WALLETS` group choices by bank. Examples: “กสิกรไทย” (Kasikornbank), “ไทยพาณิชย์” (Siam Commercial Bank), “กรุงไทย” (Krungthai), KTC card, and unspecified. They do not distinguish two accounts at one bank.
+- `packages/db/prisma/schema/finance.prisma` stores textual `bank`, `cardName`, and `cardLast4`. `walletWhere` in `packages/api/src/features/ledger/ledger.service.ts` filters bank names. Inspection found no individual-bank-account or balance model.
+- Prototype transfers select one source account and stay outside income/expense totals. Discuss this after clarifying bank choices.
+- `packages/api/src/features/import/import.schema.ts` has no bank/card fields in SlipCandidate. Inspect album and entry-creation data before defining slip account identification.
+
+### First proposed question
+
+Suppose the user has two Kasikornbank accounts. Should entries share “กสิกรไทย” (Kasikornbank), or should each account have a separate view? The agent recommended bank grouping from the handoff. This remained a proposal until the user answered.
+
+### Answer about bank grouping
+
+- The user chose bank grouping for now. Family and nearby users currently have no two accounts at one bank. The user asked whether separate accounts could come later.
+- The agent recorded “ธนาคารของรายการ” (transaction bank) in `apps/native/GLOSSARY.md` for this grouping. Card and date/time meanings remained open then.
+- Future individual accounts are possible. That extension requires changes to the model, UI choices, filters, and data transition. Preserve bank-wide views too.
+- Old bank-only entries cannot reliably identify their individual account. Future changes must retain unspecified accounts or let users assign old entries. Do not guess.
+- The spec must identify bank grouping as current scope. Individual accounts are a later extension. Discussing feasibility does not add them to this round.
+
+### Correction about time input
+
+- The agent asked about backdated entries without a time before inspecting the prototype. The user pointed out that the design has no time input. The proposal received no approval and is not an agreement.
+- Reinspection found only date selection in `README.md` and the HTML entry screen. Draft selection and `pickDate` change `occurredOn` without a time control. Preserve this approved UI.
+- Prototype `nextTime` generates simulated manual-entry times. It starts at 12:00 or adds 4 minutes to that day's latest time. These are not actual transaction times. They cannot define backend behavior.
+- Slip data and CSV display time. Inspect actual sources and meanings before proposing behavior. Prototype time data does not require user time input.
+
+### Design meanings and existing gaps
+
+- Manual entries use the selected date. Slips use the extracted date. Recurring entries use the due date. These follow the approved UI.
+- Cards use name and last four, following “บัตรเครดิตของฉัน” (my credit cards) and discovery from entries. `analytics.service.ts` already groups them this way.
+- Recurring rules must preserve the chosen bank/card, such as Netflix through KTC. `planning.service.ts` passes bank but sets cardName/cardLast4 to null when creating entries. The spec needs a contract change.
+- Transfers select one source and stay outside income/expense totals. This round needs no destination-account or balance system.
+- “ไม่ระบุ” (unspecified) means no chosen bank/card. The old filter places all manual-source entries under “อื่น ๆ” (other), even when they identify a bank. Fix this filter.
+- `scan-session.ts` sends images and asset IDs without album names or photo times. Candidates lack bank, card, and actual transaction time. The spec must inspect trusted sources for these fields.
+- Existing `SlipSourceCard` combines transaction date with createdAt. That is server recording time, not slip evidence of actual transaction time. Native and server CSV currently lack a time column.
+
+### Remaining CSV-time question at that point
+
+The handoff specifies CSV “เวลา” (time), but does not define it for date-only manual or recurring entries. The agent proposed an empty cell without actual transaction time. Recording time would separately support “จดล่าสุด” (last recorded). This proposal awaited the user while preserving date-only UI.

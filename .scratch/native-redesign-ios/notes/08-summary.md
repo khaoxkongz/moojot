@@ -1,48 +1,104 @@
 # Notes from ticket 08 (Summary)
 
-## For later tickets
+## Summary month and navigation
 
-- **Summary month** (`features/summary/summary.ts`): `summaryMonth(today, offset, monthStartDay)` returns `{ periodKey, from, to, title, overviewTitle, isCurrent }`. Summary always counts by month, even when Home shows a week or fortnight. Title is "กันยายน 2569", plus " · 25 ก.ย. – 24 ต.ค." when the month does not start on the 1st (prototype `monthTitle`). `longThaiMonth` joins `shortThaiMonth` in `utils/format.ts` (fixed names, no `Intl`). The Plan screen (10) can use `summaryMonth` for its own month title. `utils/dates.ts` also has `periodKeyParts` ("2026-09" → `{ year, month }`) and `nextMonthOffset` (one month later, never past the current one; Summary's and the plan's next arrows use it).
-- **Opening months**: Home's ดูสรุป still passes `date` (ticket 05). Summary's วางแผนงบ pushes `/plan` with `params: { periodKey }`; `plan.tsx` opens on that month through `periodKeyOffset(currentKey, target)` (`utils/dates.ts`, 0 for a later or malformed key) and its arrows take over. Ticket 10 keeps this param when it redesigns the plan.
-- **Analytics contract changes** (additive, `analytics.service.ts`):
-  - `getCategoryBreakdown` items carry `pendingIds`: the ids of the group without a category, newest first in Home's order (`occurredOn desc, createdAt desc, id desc`), empty for other groups. Summary's ยังไม่เลือกหมวด row pushes `/pending-categories` with them, so the queue covers exactly that month, kind and wallet filter.
-  - `getTagBreakdown` items carry `percentage`: share of the kind's whole (filtered) total, not of the tag totals. An entry with two tags counts in both, so shares may pass 100% together. The `null` (ไม่มีแท็ก) group is still returned; Summary leaves it out of the bars.
-  - `getPeriodSummary` (and each `getMonthlyTrend` month) carries `transferCount`, used for the ย้ายเงิน row's "N รายการ".
-- **Rows and trend**: `summaryOverview`, `summaryRows`, `summaryEmpty`, `summaryQuestion`, `summaryTrend` and `planRowSubtitle` hold the prototype's copy and numbers. Category and tag bars both take the server's `percentage` (share of the kind's filtered total) as their width, at least 2% wide; trend bars are 4–100 tall in a 150 chart, values in whole baht (`formatBaht(total, 0)`, "–" for none), labels from `shortThaiMonth` (the server's `Intl` label is ignored). Comparison copy: "ใช้มากกว่าเดือนก่อน 1,000 ฿ (25%)", "…เท่ากับเดือนก่อน", and, when the month before has none of the kind on screen, "เดือนก่อนยังไม่มีรายจ่าย/รายรับ/ย้ายเงินให้เปรียบเทียบ" (the prototype says "ยังไม่มีรายการ", which is wrong when that month had entries of another kind), with MDI `arrow-up`/`arrow-down`/`equal`/`information-outline`. `amountLabel` (satang only when there are some) is exported for the kind total above the bars.
-- **Budgets on Summary**: the วางแผนงบ row reads `planning.getBudgetStatuses(periodKey)` with no wallet filter (budgets keep their own scope, spec). While a wallet filter is on, `planRowSubtitle(statuses, { walletFiltered: true })` ends with " · นับทุกบัญชี", so the budget count under "สรุปเฉพาะบัญชีและบัตรที่เลือก" does not read as filtered; with no budgets the invitation stays as it is. `planRowSubtitle` uses the prototype's rule: over only when spent is **more** than the limit, near at the warning percent. The server's `isOverLimit` still says over at exactly the limit (`percentUsed >= 100`), so the Plan screen can disagree at that one point until ticket 10 fixes it (its second checkbox).
-- **Maestro**: `apps/native/.maestro/08-summary.yaml` saves one KBank 42 ฿ entry, opens Summary from Home, walks tabs/modes/previous month/filter, picks a category from the pending group's queue, opens the plan from the previous month, and deletes its entries at the end (its loops also clean rows a stopped run left). The plan screen's back button is labelled with the route name "(insights)/summary"; the flow taps that (ticket 10 restyles the plan header).
-- Tests: `apps/native/features/summary/summary.test.ts` (month bounds and titles with custom start and year change, overview net label, category/tag/transfer rows, empty copy, trend bars and comparison per kind, plan row subtitle with spent equal to the budget and under a wallet filter), `apps/native/utils/dates.test.ts` (plan link offset, next-month clamp) and `apps/server/test/summary.test.ts` (custom month start totals and transfer count, six-month trend by custom bounds under a filter, multi-tag shares of the kind total, pending ids within month/kind/filter and the queue pick read back by the bars).
+`features/summary/summary.ts` exports `summaryMonth(today, offset, monthStartDay)`. It returns `{ periodKey, from, to, title, overviewTitle, isCurrent }`. Summary remains monthly when Home is weekly/fortnightly.
 
-## Seams
+Title is “กันยายน 2569” (September 2569). Non-first-day months add “ · 25 ก.ย. – 24 ต.ค.” (25 September–24 October), under prototype `monthTitle`. Fixed `longThaiMonth`/`shortThaiMonth` in `utils/format.ts` replace `Intl` labels. Plan 10 can reuse `summaryMonth`.
 
-No user was available to confirm seams, so the ones tickets 04 and 05 used were kept: pure native modules (`features/summary/summary.ts`, `periodKeyOffset`) tested directly, and native modules → authenticated oRPC → Analytics/Ledger → MongoDB in `apps/server/test`. The screen is checked on the simulator, not in tests.
+`utils/dates.ts` provides `periodKeyParts`, mapping "2026-09" to `{ year, month }`, and `nextMonthOffset`. Next advances one month but never past current month. Summary/Plan arrows share it.
 
-## Design pass against the HTML prototype
+Home “ดูสรุป” (view summary) still passes `date` from ticket 05. Summary “วางแผนงบ” (plan budget) pushes `/plan` with `params: { periodKey }`. `plan.tsx` opens that month through `periodKeyOffset(currentKey, target)` in `utils/dates.ts`. Later/malformed targets use 0. Plan arrows continue from there. Ticket 10 retains this parameter.
 
-Checked against `Moojot Home.dc.html` block `03 สรุป` (lines ~1447–1569) and the script (`openSummary`, `sumShift`, the `sp`/`sumRows`/`trendBars`/`compareText` block ~3546–3584, `planRowSub` ~3354/3394, `monthTitle`). Design shots: `design-shots/08-summary{,-bottom,-tags,-income,-transfer,-previous,-filtered,-queue}[-dark].png` (script `capture/08-summary.mjs`). App captures: `08-app-<state>[-dark].png` next to this file.
+## Additive Analytics contracts
 
-What matches: 52 title bar with 44 back (MDI chevron 30) and 44 `raised` wallet button (inset `accent` ring while filtered or open), month nav with 44 `accentText` chevrons (26) and a 15 title (min 140), next disabled at 0.35 on the current month, filter notice row "สรุปเฉพาะบัญชีและบัตรที่เลือก / ล้าง", accent overview card (radius 20, 16/18/18 padding, 15 title, 14 labels with 17 amounts, rule at 0.3, net label 15 + "ได้รับ − ใช้ไป" 12, 32 net at 500 with 18 ฿), surface card radius 20 with `raised` inset ring, 3-way segment (radius 12/9, 40 tall, selected `surface` with segment shadow), 16 question + total, 34-tall mode chips (`inverse` when on) in 44 touch rows, bar rows (36 icon circle, 15 name/amount, 6 bar on `raised`, `accent` fill, 12 meta, divider from 48), pending row (dashed `accent` circle with pencil, `accentText` name/meta, `border` bar, chevron 22), empty copy, transfer note, trend card (16 title, 14 muted comparison with 18 icon, 150 chart, 32-wide bars radius 6/2, current `accent`/`accentText`, others `border`/`muted`, 11 values), วางแผนงบ row (64 tall, radius 16, 36 `raised` circle with MDI target).
+`analytics.service.ts` extends existing results:
 
-Deliberate differences:
+- `getCategoryBreakdown` adds `pendingIds` for uncategorized groups, empty for other groups. IDs follow Home's newest-first `occurredOn desc, createdAt desc, id desc` order.
+- Summary's “ยังไม่เลือกหมวด” (uncategorized) opens `/pending-categories` with those IDs. Queue scope matches month, kind, and wallet filter exactly.
+- `getTagBreakdown` adds `percentage`, using the kind's entire filtered total rather than summed tag totals. Two-tag entries count in both groups. Shares may therefore sum above 100%.
+- The returned `null` group means “ไม่มีแท็ก” (no tag). Summary excludes it from bars.
+- `getPeriodSummary` and every `getMonthlyTrend` month add `transferCount`. Transfer text “N รายการ” means N entries.
 
-- **Data, not seed**: bars, trend and plan row come from the account; the prototype's seed months and budgets are not copied.
-- **Pending group** opens the queue with that group's ids in Home's order (newest first); the prototype queues them in seed order.
-- **Opening month**: from a week or fortnight Home, Summary opens on the month of the period's last day (or today), as ticket 05 decided; the prototype uses the month of the period's first day.
-- **Plan row while budgets load or fail**: "ดูงบของเดือนนี้" so the row still opens the plan; the prototype has no such state.
-- **Loading/error states** are not in the prototype: a spinner while the month loads, an error card "โหลดสรุปไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง" (Home's style), a one-line "อัปเดตข้อมูลไม่สำเร็จ … ลองอีกครั้ง" when older data is still shown, and inline errors with ลองอีกครั้ง in the bars card ("โหลดยอดตามกลุ่มไม่สำเร็จ") and trend card ("โหลดแนวโน้มไม่สำเร็จ").
-- **Tag rows show no share %** ("2 รายการ", category rows "3 รายการ · 75%"): the prototype's tag meta is only the count, kept on purpose: an entry with several tags counts in each, so tag shares can add past 100% and a % beside each would read as parts of a whole. The bar width still shows the share of the kind's total.
-- **ไม่มีแท็ก gets no bar**: the prototype builds tag rows only from the user's tags, so untagged money has no row; Summary does the same with the server's `null` group. The untagged money stays in the kind total (the base of every tag's share), and when no entry has a tag the card says "ยังไม่มีแท็ก".
-- **Comparison when the month before is empty**: names the kind ("เดือนก่อนยังไม่มีรายจ่ายให้เปรียบเทียบ") instead of the prototype's "ยังไม่มีรายการ" (review c2).
-- **วางแผนงบ under a wallet filter**: adds " · นับทุกบัญชี" (review c3); the prototype has no filtered plan row.
-- **Plan's next arrow** is clamped to the current month (`nextMonthOffset`) as the prototype's `planShift` does (`Math.min(0, …)`); the plan screen now keeps an absolute offset (seeded from Summary's month), so the clamp guards a double tap past it. The ticket-05 plan screen otherwise stays as it was until ticket 10.
-- **planRowSubtitle** uses the prototype's `status` rule (over when spent is more than the limit, near when not over and at the warning percent) and its `planRowSub` copy.
-- **Long net amounts** shrink to fit (`adjustsFontSizeToFit`) instead of overflowing.
-- **Status bar / dev gear**: the floating gear in captures is Expo's dev menu.
+## Rows, bars, and trends
 
-## iOS run (simulator iPhone 11, iOS 18.6, dev build, 2026-10-02; the flow's captures were retaken after the review fixes)
+`summaryOverview`, `summaryRows`, `summaryEmpty`, `summaryQuestion`, `summaryTrend`, and `planRowSubtitle` own prototype text/numbers. Category/tag widths use server `percentage` with a 2% minimum. Trend bars are 4–100 high within a 150 chart. Values use whole-baht `formatBaht(total, 0)`, or “–” for none. Labels use `shortThaiMonth` rather than server `Intl` text.
 
-Driven with the `ios-preview` skill against the dev database, light and dark: `08-app-summary` (opened from Home's ดูสรุป), `-pending`, `-bottom` (trend and วางแผนงบ), `-tags` (no tags: "ยังไม่มีแท็ก"), `-income` and `-transfer` (zero kind: empty copy, all-"–" trend), `-previous` (กันยายน: empty month, zero trend, "ภาพรวมกันยายน"), `-filtered` (KBank only), `-queue` (the pending group's queue, "1 จาก N", KBank entry), `-after-queue` (the pick read back: the pending group left the filtered bars, toast "บันทึกหมวดแล้ว"), `08-app-plan-from-summary` (plan opened on กันยายน 2569 from Summary's previous month), `08-app-summary-filtered-plan` (KBank only, 42 ฿, with a 40 ฿ ทุกหมวด budget made for the shot: "ตั้งไว้ 1 งบ · เกินงบ 1 · นับทุกบัญชี", since the budget counts the account's 92 ฿; taken by a throwaway flow that made the KBank entry and budget and deleted both, kept out of the repo). Failure/recovery in dark only, by stopping the API server by hand (flows kept out of the repo): `08-app-summary-refresh-error-dark` (cached month: one-line refresh error over the data), `08-app-summary-error-dark` (a month never loaded: error card), `08-app-summary-recovered-dark` (server back, one ลองอีกครั้ง loads the month; the first retry worked here, unlike [24](../issues/24-ios-first-retry-after-outage.md) on Home). All entries the flow created were deleted again; the account's own pending 50 ฿ entry of 1 ต.ค. was left pending.
+Comparison text includes “ใช้มากกว่าเดือนก่อน 1,000 ฿ (25%)” (spent 1,000 baht more than last month, 25%) and “…เท่ากับเดือนก่อน” (equal to last month). When the earlier month lacks this kind, use “เดือนก่อนยังไม่มีรายจ่าย/รายรับ/ย้ายเงินให้เปรียบเทียบ” (no previous expenses/income/transfers to compare). Prototype “ยังไม่มีรายการ” (no entries) is inaccurate when another kind exists. Icons are MDI `arrow-up`, `arrow-down`, `equal`, and `information-outline`.
 
-The dev account has data only in ตุลาคม, so the captures show few bars. A month with many categories, several tags, transfers and a non-zero comparison was checked against the prototype's seed in the design shots and in tests only.
+Exported `amountLabel` adds satang only when present. It supplies the kind total above bars.
 
-Not checked on the simulator: a custom month start (unit and API tests only; the dev account starts months on the 1st), opening Summary from a week/fortnight Home, more than 1,000 rows, budgets on the plan row without a filter (the account has none; one was made only for the filtered shot), the inline bars/trend errors (only the page and refresh errors were forced), Dynamic Type, VoiceOver, the iPhone 13 Pro device.
+## Budget row
+
+“วางแผนงบ” (plan budget) calls `planning.getBudgetStatuses(periodKey)` without wallet filter, as budgets retain their own scope. Under an active filter, `planRowSubtitle(statuses, { walletFiltered: true })` ends “ · นับทุกบัญชี” (counts every account). This explains budget counts beneath “สรุปเฉพาะบัญชีและบัตรที่เลือก” (selected account/card summary). Without budgets, the invitation remains unchanged.
+
+`planRowSubtitle` uses prototype status: over only when spent **exceeds** the limit, near at warning percent otherwise. Server `isOverLimit` still uses `percentUsed >= 100`. Plan can disagree at exact equality until ticket 10's second criterion fixes it.
+
+## Maestro and tests
+
+`apps/native/.maestro/08-summary.yaml` creates one KBank 42 ฿ entry and opens Summary from Home. It checks tabs/modes/previous month/filter, categorizes pending work, opens the previous month's Plan, and deletes its entries. Cleanup loops also delete leftovers from interrupted runs. Plan's Back currently carries route label "(insights)/summary". The flow taps it. Ticket 10 restyles the header.
+
+- `apps/native/features/summary/summary.test.ts` covers month/custom-start/year-change titles/bounds, net labels, kind/tag rows, empty text, trends/comparisons, equality, and filtered budget text.
+- `apps/native/utils/dates.test.ts` covers Plan link offsets and next-month clamping.
+- `apps/server/test/summary.test.ts` covers custom-period totals/transfer count, filtered six-month trends, multi-tag shares, scoped pending IDs, and queue choices reflected in bars.
+
+## Test boundaries
+
+The user was unavailable to approve boundaries. Continue ticket 04/05's direct pure-module tests for `features/summary/summary.ts` and `periodKeyOffset`. Integration links native → authenticated oRPC → Analytics/Ledger → MongoDB in `apps/server/test`. Simulator checks provide screen evidence.
+
+## Design comparison
+
+Checked `Moojot Home.dc.html` block `03 สรุป` (Summary), around lines 1447–1569. Script references are `openSummary`, `sumShift`, `sp`, `sumRows`, `trendBars`, `compareText` near 3546–3584, `planRowSub` near 3354/3394, and `monthTitle`.
+
+Design captures are `design-shots/08-summary{,-bottom,-tags,-income,-transfer,-previous,-filtered,-queue}[-dark].png` through `capture/08-summary.mjs`. App captures are `08-app-<state>[-dark].png` beside this file.
+
+Matched details:
+
+- Header 52, Back 44/MDI chevron 30, and `raised` Wallet 44 with inset `accent` ring when filtered/open.
+- Month chevrons 44/26 in `accentText`, title 15/minimum 140, and current-month Next disabled at 0.35.
+- “สรุปเฉพาะบัญชีและบัตรที่เลือก / ล้าง” (selected accounts/cards summary / clear) notice.
+- `accent` overview radius 20, padding 16/18/18, title 15, labels 14/amounts 17, and rule opacity 0.3.
+- Net label 15 with “ได้รับ − ใช้ไป” (received minus spent) 12, amount 32/weight 500, and ฿ 18.
+- Surface card radius 20/`raised` inset ring. Three-way segment radius 12/9 and height 40, selected `surface` with segment shadow.
+- Question/total 16. Mode chips 34 within touch rows 44, `inverse` when selected.
+- Bar rows: icon circle 36, name/amount 15, bar 6 on `raised` with `accent` fill, meta 12, divider from 48.
+- Pending: dashed `accent` pencil, `accentText` name/meta, `border` bar, and chevron 22. Preserve empty text and transfer note.
+- Trend: title 16, comparison 14/`muted`/icon 18, chart 150, bars 32 wide/radius 6/2, current `accent`/`accentText`, others `border`/`muted`, values 11.
+- Planning row: height 64, radius 16, `raised` circle 36, MDI target.
+
+### Deliberate differences
+
+- Bars/trends/budgets use actual account data rather than prototype seeds.
+- Pending queue uses actual Home newest-first order rather than seed order.
+- Weekly/fortnightly Home opens Summary for its last day, or today. Prototype uses the first day. This follows ticket 05.
+- Budget loading/failure retains “ดูงบของเดือนนี้” (view this month's budgets) and working Plan navigation. Prototype lacks this state.
+- Added loading/error states use spinner and “โหลดสรุปไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง” (summary failed / check network / retry).
+- Cached-data refresh uses “อัปเดตข้อมูลไม่สำเร็จ … ลองอีกครั้ง” (update failed … retry). Bars use “โหลดยอดตามกลุ่มไม่สำเร็จ” (group totals failed). Trends use “โหลดแนวโน้มไม่สำเร็จ” (trend failed), with Retry.
+- Tag meta retains “2 รายการ” (2 entries), rather than category-style “3 รายการ · 75%” (3 entries · 75%). Multi-tag shares can exceed 100%. A percentage beside each tag would suggest parts of one whole. Width still shows share of the kind total.
+- “ไม่มีแท็ก” (no tag) receives no bar, matching prototype user-tag-only rows. Untagged amounts remain in the kind denominator. No tagged entries shows “ยังไม่มีแท็ก” (no tags yet).
+- Empty prior-month comparison names the kind through “เดือนก่อนยังไม่มีรายจ่ายให้เปรียบเทียบ” (no earlier expenses to compare), rather than “ยังไม่มีรายการ” (no entries). Review c2 records this.
+- Filtered Plan adds “ · นับทุกบัญชี” (counts every account), under review c3. Prototype lacks filtered Plan.
+- Plan uses `nextMonthOffset` like prototype `planShift` and `Math.min(0, …)`. Its absolute Summary-seeded offset requires clamping rapid taps. Other Plan UI remains unchanged until ticket 10.
+- `planRowSubtitle` follows prototype `status` and `planRowSub`: over above limit, near at warning percent when not over.
+- Long net amounts shrink through `adjustsFontSizeToFit`.
+- The floating gear is Expo's development menu.
+
+## iOS evidence: iPhone 11 simulator, iOS 18.6, development build, 2026-10-02
+
+The agent captured new images after review fixes. `ios-preview` drove the development database in light/dark:
+
+- `08-app-summary` from Home Summary.
+- `-pending`, `-bottom` with trend/Plan, and `-tags` showing “ยังไม่มีแท็ก” (no tags yet).
+- `-income`/`-transfer` with empty copy and all-“–” trends.
+- `-previous`: September empty month/zero trend/“ภาพรวมกันยายน” (September overview).
+- `-filtered`: KBank only.
+- `-queue`: pending KBank group with “1 จาก N” (1 of N).
+- `-after-queue`: categorized group leaves filtered bars, with “บันทึกหมวดแล้ว” (category saved).
+- `08-app-plan-from-summary`: September 2569 Plan from previous-month Summary.
+- `08-app-summary-filtered-plan`: KBank 42 ฿ with a 40 ฿ all-category budget. “ตั้งไว้ 1 งบ · เกินงบ 1 · นับทุกบัญชี” means 1 budget, 1 over-budget, all accounts. Budget includes the account's 92 ฿. A temporary uncommitted flow created/deleted its entry and budget.
+
+Dark-only failure/recovery used manually stopped API and uncommitted flows. `08-app-summary-refresh-error-dark` retains cached data with a refresh error. `08-app-summary-error-dark` shows a never-loaded month's error. `08-app-summary-recovered-dark` loads after one Retry, unlike Home [24](../issues/24-ios-first-retry-after-outage.md).
+
+The flows deleted all entries they created. The account's pending 50 ฿ entry from 1 October remained pending. Only October has account data, so captures contain few bars. Many-category/multi-tag/transfer/nonzero comparisons have prototype-image and test evidence only.
+
+Unverified on simulator: custom month start, weekly/fortnightly Home navigation, >1,000 rows, unfiltered budgets, inline bar/trend errors, Dynamic Type, VoiceOver, and physical iPhone 13 Pro. Custom start has unit/API evidence only. Month start is 1 here. A budget existed only for the filtered shot, and the agent induced only page/refresh errors.

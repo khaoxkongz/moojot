@@ -1,54 +1,62 @@
-# วางทางปรับแอปหมูจดตามดีไซน์ใหม่
+# Plan the Moojot app redesign
 
 Label: wayfinder:map
 
 ## Destination
 
-ได้แผนที่ตัดสินใจครบสำหรับปรับแอปมือถือเดิมให้ตรงกับดีไซน์ใหม่ทั้งหน้าตาและวิธีใช้งาน รวมการเปลี่ยนข้อมูลและระบบหลังบ้านที่จำเป็น พร้อมส่งต่อเป็น spec และงานลงมือทำที่มีลำดับและเกณฑ์ตรวจรับชัดเจน
+Complete the decisions for adapting the existing mobile app to the new appearance and behavior. Include necessary data and backend changes. Prepare a spec and implementation tickets with clear order and acceptance criteria.
 
 ## Notes
 
-- ผู้ใช้เลือกดีไซน์ใหม่จาก Claude Design และยอมรับการปรับระบบหลังบ้านที่จำเป็นตามดีไซน์นี้แล้ว การยอมรับดีไซน์เป็นข้อมูลตั้งต้นของ map
-- แอปอยู่ในช่วงทดลอง ผู้ใช้ระบุว่าเริ่มพัฒนาเมื่อ 24 กันยายน 2569 ความต้องการเก็บข้อมูลอยู่ใน [กำหนดข้อมูลเดิมที่ต้องเก็บ](issues/08-existing-data-preference.md#answer)
-- แหล่งอ้างอิงคือ `/Users/computer/Downloads/design_handoff_moojot_app/`: `README.md` อธิบายพฤติกรรม, `Moojot Home.dc.html` เป็นต้นแบบ, `screenshots/` มีภาพ 29 ภาพ และมี `assets/` กับ `fonts/` ใช้ตรวจรายละเอียดจากต้นแบบเมื่อภาพหรือ README ไม่พอ
-- การตรวจครั้งแรกเป็นการอ่านภาพ เอกสาร และโค้ด ยังไม่ได้ตรวจแอปบนอุปกรณ์จริงหรือทดลองกดต้นแบบในเบราว์เซอร์
-- ใช้แอปเดิมใน `apps/native` เป็นฐาน ตรวจความสามารถที่มีอยู่ก่อนประเมินขนาดการเปลี่ยนแปลง รายละเอียด Expo ให้ตรวจจาก `apps/native/package.json`
-- เมื่อดีไซน์ใหม่เปลี่ยนพฤติกรรมที่ spec เดิมเคยกำหนด ให้ระบุข้อกำหนดเดิมที่ถูกแทนที่และตัดสินใจรายละเอียดใหม่ใน ticket ที่เกี่ยวข้อง โดยเฉพาะ [Spec: ปรับ Home มือถือให้รองรับการนำเข้าสลิปอัตโนมัติ](../native-slip-auto-import/spec.md)
-- ทุก session ใช้ `grilling` และ `domain-modeling`; ใช้ `expo-overview` เมื่อพิจารณา Expo และอ่าน domain docs ตาม `GLOSSARY-MAP.md` เมื่อสำรวจโค้ด
-- สนทนาเป็นภาษาไทย ใช้สถานการณ์ใช้งานจริงและคำถามที่ตอบได้ง่าย ให้ agent ตรวจข้อเท็จจริงทางเทคนิคเอง แล้วเสนอทางเลือกพร้อมคำแนะนำ
-- ผู้ใช้ระบุว่ายังตามรายละเอียดไม่ทัน ให้ชะลอการสนทนา อธิบายคำที่จำเป็นก่อนถามทีละสถานการณ์ และระบุข้อตกลงชั่วคราวว่าเปิดให้ทบทวนได้
-- ยึดหน้าจอและ controls ที่ผู้ใช้เลือกไว้ ตรวจต้นแบบก่อนถามเรื่องพฤติกรรม และตรวจความหมายของข้อมูลจำลองเป็นงานของ agent; กรณีเวลาในข้อมูลสลิป/CSV ให้ดูข้อแก้ไขใน [กำหนดความหมายของบัญชี บัตร และวันเวลาของรายการ](issues/02-finance-data-model.md#แก้ความเข้าใจเรื่องช่องกรอกเวลา)
-- งานรอบนี้เป็นการวางแผนตาม Wayfinder การลงมือปรับแอปเริ่มหลังส่งต่อเป็น spec
-- Tracker เป็น local Markdown ตาม `docs/agents/issue-tracker.md`; ticket ลูกอยู่ใน `issues/` และอ้าง dependency ด้วย `Blocked by:`
-- คำสั่งล่าสุดของผู้ใช้ให้ตรวจและรับงานบน iOS ก่อน โดยเลื่อน Android verification ไปงานภายหลัง; รายละเอียดปัจจุบันอยู่ใน “กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่”
+### Approved design and sources
+
+- The user chose the Claude Design redesign and approved its necessary backend changes. This approval is the map's starting point.
+- The app is experimental. The user said development started on 24 September 2569 (2026). See [existing-data preference](issues/08-existing-data-preference.md#answer).
+- Source directory: `/Users/computer/Downloads/design_handoff_moojot_app/`. `README.md` explains behavior. `Moojot Home.dc.html` is the prototype. `screenshots/` contains 29 images, alongside `assets/` and `fonts/`.
+- Inspect the prototype when images or README lack detail.
+- Initial inspection covered images, documents, and code. It did not include physical-device checks or browser interaction with the prototype.
+- Use the existing `apps/native` app as the base. Inspect its capabilities before estimating changes. Check Expo details in `apps/native/package.json`.
+- Identify previous requirements that the redesign replaces. Decide new details in the relevant ticket, especially [native automatic slip import](../native-slip-auto-import/spec.md).
+
+### Planning sessions
+
+- Use `grilling` and `domain-modeling` in every session.
+- Use `expo-overview` when considering Expo. Read domain documents through `GLOSSARY-MAP.md` when exploring code.
+- Speak Thai with the user. Use real scenarios and easy questions. The agent checks technical facts, then presents options and a recommendation.
+- The user reported difficulty following details. Slow the discussion. Explain necessary terms before asking about one scenario. Mark provisional agreements as open to review.
+- Preserve the chosen screens and controls. Inspect the prototype before asking about behavior. The agent checks the meaning of simulated data.
+- For slip/CSV times, see [the time-input correction](issues/02-finance-data-model.md#correction-about-time-input).
+- This Wayfinder map covers planning. App implementation starts after spec handoff.
+- Use the local Markdown tracker in `docs/agents/issue-tracker.md`. Child tickets belong in `issues/`. Declare dependencies through `Blocked by:`.
+- The latest user instruction requires iOS acceptance first. Android verification follows later. See the platform decision below.
 
 ## Decisions so far
 
-<!-- เติมเฉพาะ ticket ที่ resolved แล้ว พร้อม gist และลิงก์ไปยังคำตอบ -->
+<!-- Add only resolved tickets, with a brief decision and an Answer link. -->
 
-- [กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่](issues/01-device-validation.md#answer): รอบนี้ตรวจ iOS ด้วย iPhone 13 Pro/Expo Go และ iPhone 11/Device Hub; เลื่อนการตรวจ Android ไปภายหลัง
-- [กำหนดความหมายของบัญชี บัตร และวันเวลาของรายการ](issues/02-finance-data-model.md#answer): รวมตามธนาคาร บัตรแยกตามชื่อกับเลขท้าย จดเองเลือกวันที่ และ CSV เว้นเวลาเมื่อไม่มีเวลาทำรายการจริง
-- [กำหนดขอบเขตการเอากลับคืนหลังลบ](issues/03-delete-undo.md#answer): ลบหมวดแล้วลบงบที่ผูกอยู่ รายการเดิมยังอยู่; เอากลับคืนคืนหมวด งบ และความสัมพันธ์กับรายการครบ
-- [กำหนดการอ่านสลิปเมื่อเปลี่ยนหน้าหรือพักแอป](issues/04-slip-reading-lifecycle.md#answer): คงงานค้างข้ามรอบ ข้อมูลไม่ครบรอจดเองโดยไม่อ่านซ้ำรูปเดิม; ข้อผิดพลาดชั่วคราวลองใหม่ตามเงื่อนไข และอ่านต่อเมื่อเปลี่ยนหน้าภายในแอป
-- [กำหนดข้อมูลเดิมที่ต้องเก็บ](issues/08-existing-data-preference.md#answer): ข้อมูลเดิมเป็นข้อมูลทดลอง เริ่มชุดข้อมูลใหม่ได้; ขั้นตอนและขอบเขตการเริ่มใหม่จะกำหนดก่อนลงมือ
-- [กำหนดผลเมื่อเปิดจดซ้ำหลังหยุดไว้](issues/09-recurring-resume.md#answer): เปิดกฎกลับมาแล้วเริ่มครั้งถัดไป ข้ามช่วงที่กดหยุด และเก็บรายการที่เคยจดแล้ว
-- [กำหนดวิธีระบุบัตรที่ยังไม่เคยจดรายการ](issues/10-first-credit-card.md#answer): เพิ่มบัตรด้วยชื่อและเลขท้ายสี่หลัก แล้วเลือกใช้ต่อได้ เป็น flow เสริมและแนวทางตั้งต้นที่ทบทวนหลังทดลองจริง
-- [ตรวจช่องว่างข้อมูลและ API ที่ดีไซน์ใหม่ต้องใช้](issues/07-data-api-coverage.md#answer): ตรวจครบหน้าจอและ flow แล้ว หลายส่วนใช้ operations เดิม; ช่องว่างหลักอยู่ที่ undo, จดซ้ำ, งานสลิป/หลักฐาน, amount search, CSV และ auth errors
-- [กำหนดวิธีพาข้อมูลทดลองไปสู่ระบบใหม่](issues/05-data-transition.md#answer): เริ่มข้อมูลการเงินและ preferences ใหม่ในบัญชีเดิม พร้อม reset ความจำมือถือ; เก็บ auth และทำ cutover เมื่อ schema/API/client พร้อม
-- [กำหนดลำดับงานและเกณฑ์ตรวจรับการปรับโฉม](issues/06-delivery-sequence.md#answer): สี่ช่วงจากฐานร่วมไป core, สรุป/วางแผน และส่วนเสริม พร้อมรับงานบน iOS ก่อน; Android ตรวจภายหลัง
+- [Platforms and validation](issues/01-device-validation.md#answer): check iOS through iPhone 13 Pro/Expo Go and iPhone 11/Device Hub. Defer Android checks.
+- [Banks, cards, dates, and times](issues/02-finance-data-model.md#answer): group by bank. Identify cards by name and last four. Manual entry selects a date. Leave CSV time blank without actual transaction time.
+- [Delete and undo](issues/03-delete-undo.md#answer): deleting a category also deletes linked budgets. Entries remain. Undo restores the category, budgets, and affected entry relationships.
+- [Slip-reading lifecycle](issues/04-slip-reading-lifecycle.md#answer): retain pending work across rounds. Incomplete data waits for manual entry without rereading the same image. Retry temporary failures conditionally. Continue across in-app navigation.
+- [Existing-data preference](issues/08-existing-data-preference.md#answer): existing data is experimental. A fresh dataset is acceptable. Define reset steps and scope before implementation.
+- [Recurring-rule resume](issues/09-recurring-resume.md#answer): resume at the next occurrence. Skip the intentional pause period. Preserve previously recorded entries.
+- [First credit card](issues/10-first-credit-card.md#answer): add a card by name and last four, then select it. This additional flow is provisional until real use.
+- [Data and API coverage](issues/07-data-api-coverage.md#answer): inspection covers every screen and flow. Many use existing operations. Main gaps concern undo, recurring rules, slip work/evidence, amount search, CSV, and auth errors.
+- [Data transition](issues/05-data-transition.md#answer): reset finance data and preferences in the existing account. Reset mobile memory. Keep auth. Cut over when schema, API, and client are ready.
+- [Delivery order and acceptance](issues/06-delivery-sequence.md#answer): four phases cover foundations, core flows, summaries/planning, and additional features. Accept iOS first. Check Android later.
 
 ## Not yet specified
 
-<!-- หัวข้อเดิมระบุแผนได้แล้วและย้ายไปทบทวนในกำหนดลำดับงานและเกณฑ์ตรวจรับการปรับโฉม -->
+<!-- Previous open topics now have plans. Review them in the delivery-order decision. -->
 
 ## Out of scope
 
-- การลงมือปรับ implementation ใน map นี้; ส่งต่อเป็น spec ใน feature directory ใหม่เมื่อทางชัดเจน
-- ฟีเจอร์ที่ต้นแบบระบุว่า “จะทำในรอบถัดไป” ตามขอบเขตของ handoff
-- การปรับหน้าตาเว็บแอปและการเผยแพร่ขึ้น App Store / Google Play ในแผนที่นี้
-- การแยกหลายบัญชีของธนาคารเดียวกันในรอบปรับโฉมนี้ ผู้ใช้เลือกให้รวมตามธนาคารก่อน; เหตุผลและทางขยายภายหลังอยู่ใน [กำหนดความหมายของบัญชี บัตร และวันเวลาของรายการ](issues/02-finance-data-model.md#คำตอบเรื่องการรวมตามธนาคาร)
-- การเตรียมเครื่องมือและตรวจ runtime/UI ของ Android ในรอบรับงาน iOS นี้ ตามขอบเขตล่าสุดใน [กำหนดแพลตฟอร์มและวิธีทดลองแอปโฉมใหม่](issues/01-device-validation.md#answer)
+- Implementation within this map. Hand off a spec in a new feature directory when decisions are clear.
+- Features marked “จะทำในรอบถัดไป” (planned for a later round) in the handoff.
+- Web app visual changes and App Store / Google Play publication.
+- Separate accounts within one bank during this redesign. The user chose bank grouping. See [the decision and future extension](issues/02-finance-data-model.md#answer-about-bank-grouping).
+- Android tooling and runtime/UI checks during this iOS acceptance round. See [the latest platform scope](issues/01-device-validation.md#answer).
 
 ## Handed off
 
-- ส่งต่อเป็น [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../native-redesign-ios/spec.md) ใน feature directory ใหม่ สถานะ ready-for-agent ใช้ข้อตกลงล่าสุดของแผนและเกณฑ์ตรวจ iOS โดยเลื่อน Android ไปภายหลัง
+- [iOS-first redesign spec](../native-redesign-ios/spec.md) uses a new feature directory. The handoff recorded status ready-for-agent. It uses the latest agreements and iOS acceptance criteria. Android follows later.

@@ -1,43 +1,150 @@
 # Notes from ticket 09 (Search)
 
-## For later tickets
+## Search scope and pages
 
-- **All months, all pages**: `entriesQueryOptions.search(term, card?)` (`features/entries/query-options.ts`) is `entriesQueryOptions.all(searchFilters(term, card))`: no date bounds, read 1,000 at a time until a short page, under the Ledger key (so `refreshEntryReaders()` refreshes it). The count and expense total are computed on the device from every page, so they are right past 1,000 results. No new endpoint: `listTransactions` gained the matching below.
-- **What a term matches** (`transactionWhere` in `packages/api/src/features/ledger/ledger.service.ts`): title, note, category name, tag name (kept from before), bank, card name, card last four, and:
-  - **Bank by any of its names**: the bank alias table moved from `apps/native/features/wallets/banks.ts` to `packages/api/src/shared/finance/banks.ts` (the native file now re-exports it from `@moojot/api/shared/finance/banks`; Metro resolves it). `bankMatchesSearch(storedName, term)` matches a stored spelling by itself, its identity or its Thai name, or when the whole term (less a leading "ธนาคาร") is the start of one of the bank's `spellings` ("กสิกร", "kbank", "bangkok"). A term that only mentions a bank among other words ("ค่ารถไปกรุงเทพ") names no bank. The Ledger reads the user's distinct stored banks and matches `bank in [matching spellings]` (this also covers a stored name containing the term), so "กสิกร" finds rows stored as "KBank" and "kbank" finds old "กสิกรไทย" rows. This resolves the comment from ticket 04.
-  - **Amount**: `packages/api/src/shared/finance/search-terms.ts`. A term of digits, commas and at most one decimal point matches when it appears in the amount written without commas, satang only when there are some ("419" finds 419 and 4,190; "1,250" finds 1,250.50; "12." finds only amounts with satang). This is the prototype's `amountMatch`, never exact equality. MongoDB cannot substring-match the stored integer, so the Ledger reads the user's active `{ id, amountSatang }` and matches them in the server; fine at personal-ledger sizes, revisit if accounts grow to hundreds of thousands of rows.
-  - **Numeric-term cost** (review, left as is): every search term made only of digits reads all of the user's active amounts once per page request, so a long result list repeats that read for each 1,000-row page; move the match into a stored text field or cache it per request if this shows up.
-- **Card scope** (for ticket 19's “ดูทั้งหมด”): push `/search` with `params: { q, cardName, cardLast4 }`. The screen searches only that card through `walletFilter.cards` (name and last four, exact), so another card with the same name stays out, and shows "ค้นเฉพาะบัตร KTC •• 4821 / ค้นทุกบัญชี" under the field. A prefilled `q` skips the initial focus (prototype `openSearchFor`).
-- **Rows** (`features/search/search.ts`): `searchResults(entries, { term, today, categories })` returns `{ summary, days }`: "พบ N รายการ · รายจ่ายรวม X ฿" (no total when no result is an expense), days in the Ledger's order with "N รายการ", day labels from Home's `dayLabel` plus the 2-digit B.E. year when not this year ("พ. 31 ธ.ค. 68"), and rows with `title`/`meta` cut into hit parts (`splitHits`), meta "อาหาร · กสิกรไทย" / "รอเลือกหมวด · บัตร KTC •• 4821" / "ย้ายเงิน · ไม่ระบุบัญชี", or "โน้ต: …" when only the note matched, `amountHit` (amount highlighted) and `income`.
-- **Stale answers**: each term has its own query key and the screen shows results only when the settled term equals the text on screen, with no placeholder data, so a slower answer for an older term is stored under that term and never shown for the new one. The results query is not paused while the editor or queue covers search, so a save, delete or pick there refreshes the list before the user comes back.
-- **Recent searches** use the existing `financePreferences` add/remove/get (per user, newest first, case-insensitive dedupe, at most 8; the prototype keeps 6). Remembered on Enter, when a result opens, and when a recent term is picked (not on example chips, as in the prototype). A failed remove shows a toast.
-- **Maestro**: `apps/native/.maestro/09-search.yaml` saves 7,319 ฿ (อาหาร, no bank) and 73,190 ฿ (KBank, pending), searches "7,319", opens the pending one in the queue and picks อาหาร, opens the other in the editor, walks recents, "กสิกร", no results, removes the recent term, deletes both entries from their search results, then opens `moojot://search?q=KTC&cardName=KTC&cardLast4=4821` (taps iOS's "Open" prompt when it appears). **Gotcha:** Expo's floating dev-tools gear on the left takes taps near it; a button just below it (search's ลองอีกครั้ง at x 36–100) does not get the tap. Tap such buttons by `point` on their right side. This may also explain issue 24 (comment added there).
-- Tests: `apps/native/features/search/search.test.ts` (highlight parts, day grouping and labels across years, expense-only total, meta by category/wallet/note, amount highlight and income sign) and `apps/server/test/search.test.ts` (amount substring with comma/decimal, Thai and English bank names over both stored spellings, 1,003 results over 13 months read in full with the right count and expense total, card scope with two KTC cards and a KTC entry with no last four, recent searches per user).
+`entriesQueryOptions.search(term, card?)` is in `features/entries/query-options.ts`. It calls `entriesQueryOptions.all(searchFilters(term, card))` without date bounds. It reads pages of 1,000 until a page contains fewer results. The Ledger query key lets `refreshEntryReaders()` refresh these results.
 
-## Seams
+The device calculates the count and expense total from every page. These totals therefore include results beyond 1,000. The existing `listTransactions` endpoint gained the matching rules below.
 
-No user was available to confirm seams, so the ones tickets 04, 05 and 08 used were kept: the pure native module (`features/search/search.ts`) tested directly, and native modules → authenticated oRPC → Ledger/Preferences → MongoDB in `apps/server/test`. The recent-searches test describes behavior that already existed (it passed when written). Stale-answer handling rests on TanStack Query's per-key cache and is checked by reading the screen code, not by a test (a test would only exercise the library). The screen is checked on the simulator.
+## Search terms
 
-## Design pass against the HTML prototype
+`transactionWhere` in `packages/api/src/features/ledger/ledger.service.ts` matches title, note, category name, tag name, bank, card name, and card last four. Tag matching already existed.
 
-Checked against `Moojot Home.dc.html` block `11 ค้นหา` (lines ~1005–1076) and the script (`openSearch`, `closeSearch`, `clearQuery`, `rememberQuery`, `onQueryKey`, `searchVals` ~3136–3192, `splitHits`, `amountLabel`). Design shots: `design-shots/09-search-{start,amount,bank,none}[-dark].png` (script `capture/09-search.mjs`). App captures: `09-app-search-<state>[-dark].png` next to this file.
+### Bank names
 
-What matches: header 60 tall with 4/16 side padding, 44 back (MDI chevron-left 30), 48 field radius 24 on `raised` with the 20 `muted` search icon, 16 input, 36 clear (MDI close-circle 20 `muted`), focus 320 ms after opening; "ค้นหาล่าสุด" 13 `muted`, recent card radius 16 with `raised` ring, 52 rows with MDI history 20, 15 text, 44 remove (MDI close 20), divider from 46; pig 150, "พิมพ์ชื่อร้าน ชื่อผู้รับ โน้ต / หรือจำนวนเงินก็ได้" 15, "หมูค้นให้ทุกเดือน" 13 `muted`, example chips Grab/อาหาร/เงินเดือน (40 tall, 1.2 `border`, 14); summary line 13 `muted`; day header (วันนี้ 14 `accentText` + label 13 `muted`, other days 14, count 13 `muted`); day cards radius 16, 62 rows, 34 icon circle or dashed `accent` circle with pencil when pending, divider from 60, 15 title, 12 meta (`accentText` when pending), 15 amount at 500 tabular, income `success` with +; hits on `accent` with `onAccent` text, the amount as a padded `accent` pill when it matched; no-results pig with "ไม่พบ “…”" and "ลองพิมพ์คำอื่น เช่น ชื่อร้าน หรือจำนวนเงิน"; pending opens the queue for that entry, others the editor.
+The alias table moved from `apps/native/features/wallets/banks.ts` to `packages/api/src/shared/finance/banks.ts`. The native file re-exports `@moojot/api/shared/finance/banks`. Metro resolves this import.
 
-Deliberate differences:
+`bankMatchesSearch(storedName, term)` matches a stored spelling, bank identity, or Thai name. It also matches when the whole term is the initial part of one of the bank's `spellings`. It deletes a leading "ธนาคาร" (bank) first. Examples are "กสิกร" (Kasikorn), "kbank", and "bangkok".
 
-- **Data, not seed**: results, banks and cards come from the account.
-- **Year on day labels** from another year ("พ. 31 ธ.ค. 68"): search spans every month and year; the prototype's data covers one year.
-- **Bank hits**: a bank found by its identity ("kbank") is not highlighted, because the meta shows the Thai name; a Thai term ("กสิกร") is.
-- **Tags still match** (the existing Ledger search did); the prototype does not search tags, and the row shows no tag, so such a row has no highlight.
-- **Card scope line** under the field is not in the prototype (its `openSearchFor` only types "KTC"); the spec asks the scope to keep the chosen card's identity.
-- **Loading/error states** are not in the prototype: a spinner while a term loads; "ค้นหาไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง" card (Home/Summary style) that keeps the typed term.
-- **Debounce** 200 ms before asking the server; the prototype filters in memory as you type.
-- **Recent searches** keep 8 (server limit) instead of 6.
-- **Status bar / dev gear**: the floating gear in captures is Expo's dev menu.
+A term containing a bank name among other words does not identify a bank. For example, "ค่ารถไปกรุงเทพ" means travel fare to Bangkok.
 
-## iOS run (simulator iPhone 11, iOS 18.6, dev build, 2026-10-03)
+The Ledger reads the user's distinct stored banks. It applies `bank in [matching spellings]`, including stored names containing the term. Thus, "กสิกร" (Kasikorn) finds "KBank" rows. "kbank" finds old "กสิกรไทย" (Kasikornbank) rows. This resolves ticket 04's comment.
 
-Driven with the `ios-preview` skill against the dev database, light and dark: `09-app-search-start` (field focused; the account had no recent searches), `-amount` ("7,319": both entries, amounts highlighted, "พบ 2 รายการ · รายจ่ายรวม 80,509 ฿"), `-queue` (pending result → queue for that one entry), `-after-queue` (back on search, the row now อาหาร, toast "บันทึกหมวดแล้ว"), `-edit` (other result → editor), `-recent` ("7,319" remembered), `-bank` ("กสิกร" finds the KBank entry, Thai name highlighted), `-none`, `-card` (deep link with card scope: "ค้นเฉพาะบัตร KTC •• 4821"; the account has no KTC card, so no results). Failure/recovery in light only, by stopping the API server by hand (flows kept out of the repo): `09-app-search-error` (term "ค่าโทร", error card, term kept) and `09-app-search-recovered` (server back, one ลองอีกครั้ง loads "ค่าแก๊ส": no results in this account). Both entries the flow created were deleted again; the recent term was removed.
+### Amounts
 
-Not checked on the simulator: more than 1,000 results on screen (API test only), two cards with the same name (API test only; the account has no cards), a slow older answer arriving after a newer one (by design of the query keys, not forced), Dynamic Type, VoiceOver, the iPhone 13 Pro device.
+`packages/api/src/shared/finance/search-terms.ts` handles numeric terms. A term can contain digits, commas, and at most one decimal point. It matches a substring of the amount without commas. The amount includes satang only when present.
+
+- "419" finds 419 and 4,190.
+- "1,250" finds 1,250.50.
+- "12." finds only amounts with satang.
+
+This follows prototype `amountMatch`, which uses substring matching rather than exact equality. MongoDB cannot match a substring in the stored integer. The Ledger therefore reads the user's active `{ id, amountSatang }` values. It matches these values on the server.
+
+This approach suits personal ledgers. Reconsider it if accounts reach hundreds of thousands of rows.
+
+The review retained one cost: each digits-only search term reads every active amount once per page request. A long result list repeats this read for each 1,000-row page. If this causes a problem, use a stored text field or a cache per request.
+
+## Card scope
+
+Ticket 19's “ดูทั้งหมด” (view all) opens `/search` with `params: { q, cardName, cardLast4 }`. `walletFilter.cards` restricts results to the exact name and last four. Another card with the same name stays outside this scope.
+
+The field shows "ค้นเฉพาะบัตร KTC •• 4821 / ค้นทุกบัญชี" (search only this card / search all accounts). A prefilled `q` skips initial focus, following prototype `openSearchFor`.
+
+## Results and recent searches
+
+`features/search/search.ts` exports `searchResults(entries, { term, today, categories })`. It returns `{ summary, days }`.
+
+- "พบ N รายการ · รายจ่ายรวม X ฿" means N results and total expenses of X baht. Omit the total when no result is an expense.
+- Days retain Ledger order and show "N รายการ" (N entries).
+- Labels use Home's `dayLabel`. Dates outside this year add a two-digit Buddhist Era year. Example: "พ. 31 ธ.ค. 68" (Wednesday, 31 December 2568).
+- `splitHits` divides `title` and `meta` into matching and other parts.
+- Meta example: "อาหาร · กสิกรไทย" (food · Kasikornbank).
+- Pending meta: "รอเลือกหมวด · บัตร KTC •• 4821" (pending category · card).
+- Transfer meta: "ย้ายเงิน · ไม่ระบุบัญชี" (transfer · unspecified account).
+- A note-only match shows "โน้ต: …" (note).
+- `amountHit` identifies a matching amount. `income` identifies an income result.
+
+Each term has its own query key. Results appear only when the settled term equals the visible input. The screen uses no placeholder data. An older answer stays under its own key and cannot replace the new term's results.
+
+The results query continues while the editor or queue covers Search. Saving, deleting, or selecting a category refreshes results before the user returns.
+
+Recent searches use existing per-user `financePreferences` `add`/`remove`/`get` operations. They retain the newest terms first, deduplicate without case sensitivity, and keep at most 8 terms. The prototype keeps 6.
+
+Remember a term on Enter, when opening a result, or when selecting a recent term. Example chips do not save a term, following the prototype. A failed deletion shows a toast.
+
+## Maestro and tests
+
+`apps/native/.maestro/09-search.yaml` performs these checks:
+
+1. Save 7,319 ฿ under “อาหาร” (food), without a bank.
+2. Save 73,190 ฿ under KBank, with a pending category.
+3. Search "7,319".
+4. Open the pending result's queue.
+5. Select “อาหาร” (food).
+6. Open the other result in the editor.
+7. Check recents, "กสิกร" (Kasikorn), and no results.
+8. Delete the recent term.
+9. Delete both entries through their results.
+10. Open `moojot://search?q=KTC&cardName=KTC&cardLast4=4821`.
+11. Tap iOS's "Open" prompt if it appears.
+
+Expo's floating development gear on the left intercepts nearby taps. Search's “ลองอีกครั้ง” (retry) at x 36–100 can miss a tap. Tap its right side by `point`. This may also explain issue 24. That issue contains a comment about this possibility.
+
+`apps/native/features/search/search.test.ts` checks highlights, day grouping, labels across years, and expense-only totals. It also checks category/wallet/note meta, amount highlights, and income signs.
+
+`apps/server/test/search.test.ts` checks amount substrings with commas and decimals. It checks Thai/English aliases across stored spellings and per-user recents. It reads 1,003 results across 13 months with correct counts and expense totals. Card tests distinguish two KTC cards and a KTC entry without last four.
+
+### Test boundaries
+
+The user was unavailable to approve boundaries. The implementation retained tickets 04, 05, and 08's boundaries. Tests call the pure `features/search/search.ts` module directly. Server tests integrate native modules → authenticated oRPC → Ledger/Preferences → MongoDB in `apps/server/test`.
+
+The recent-search test describes existing behavior. It passed when first written. Source inspection checks stale answers through TanStack Query's per-key cache. A test of that mechanism would test the library. Simulator checks provide screen evidence.
+
+## Design reference
+
+The comparison used `Moojot Home.dc.html`, block `11 ค้นหา` (Search), around lines 1005–1076. Script references include `openSearch`, `closeSearch`, `clearQuery`, `rememberQuery`, `onQueryKey`, and `searchVals` around 3136–3192. They also include `splitHits` and `amountLabel`.
+
+Design images: `design-shots/09-search-{start,amount,bank,none}[-dark].png`, through `capture/09-search.mjs`. App images: `09-app-search-<state>[-dark].png`, beside this file.
+
+### Matching geometry and behavior
+
+- Header height 60, side padding 4/16. Back target 44 with MDI chevron-left 30.
+- Field height 48, radius 24, `raised` background. Search icon 20/`muted`, input 16, clear target 36 with MDI close-circle 20/`muted`.
+- Focus starts 320 ms after opening.
+- "ค้นหาล่าสุด" (recent searches) uses 13/`muted`. Recent card radius 16 with `raised` ring, rows 52, history icon 20, text 15.
+- Delete target 44 with MDI close 20. Divider starts at 46.
+- Pig size 150. "พิมพ์ชื่อร้าน ชื่อผู้รับ โน้ต / หรือจำนวนเงินก็ได้" means type a merchant, recipient, note, or amount. Text size 15.
+- "หมูค้นให้ทุกเดือน" means the pig searches every month. Text size 13/`muted`.
+- Example chips “Grab”/“อาหาร”/“เงินเดือน” (Grab/food/salary): height 40, `border` 1.2, text 14.
+- Summary line: 13/`muted`.
+- Day header: “วันนี้” (today) 14/`accentText`, date 13/`muted`. Other days use 14, counts 13/`muted`.
+- Day cards: radius 16, rows 62, icon circle 34. Pending entries use a dashed `accent` circle and pencil.
+- Divider starts at 60. Title 15, meta 12/`accentText` when pending, amount 15/weight 500 with tabular numbers.
+- Income uses `success` and a plus sign. Hits use `accent` with `onAccent` text. Matching amounts use a padded `accent` pill.
+- Empty results show a pig and "ไม่พบ “…”" (no match). "ลองพิมพ์คำอื่น เช่น ชื่อร้าน หรือจำนวนเงิน" means try another term, such as a merchant or amount.
+- Pending entries open their queue. Other entries open the editor.
+
+### Deliberate differences
+
+- Results, banks, and cards use account data instead of seeds.
+- Dates outside this year add the year. Search spans all months and years, while prototype data covers one year.
+- An identity match such as "kbank" receives no highlight because meta shows the Thai name. A Thai term such as "กสิกร" (Kasikorn) receives highlights.
+- Tags retain existing matching. The prototype does not search tags. Rows show no tag, so tag-only matches have no highlight.
+- The card scope line preserves the chosen card's identity. Prototype `openSearchFor` only enters "KTC".
+- Loading shows a spinner. Errors retain the term and follow Home/Summary styling.
+- Error copy: "ค้นหาไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง" (search failed / check internet and retry / retry).
+- Debounce waits 200 ms before requesting the server. The prototype filters memory during typing.
+- The server retains 8 recent terms, while the prototype retains 6.
+- The floating gear is Expo's development menu. Captures also include the status bar.
+
+## iOS evidence: iPhone 11 simulator, iOS 18.6, development build, 2026-10-03
+
+`ios-preview` drove the development database in light and dark modes:
+
+- `09-app-search-start`: focused field, with no recent searches in the account.
+- `-amount`: "7,319" matches both entries with highlights. "พบ 2 รายการ · รายจ่ายรวม 80,509 ฿" means 2 results and 80,509 baht of expenses.
+- `-queue`: the pending result opens a queue for that entry.
+- `-after-queue`: Search returns with “อาหาร” (food) and "บันทึกหมวดแล้ว" (category saved).
+- `-edit`: the other result opens the editor.
+- `-recent`: "7,319" appears in recents.
+- `-bank`: "กสิกร" (Kasikorn) matches KBank and highlights the Thai name.
+- `-none`: no results.
+- `-card`: deep link shows "ค้นเฉพาะบัตร KTC •• 4821" (search only this card). The account has no KTC card, so results are empty.
+
+Failure/recovery ran in light mode only. The API server stopped manually. The flows stayed outside the repository. `09-app-search-error` retained "ค่าโทร" (telephone costs) and showed the error card.
+
+`09-app-search-recovered` shows server recovery. One “ลองอีกครั้ง” (retry) loaded "ค่าแก๊ส" (gas costs). This account had no matching results.
+
+The flow deleted both created entries afterward. It deleted the recent term.
+
+The simulator did not check more than 1,000 onscreen results or two cards with the same name. These have API evidence only. The account has no cards. A slow older answer arriving after a newer answer was not forced. Query keys provide that behavior. Dynamic Type, VoiceOver, and physical iPhone 13 Pro remain unchecked.

@@ -1,4 +1,4 @@
-# ตรวจช่องว่างข้อมูลและ API ที่ดีไซน์ใหม่ต้องใช้
+# Inspect data and API gaps for the redesign
 
 Label: wayfinder:task
 Type: task
@@ -6,30 +6,30 @@ Mode: AFK
 Status: resolved
 Assignee: Codex (/root)
 Blocked by: 02, 03, 04
-Parent: [วางทางปรับแอปหมูจดตามดีไซน์ใหม่](../map.md)
+Parent: [Plan the Moojot app redesign](../map.md)
 
 ## Question
 
-ตรวจและจัดทำตารางข้อกำหนดข้อมูลของแต่ละหน้าจอ/flow ใน handoff เทียบกับข้อมูลและ API ที่มีอยู่ เพื่อให้ตัดสินใจลำดับงานและการเปลี่ยนข้อมูลได้จากหลักฐาน รวมการค้นหาทุกเดือนและจำนวนเงิน หน้าบัตรเครดิต การจดซ้ำ การเอากลับคืน ผลอ่านสลิป CSV และสถานะในหน้าโปรไฟล์
+Compare each handoff screen/flow's data needs with existing data and APIs. Create a coverage table for evidence-based delivery and transition decisions. Include all-month/amount search, cards, recurring entries, undo, slip results, CSV, and profile states.
 
-เสร็จเมื่อทุกข้อกำหนดข้อมูลมีแหล่งอ้างอิงจาก handoff และโค้ด ระบุได้ว่ารองรับแล้ว ขาดข้อมูล หรือขาดสัญญา API พร้อมคำถามที่ยังต้องตัดสินใจและเส้นทางโค้ดที่เกี่ยวข้อง บันทึกตารางเป็น asset ที่ลิงก์จาก ticket ให้ผลเป็นข้อเท็จจริงสำหรับตัดสินใจ โดยคง UI ตามข้อตกลงของ map
-
-## Comments
-
-### ตาราง source coverage
-
-จัด [ข้อมูลและ API สำหรับดีไซน์มือถือใหม่](../assets/data-api-coverage.md) จากการตรวจของ agent และทบทวนโดย root ครอบคลุมหน้าจอ/flow ของ handoff ระบุฐานที่ใช้ต่อได้กับส่วนที่ต้องเพิ่มข้อมูลหรือสัญญา ยังเป็น source evidence โดยไม่มีการแก้ implementation
-
-แยกคำถามที่ตรวจพบเป็น “กำหนดผลเมื่อเปิดจดซ้ำหลังหยุดไว้” และ “กำหนดวิธีระบุบัตรที่ยังไม่เคยจดรายการ” เพื่อคุยกับผู้ใช้ทีละสถานการณ์ ส่วนรายละเอียดวิศวกรรมให้ใช้เป็น input ของลำดับงานและ spec ต่อไป
-
-คง claimed ไว้เพื่อบันทึก resolution ของการตรวจ coverage ในรอบถัดไป รอบนี้ปิดการตัดสินใจ “กำหนดข้อมูลเดิมที่ต้องเก็บ” แล้วตามข้อจำกัดของ Wayfinder
+Finish when every requirement has handoff and code references. Identify existing support, missing data, or missing API contracts. Include open decisions and related code paths. Save the table as a linked asset. Provide decision facts while preserving the map's approved UI.
 
 ## Answer
 
-ตรวจและทบทวน [ข้อมูลและ API สำหรับดีไซน์มือถือใหม่](../assets/data-api-coverage.md) ครอบคลุม auth/onboarding, Home/filter/category queue, editor, summary, slips, streak, planning, profile/settings/CSV, search, categories/tags/undo, calendar และ cards พร้อม source pointers และเกณฑ์ตรวจที่ต้องส่งต่อ
+[The reviewed coverage table](../assets/data-api-coverage.md) covers auth/onboarding, Home/filter/category queue, editor, summary, slips, streak, planning, and profile/settings/CSV. It also covers search, categories/tags/undo, calendar, and cards. It includes source pointers and acceptance criteria for handoff.
 
-- ใช้ฐานรายการ หมวด แท็ก งบ สรุปยอด ปฏิทิน preferences และ auth เดิมต่อได้ การค้นหาทุกเดือนและหน้าบัตรหลายส่วน compose จาก operations เดิมได้
-- ส่วนต้องปรับหลักคือ undo ที่คืน identity/ความสัมพันธ์ครบ, ข้อมูลบัตรและผลการมีผลของกฎจดซ้ำ, งานสลิปค้าง/การจดเอง/targeted retry, ข้อมูลหลักฐานสลิป, amount search, CSV และ auth error contract
-- แยกสองคำถามผลิตภัณฑ์ที่ตรวจพบเป็น “กำหนดผลเมื่อเปิดจดซ้ำหลังหยุดไว้” และ “กำหนดวิธีระบุบัตรที่ยังไม่เคยจดรายการ” ทั้งสองมีคำตอบของผู้ใช้แล้วใน ticket ของตน
-- ผลการตรวจเป็นหลักฐาน source ไม่ใช่ runtime proof สำหรับดีไซน์ใหม่ ทดสอบที่ผ่านเดิมไม่แทนเกณฑ์ตรวจพฤติกรรมใหม่
-- ใช้ตารางนี้เป็น input ของวิธีเริ่มข้อมูลใหม่ การวางแนวทางทางเทคนิค และลำดับงานให้พร้อมส่งต่อเป็น spec
+- Reuse existing entries, categories, tags, budgets, summaries, calendar, preferences, and auth. Compose all-month search and many card functions from existing operations.
+- Main changes concern identity/relationship-preserving undo, recurring cards/effective periods, pending slip work/manual entry/targeted retry, slip evidence, amount search, CSV, and auth errors.
+- The separate recurring-resume and first-card product questions now have user answers in their tickets.
+- These findings are source evidence, rather than redesign runtime proof. Earlier passing tests do not replace new behavior checks.
+- Use the table for reset methods, technical planning, and delivery order before spec handoff.
+
+## Comments
+
+### Source coverage table
+
+[Data and API coverage](../assets/data-api-coverage.md) combines agent inspection and root review. It covers handoff screens/flows and distinguishes reusable foundations from data/contract additions. This is source evidence. No implementation changed.
+
+Two discovered questions became recurring-resume and first-card decisions. Discuss them with the user one scenario at a time. Engineering details support delivery planning and the spec.
+
+The task remained claimed for coverage resolution in the next round. This round closed the existing-data decision under Wayfinder constraints.

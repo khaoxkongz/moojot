@@ -1,24 +1,24 @@
-# 11: เพิ่มและเลือกบัตร
+# 11: Add and select the first card
 
-**What to build:** เพิ่มชื่อบัตรกับเลขท้ายสี่หลักครั้งแรก แล้วเลือกบัตรจริงนั้นในการจดครั้งต่อไปได้ โดยผู้ไม่มีบัตรยังใช้แอปได้
+**What to build:** Add the actual card's name/last four digits and select it in later entries. Users without cards retain app use.
 
-**Blocked by:** 04 — [จดเองและแก้รายการ](04-manual-entry.md)
+**Blocked by:** 04 — [Manual entry and transaction editing](04-manual-entry.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 42, 103–104
 
-**Why blocked:** ต้องบันทึกการเลือกบัตรผ่าน editor ที่มีอยู่ในงานจดเอง
+**Why blocked:** The completed manual editor must persist card selection.
 
-- [ ] มี action เพิ่มบัตรตาม flow ที่เลือก ตรวจชื่อ/เลขท้ายสี่หลักและรักษา draft เมื่อ save ไม่สำเร็จ (story 104)
-- [ ] บันทึกตัวเลือกจริงแบบแยกบัญชีผู้ใช้ กลับมาเปิด app แล้วยังเลือกได้ ไม่มี KTC seed เป็นบัตรของผู้ใช้ (story 104)
-- [ ] ตัวเลือกเดียวกันนำไปใช้ editor/rules/cards และ bank/card filter identities เป็นชื่อ+last4 ที่ normalize สอดคล้องกัน (story 42)
-- [ ] บัตรชื่อเดียวกันแต่ last4 ต่างกันไม่รวมเป็นใบเดียว; ไม่ระบุและไม่มีบัตรไม่ขวางการจดธนาคารหรือรายการทั่วไป (story 103)
-- [ ] จดรายการที่ใช้บัตรแล้ว detail/query คืน card identity เดิมครบ
-- [ ] ตรวจ persistence/ownership/validation และเพิ่มบัตร→จดรายการ→เปิดใหม่บน iOS โดยไม่มีงานยอดหนี้หรือชำระบัตร
+- [ ] Provide card creation through the chosen flow. Check name/last4 and preserve drafts on save failure. (story 104)
+- [ ] Persist actual choices per account across app starts. Sample KTC cards cannot become user cards. (story 104)
+- [ ] Reuse choices in editor/rules/cards. Normalize name+last4 identity consistently with bank/card filters. (story 42)
+- [ ] Same-name cards with different last4 remain separate. Unspecified/no-card use leaves bank and ordinary entry available. (story 103)
+- [ ] Card entries return the complete original identity through details/queries.
+- [ ] Check persistence/ownership/input and add-card→entry→reopen on iOS. Debt/payment work remains outside scope.
 
 ## Comments
 
-**จากงาน 04 (review):** ชิป "เพิ่มบัตร" ใน editor ตอนนี้ `router.push({ pathname: "/settings/cards", params: { from: "entry" } })` และหน้าบัตรที่เปิดด้วย `from=entry` จะ `router.back()` กลับ editor เดิมแทนการเปิด `/entry` ซ้อน งานนี้ควรแทนที่ด้วย flow เพิ่มบัตรจริง (ชื่อ + เลขท้าย) ที่จบแล้วกลับ editor พร้อมเลือกบัตรใหม่ให้ draft (`selectEntrySource`) ใช้ `walletCardKey` จาก `features/wallets/cards.ts` เป็น identity ของบัตร
+**From ticket 04 review:** Editor “เพิ่มบัตร” (add card) currently calls `router.push({ pathname: "/settings/cards", params: { from: "entry" } })`. Cards with `from=entry` calls `router.back()` to the existing editor rather than opening another `/entry`. Replace this with actual name/last4 creation. Return with the new card selected in the draft through `selectEntrySource`. Use `walletCardKey` from `features/wallets/cards.ts` as identity.

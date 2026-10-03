@@ -1,41 +1,118 @@
-# Notes from ticket 05 (Home, filter, pending-category queue)
+# Notes from ticket 05 (Home, filter, category queue)
 
-## For later tickets
+## Periods and Summary navigation
 
-- **Period** (`features/home/period.ts`): `selectedHomePeriod(today, offset, mode, { monthStartDay, weekStart, fortnightAnchor })` returns `{ from, to, label, caption, previousLabel, nextLabel, isCurrent, summaryDate }`. Labels use fixed Thai month names (`shortThaiMonth`/`shortThaiDate` in `utils/format.ts`, "ก.ย. 69", "28 ก.ย. – 4 ต.ค. 69"), not `Intl`, so they match the prototype on any device. A month that does not start on the 1st captions the hero "ยอดใช้จ่าย · 25 ก.ย. – 24 ต.ค."; week/fortnight arrows say "รอบก่อน"/"รอบถัดไป". Summary (08) can reuse the month labels.
-- **ดูสรุป**: Home pushes `/summary` with `params: { date: period.summaryDate }` (the period's last day, or today while it runs); Summary opens on `summaryMonthOffset(today, date, monthStartDay)` and its arrows take over from there. A week that runs into next month opens the month of its days so far.
-- **All pages** (`features/entries/all-entries.ts`): `loadAllEntries(list, filters)` reads `listTransactions` 1,000 at a time until a short page. `entriesQueryOptions.all(filters)` wraps it under the Ledger query key, so `refreshEntryReaders()` and the slip import refresh it. `pendingCategories()` now uses it too (the old `pending-categories.ts` loader is gone). Use `all` wherever counts or totals must not stop at the first page (Search 09, cards 19).
-- **Day list**: `homeDays(entries, { today, categories })` groups by day in server order and gives each row `pending`, `icon` (emoji, ⇄, or empty while pending), `meta` ("อาหาร · สลิป", "รอเลือกหมวด · จดเอง") and `isNew`. `latestJotLabel(createdAt, today)` and `homeSpeech(...)` hold the copy; `sumOf(entries, kind)` totals. `needsCategory` (`features/entries/category-queue.ts`) is the one "waits for a category" rule (transfers never do).
-- **Paging order**: `listTransactions` orders by `occurredOn desc, createdAt desc, id desc`; `id` last makes the order total so offset pages never repeat or drop entries recorded at the same moment.
-- **จดล่าสุด** reads `listTransactions({ sort: "recorded", limit: 1 })`. `sort: "recorded"` is a new optional filter on the existing operation (newest `createdAt` first); the default stays newest day first.
-- **ไม่ระบุ** now means "no bank and no card" in both Ledger (`walletWhere`) and Analytics (`matchesWallet`); a manual entry with a bank is only in that bank. GLOSSARY: **รายการไม่ระบุบัญชี**. Because the meaning changed, the flag is now `includeUnspecified` (was `includeOther`); the shared schema `packages/api/src/shared/finance/wallet-filter.ts` still decodes `includeOther` from older app builds into it. The filter is only held in memory on the device (`context/app-data`), so nothing stored there needs migrating. `entryWallet(entry)` (`features/wallets/entry-wallet.ts`) is the same rule on the device: card name → card; bank with no last four → bank; else ไม่ระบุ. The queue card's wallet uses it.
-- **Filter sheet** (`features/wallets/filter.ts`): `walletFilterSections(options, value)` gives the three groups the sheet shows (banks via `bankFilterGroups`, cards labelled by `walletCardLabel` "บัตร KTC •• 4821", then "รายการที่ไม่ระบุบัญชี"; empty groups are left out), `toggleWalletRow`, `toggleAllWalletSources`, `hasNoWalletSource`. Options only ever come from the user's own entries, never the prototype's sample banks. `includeDeletedCards` filtered nothing and was removed (schema, types, sheet); the "บัตรที่ลบไปแล้ว" row is gone. Both sheets share `SheetPanel`/`SheetBackdrop` (`components/ui/bottom-sheet.tsx`: surface, handle, 17 title, close). Summary still uses the same sheet and the same `appliedWalletFilter` from `context/app-data`.
-- **Queue** (`features/entries/category-queue.ts` + route `app/(app)/(categories)/pending-categories.tsx`): the route is a `transparentModal` bottom sheet (own shade and slide). `router.push("/pending-categories")` queues today's pending entries (streak); `router.push({ pathname: "/pending-categories", params: { ids: "a,b,c" } })` queues those entries in that order (Home's link → every pending entry of the viewed period under the applied filter; Home row → one id; Summary's "ยังไม่เลือกหมวด" group in 08 and Search 09 should pass their ids). Members are fixed when it opens; entries categorized or deleted elsewhere meanwhile are passed over (`currentInQueue`). A pick calls `useEntryActions().setCategory` (refreshes every reader), then moves on to the next entry that still waits; when none does (last pick, or the rest got a category elsewhere meanwhile) the sheet closes with "เลือกหมวดครบแล้ว" or "บันทึกหมวดแล้ว" (anything else still pending), `queueEmptiedMessage`. A failed pick keeps the entry and shows the Thai error under the grid.
-- **Edit route fix**: `entry/[id].tsx` now waits for a stale cached copy to be read again before opening. Before, an entry categorized in the queue and opened again showed its old (empty) category.
-- **Maestro**: `apps/native/.maestro/05-home-filter-queue.yaml` saves one KBank 42 ฿ entry, walks filter and queue, then deletes it. It also opens Summary from the previous month (`05-app-summary-previous`). It writes to the dev account; if a run stops early, rerun it (its loops categorize and delete any leftover "รายจ่าย 42 บาท" rows from their own rows). Since the link queues the whole month, the flow closes the sheet after its own pick and never categorizes the account's other pending entries. Icon glyphs end up in a Pressable's accessibility text unless it has an `accessibilityLabel`, so give buttons with icons a label (done for เลือกทั้งหมด and แก้ไขรายการนี้).
-- Tests: `apps/native/features/home/{period,home-days}.test.ts`, `features/wallets/filter.test.ts`, `features/entries/category-queue.test.ts`, and `apps/server/test/home-filter-queue.test.ts` (ไม่ระบุ vs manual-with-bank in Ledger and Analytics, 1,001 rows read in full with day totals, queue scope/pick/skip/passed-over through the real routes, wrong-kind pick refused, latest recorded entry; after review: same-moment entries page in one order, `entryWallet` agrees with both filters, the legacy `includeOther` key still filters, Home's queue covers the viewed period and filter).
+`features/home/period.ts` exports `selectedHomePeriod(today, offset, mode, { monthStartDay, weekStart, fortnightAnchor })`. It returns `{ from, to, label, caption, previousLabel, nextLabel, isCurrent, summaryDate }`.
 
-## Seams
+`shortThaiMonth`/`shortThaiDate` in `utils/format.ts` use fixed Thai names rather than `Intl`. Examples are “ก.ย. 69” (September 2569) and “28 ก.ย. – 4 ต.ค. 69” (28 September–4 October 2569).
 
-No user was available to confirm seams, so the ones ticket 04 used were kept: pure native modules (period, day list, filter rows, queue state) tested directly, and native modules → authenticated oRPC → Ledger/Analytics → MongoDB in `apps/server/test`. Screens themselves are checked on the simulator, not in tests.
+Non-first-day months caption the hero “ยอดใช้จ่าย · 25 ก.ย. – 24 ต.ค.” (spending, 25 September–24 October). Week/fortnight arrows say “รอบก่อน” (previous period)/“รอบถัดไป” (next period). Summary 08 can reuse month labels.
 
-## Design pass against the HTML prototype
+Home “ดูสรุป” (view summary) opens `/summary` with `params: { date: period.summaryDate }`. Date is the period's final day, or today while it runs. Summary uses `summaryMonthOffset(today, date, monthStartDay)`, then its own arrows. A week extending into next month opens the month of its elapsed days.
 
-Checked against `Moojot Home.dc.html` blocks `01 หน้าแรก` (lines ~52–185), `เลือกบัญชีและบัตร` (~319) and `เลือกหมวด` queue (~350) and the script (`renderVals`, `rowVals`, `openQueue`, `pickCategory`). Design shots: `design-shots/05-{home,filter-sheet,filter-none,home-filtered,queue}[-dark].png` (script `capture/05-home-filter-queue.mjs`; `lib.mjs` now clicks the button itself when the hit is an SVG icon). App captures: `05-app-<state>[-dark].png` next to this file.
+## Complete paging and day rows
 
-What changed to match: top bar (44 chip radius 12 with 26 carrot and 14 text, 44 round search/wallet, wallet `accent` ring while filtered or open), filter notice row, pig 72 + speech 16/14 with the 14 `accentText` links, hero (radius 20, `accent`, 44 arrows with 20 icons, 15 label, "ดูสรุป" 34-tall pill on `rgba(30,27,25,.1)`, 13 caption, 36 amount + 20 ฿), จดล่าสุด row, day header (วันนี้ 14 `accentText` + date 13 `muted`, total 13), day cards (radius 16, `raised` 1px border, 62 rows, 34 icon circle, dashed `accent` circle with pencil when pending, divider from 60, ใหม่ badge, income `success` with +), empty card, จดเพิ่ม (52, 16/20 padding, 20 plus). Filter sheet and queue sheet follow their blocks (handle, 17 titles, 13 subtitle/progress, 56 rows on `raised` radius 14, 24 checkboxes radius 7, 50 apply button, 78 tiles in three columns, skip `accentText` 15, edit `muted` 14).
+`features/entries/all-entries.ts` exports `loadAllEntries(list, filters)`. It reads `listTransactions` in 1,000-row pages until a short page. `entriesQueryOptions.all(filters)` uses the Ledger key, so `refreshEntryReaders()`/slip import refresh it. `pendingCategories()` also uses it. The change deleted the old `pending-categories.ts` loader. Use `all` for complete Search 09/card 19 counts and totals.
 
-Deliberate differences:
+`homeDays(entries, { today, categories })` preserves server order and groups days. Rows contain `pending`, `icon`, `meta`, and `isNew`. Icons are emoji, ⇄, or empty when pending. Meta examples are “อาหาร · สลิป” (food · slip) and “รอเลือกหมวด · จดเอง” (awaiting category · manual).
 
-- **Data, not seed**: the filter lists only the user's banks and cards; the prototype hard-codes กสิกรไทย/ไทยพาณิชย์/กรุงไทย/บัตร KTC. Empty groups are hidden.
-- **ใหม่ badge** marks entries recorded today (by the user, a slip or a rule). The prototype marks entries added in the session; the app has no "seen" state yet.
-- **Queue card meta** has no time ("กสิกรไทย · สลิป · วันนี้"): the app does not store a time of day for entries (spec: never fill it from `createdAt`). The prototype shows "วันนี้ 12:41".
-- **Queue scope**: Home's count, link and queue cover every pending entry of the period and filter on screen (not only today's), so an earlier day of the month that waits still shows the link. The prototype's `openQueue` queues every pending entry while its link counts only today's; the spec asks the queue to follow the scope it was opened from. The pig says "วันนี้เลือกหมวดครบแล้ว" only when today has entries and none of them waits.
-- **Loading/error states** are not in the prototype: a spinner while loading, an error card "โหลดรายการไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง" in the empty-card style, a one-line "อัปเดตข้อมูลไม่สำเร็จ … ลองอีกครั้ง" when older data is still shown, and "–" instead of 0.00 in the hero while the period is unknown.
-- **Empty copy** keeps the week/fortnight and "ที่เลือก" variants (prototype only has the month text).
-- **Hero amount** keeps the existing spinning counter animation; the prototype's number is static.
-- **Status bar / dev gear**: the floating gear in captures is Expo's dev menu.
+`latestJotLabel(createdAt, today)` and `homeSpeech(...)` own text. `sumOf(entries, kind)` totals. `needsCategory` in `features/entries/category-queue.ts` is the shared pending rule. Transfers never need a category.
 
-## iOS run (simulator iPhone 11, iOS 18.6, dev build, 2026-10-02)
+`listTransactions` orders by `occurredOn desc, createdAt desc, id desc`. The final `id` makes ordering total, preventing repetition or omission of same-moment entries across offset pages.
 
-Driven with the `ios-preview` skill against the dev database. Captured light and dark: `05-app-home`, `-home-previous`, `-home-pending`, `-filter-sheet`, `-filter-none`, `-home-filtered`, `-queue`, `-queue-edit`, `-queue-back`, `-queue-done`. Failure/recovery captured in light only by stopping the API server by hand (flows kept out of the repo): `05-app-queue-error` (pick while offline: Thai error, entry kept), `05-app-home-error` (period that cannot load), `05-app-home-recovered` (after "ลองอีกครั้ง", loading again). Found that the first "ลองอีกครั้ง" after the server returns sends no request and only the second does: filed as [24](../issues/24-ios-first-retry-after-outage.md). All test entries the flows created were deleted again (soft-deleted rows stay in the dev database, as any app delete does). After the review fixes the flow was run again light and dark and the shots above were replaced, plus `05-app-summary-previous` (ดูสรุป from ก.ย. opens Summary on ก.ย. 69). The dev account had a pending entry on 1 ต.ค., so `05-app-queue` now reads "1 จาก 2" and `05-app-queue-done` shows the queue moving on to it ("2 จาก 2", ไม่ระบุบัญชี · จดเอง · 1 ต.ค.); the flow then closed the sheet and left that entry pending. The error/recovery shots were not retaken (that code did not change). Not checked on the simulator: a custom month start / week / fortnight calendar (unit tests only; the dev account uses months from the 1st), slip reading state, more than 1,000 rows on screen, Dynamic Type, VoiceOver.
+Latest-recorded text reads `listTransactions({ sort: "recorded", limit: 1 })`. Optional `sort: "recorded"` puts newest `createdAt` first. The default still orders newest transaction day first.
+
+## Unspecified identity and filters
+
+Unspecified now means no bank and no card in Ledger `walletWhere` and Analytics `matchesWallet`. A manual bank-selected entry belongs only to that bank. This is the glossary's unspecified-account transaction.
+
+The flag changed from `includeOther` to `includeUnspecified`. `packages/api/src/shared/finance/wallet-filter.ts` still decodes older `includeOther` values. Device `context/app-data` holds filters only in memory, so stored-state migration is unnecessary.
+
+Device `entryWallet(entry)` in `features/wallets/entry-wallet.ts` shares this rule:
+
+- Card name → card.
+- Bank without last four → bank.
+- Otherwise → “ไม่ระบุ” (unspecified).
+
+Queue cards use it too.
+
+`features/wallets/filter.ts` exports `walletFilterSections(options, value)`, `toggleWalletRow`, `toggleAllWalletSources`, and `hasNoWalletSource`. Sections contain bank groups through `bankFilterGroups`, cards through `walletCardLabel`, then unspecified. Example card is “บัตร KTC •• 4821” (KTC card ending 4821). The last group is “รายการที่ไม่ระบุบัญชี” (unspecified-account entries). Empty groups stay hidden. Options come only from actual user entries.
+
+`includeDeletedCards` filtered nothing. The change deleted it from schema/types/sheet. “บัตรที่ลบไปแล้ว” (deleted cards) is gone. Both sheets share `SheetPanel`/`SheetBackdrop` from `components/ui/bottom-sheet.tsx`: surface, handle, title 17, and Close. Summary shares the sheet and `appliedWalletFilter` in `context/app-data`.
+
+## Category queue
+
+`features/entries/category-queue.ts` supports `app/(app)/(categories)/pending-categories.tsx`. The route is a `transparentModal` bottom sheet with its own shade/slide.
+
+- `router.push("/pending-categories")` queues today's pending entries for streak work.
+- `router.push({ pathname: "/pending-categories", params: { ids: "a,b,c" } })` queues specified IDs in order.
+- Home's link supplies every pending entry of the viewed period/filter. A Home row supplies one ID.
+- Summary 08's “ยังไม่เลือกหมวด” (uncategorized) and Search 09 should supply their own IDs.
+
+Queue membership stays constant after opening. `currentInQueue` skips entries categorized/deleted elsewhere. Category selection calls `useEntryActions().setCategory`, refreshes every reader, and advances to the next pending entry. When none remain, the sheet closes through `queueEmptiedMessage`. This also covers outside categorization of remaining entries.
+
+Completion says “เลือกหมวดครบแล้ว” (categories complete) or “บันทึกหมวดแล้ว” (category saved) if other pending work remains. Failed selection retains the entry with Thai error below the grid.
+
+`entry/[id].tsx` now rereads stale cached data before opening. Previously, categorizing in queue then reopening showed the old empty category.
+
+## Maestro and tests
+
+`apps/native/.maestro/05-home-filter-queue.yaml` creates one KBank 42 ฿ entry, checks filters/queue, then deletes it. It also opens previous-month Summary (`05-app-summary-previous`). Runs affect the development account. Rerun interrupted flows to clean their “รายจ่าย 42 บาท” (42-baht expense) rows. Their loops categorize/delete only those rows. The flow closes the whole-month queue after its own choice, leaving other pending entries unchanged.
+
+Icon glyphs appear in Pressable accessibility text unless `accessibilityLabel` exists. Label icon buttons. The change labels “เลือกทั้งหมด” (select all) and “แก้ไขรายการนี้” (edit this entry).
+
+Tests are:
+
+- `apps/native/features/home/{period,home-days}.test.ts`.
+- `features/wallets/filter.test.ts`.
+- `features/entries/category-queue.test.ts`.
+- `apps/server/test/home-filter-queue.test.ts`.
+
+Server cases cover unspecified versus manual-with-bank in Ledger/Analytics, 1,001 complete rows/daily totals, and queue scope/pick/skip/outside changes through real routes. They also cover wrong-kind refusal and latest recording time. Review additions cover stable same-moment paging, `entryWallet` agreement, legacy `includeOther`, and Home queue period/filter scope.
+
+## Test boundaries
+
+The user was unavailable to approve boundaries, so ticket 04's boundaries continued. Test pure native period/day/filter/queue modules directly. Integration links native → authenticated oRPC → Ledger/Analytics → MongoDB in `apps/server/test`. Screens use simulator checks rather than automated screen tests.
+
+## Design comparison
+
+Checked `Moojot Home.dc.html` blocks `01 หน้าแรก` (Home, lines about 52–185), `เลือกบัญชีและบัตร` (account/card sheet, about 319), and `เลือกหมวด` (category queue, about 350). Script references are `renderVals`, `rowVals`, `openQueue`, and `pickCategory`.
+
+Design captures are `design-shots/05-{home,filter-sheet,filter-none,home-filtered,queue}[-dark].png`, through `capture/05-home-filter-queue.mjs`. `lib.mjs` now clicks the button when an SVG icon receives the hit. App captures are `05-app-<state>[-dark].png` beside this file.
+
+Matched geometry:
+
+- Top carrot chip: height 44, radius 12, carrot 26, text 14. Search/wallet circles are 44. Filtered/open wallet uses `accent` ring.
+- Filter notice, mascot 72, speech 16/14, and `accentText` links 14.
+- Hero radius 20 and `accent`, arrows 44/icons 20, month label 15, “ดูสรุป” (view summary) pill 34 on `rgba(30,27,25,.1)`.
+- Hero caption 13, amount 36, ฿ 20, and latest-recorded row.
+- Day heading: “วันนี้” (today) 14 `accentText`, date 13 `muted`, total 13.
+- Cards: radius 16, 1px `raised` border, rows 62, icon circles 34, pending dashed `accent` pencil, divider from 60.
+- “ใหม่” (new) badge and income `success` with +. Empty card and “จดเพิ่ม” (add entry): height 52, padding 16/20, plus 20.
+- Sheets: handle, title 17, subtitle/progress 13, rows 56 on `raised` radius 14, checkboxes 24/radius 7, Apply 50.
+- Category tiles 78 in three columns. Skip uses `accentText` 15. Edit uses `muted` 14.
+
+### Deliberate differences
+
+- Filters use actual banks/cards rather than sample “กสิกรไทย” (Kasikornbank)/“ไทยพาณิชย์” (SCB)/“กรุงไทย” (Krungthai)/“บัตร KTC” (KTC card). Hide empty groups.
+- “ใหม่” (new) means recorded today by user/slip/rule. Prototype marks session additions. The app has no seen state yet.
+- Queue meta omits time: “กสิกรไทย · สลิป · วันนี้” (Kasikornbank · slip · today). Entry time is unavailable and cannot come from `createdAt`. Prototype shows “วันนี้ 12:41” (today 12:41).
+- Home count/link/queue cover the viewed period/filter rather than only today. Earlier pending days retain the link. Prototype `openQueue` includes all pending work but counts today in its link. The spec requires action-scoped queues.
+- “วันนี้เลือกหมวดครบแล้ว” (today's categories complete) requires at least one today entry and none pending.
+- Added states: loading spinner, error card “โหลดรายการไม่สำเร็จ / เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง / ลองอีกครั้ง” (load failed / cannot connect, check network / retry).
+- Cached-data refresh errors show “อัปเดตข้อมูลไม่สำเร็จ … ลองอีกครั้ง” (update failed … retry). Unknown period totals show “–” rather than 0.00.
+- Empty text retains week/fortnight and “ที่เลือก” (selected) variants. Prototype only describes a month.
+- Hero retains the existing spinning counter. Prototype amounts are static.
+- The captured floating gear belongs to Expo development tools.
+
+## iOS evidence: iPhone 11 simulator, iOS 18.6, development build, 2026-10-02
+
+`ios-preview` drove development-database checks in light/dark. Captures include `05-app-home`, `-home-previous`, `-home-pending`, `-filter-sheet`, `-filter-none`, `-home-filtered`, `-queue`, `-queue-edit`, `-queue-back`, and `-queue-done`.
+
+Failure/recovery used manually stopped API and uncommitted flows, in light only. `05-app-queue-error` retains entry with Thai offline error. `05-app-home-error` shows period failure. `05-app-home-recovered` shows restored loading after “ลองอีกครั้ง” (retry). First Retry sent no request, while the second did. See [24](../issues/24-ios-first-retry-after-outage.md).
+
+The flows deleted their created entries afterward. Soft-deleted rows remain in the development database under normal app behavior. After review, repeat light/dark flows replaced those captures and added `05-app-summary-previous`. September Home now opens September 2569 Summary.
+
+The development account had pending work on 1 October. `05-app-queue` therefore shows “1 จาก 2” (1 of 2). `05-app-queue-done` advances to “2 จาก 2” (2 of 2), with “ไม่ระบุบัญชี · จดเอง · 1 ต.ค.” (unspecified · manual · 1 October). The flow closed the sheet and left that entry pending. Unchanged error/recovery code was not recaptured.
+
+Unverified on simulator: custom month start, week/fortnight calendar, slip-reading state, more than 1,000 visible rows, Dynamic Type, and VoiceOver. Calendar has unit evidence only, with this account using month start 1.

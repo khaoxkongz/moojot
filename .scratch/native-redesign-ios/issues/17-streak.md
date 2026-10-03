@@ -1,20 +1,20 @@
-# 17: แครอต สตรีค และบทสอน
+# 17: Carrots, streak, and tutorial
 
-**What to build:** ดูความต่อเนื่อง ให้อาหารหมู เปลี่ยนเกณฑ์นับ และเรียนผ่านบทสอนสี่หน้าโดยข้อมูลจริงไม่ถูกรีเซ็ต
+**What to build:** Show recording continuity, feeding, counting choices, and the four-page tutorial while preserving actual data.
 
-**Blocked by:** 05 — [หน้าแรก ตัวกรอง และคิวเลือกหมวด](05-home-filter-queue.md)
+**Blocked by:** 05 — [Home, filters, and category queue](05-home-filter-queue.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 99–102
 
-**Why blocked:** ต้องใช้คิวหมวด/จดเพิ่มและรายการวันจริงจาก Home เพื่อทำเกณฑ์ก่อน feed
+**Why blocked:** Feeding criteria need Home's category queue, Add entry, and actual transaction dates.
 
-- [ ] Today status, 7-day row, streak และ carrots ใช้วันรายการ/setting จริง ไม่ใช้ตัวเลข seed (story 99)
-- [ ] Feed วันละหนึ่งครั้งเมื่อเข้าเกณฑ์ recorded/categorized และ enabled; รอผล server ก่อนเพิ่ม/แจ้งสำเร็จ (story 100)
-- [ ] ไม่เข้าเกณฑ์พาไปจดหรือคิวหมวด และ error/retry ไม่เพิ่มแครอตซ้ำ
-- [ ] สาม options recorded/categorized/off และเปิดกลับได้ ปิดไม่ลบ entries/reset progress โดยปริยาย (story 101)
-- [ ] Tutorial 4 illustrations พร้อม back/next ตาม handoff และ help sheet อธิบายเกณฑ์จริง (story 102)
-- [ ] ตรวจ API day/timezone/count/ownership และ feed/settings/tutorial บน iOS
+- [ ] Today, seven-day row, streak, and carrots use actual transaction date/settings rather than seed values. (story 99)
+- [ ] Feed once daily when enabled and actual recorded/categorized criteria hold. Await server success before incrementing carrots or reporting success. (story 100)
+- [ ] Unmet criteria lead to entry/category queue. Error/retry prevents duplicate carrots.
+- [ ] Provide recorded/categorized/off choices and reactivation. Disabled counting preserves entries/progress by default. (story 101)
+- [ ] Four tutorial illustrations provide handoff back/next. Help explains actual criteria. (story 102)
+- [ ] Check API day/timezone/count/ownership and feeding/settings/tutorial on iOS.

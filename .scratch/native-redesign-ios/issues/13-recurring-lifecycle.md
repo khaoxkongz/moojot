@@ -1,21 +1,21 @@
-# 13: แก้ หยุด และเปิดกฎจดซ้ำ
+# 13: Edit, pause, and resume recurring rules
 
-**What to build:** แก้รายการประจำให้มีผลครั้งถัดไป หยุด/เปิดโดยข้ามช่วงหยุด และลบ/เอากฎกลับคืนได้โดยประวัติยังอยู่
+**What to build:** Apply recurring edits to the next occurrence. Pause/resume skips intentional pause dates. Rule deletion/restoration preserves history.
 
-**Blocked by:** 10 — [ตั้งงบและเอางบกลับคืน](10-budgets.md); 12 — [ตั้งกฎจดซ้ำและจดย้อนตามกำหนด](12-recurring-create.md)
+**Blocked by:** 10 — [Set budgets and restore deleted budgets](10-budgets.md); 12 — [Create recurring rules and generate due entries](12-recurring-create.md)
 
 **Status:** ready-for-agent
 
-**Source:** [Spec: ปรับแอปหมูจดตามดีไซน์ใหม่ — ตรวจรับ iOS ก่อน](../spec.md)
+**Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md)
 
 **User stories:** 81–84
 
-**Why blocked:** ใช้ schedule/identity จากงานตั้งกฎ และขอบเขต server delete/restore จากงานงบ
+**Why blocked:** This uses ticket 12's schedule/identity and ticket 10's server delete/restore boundary.
 
-- [ ] แก้วัน/ยอด/details มีผลครั้งถัดไป ไม่สร้างย้อนหลังด้วยค่าที่แก้หรือเปลี่ยนรายการเดิม (story 81)
-- [ ] หยุดสองเดือนแล้วเปิดกลับมา ข้ามวันที่ในช่วงหยุดและเริ่มตามวันครบกำหนดถัดไป; รองรับหลายช่วงหยุดจริง (story 82)
-- [ ] ไม่เพิ่ม timer เปิดกฎกลับอัตโนมัติ การไม่เข้าแอปไม่กลายเป็นช่วงหยุด (stories 82, 83)
-- [ ] Persist effective schedule/version/interval ที่ generator ใช้จริงและไม่อาศัย isActive ปัจจุบันย้อนทั้งประวัติ
-- [ ] ลบกฎคงรายการที่เคยสร้างไว้; undo คืน ID/fields/references ที่ได้รับผล และการเรียก generation ซ้ำไม่เพิ่มสำเนารายการ (story 84)
-- [ ] คำขอซ้ำ/failure/conflict/account ownership ไม่ทำให้ history ผิดหรือแจ้งว่าคืนครบโดยไม่ครบ
-- [ ] ตรวจ generation หลายเดือน/edit/resume/delete/restore ด้วย clock/ฐานทดสอบ และเดิน lifecycle บน iOS
+- [ ] Day/amount/detail edits affect the next occurrence. Preserve existing entries and avoid historical generation with edited values. (story 81)
+- [ ] A two-month pause followed by resume skips paused dates and starts at the next due date. Support multiple actual intervals. (story 82)
+- [ ] Resume requires user action rather than an automatic timer. App inactivity is not a pause interval. (stories 82, 83)
+- [ ] Persist effective schedules/versions/intervals that generation actually uses. Current isActive alone cannot reinterpret all history.
+- [ ] Rule deletion preserves generated entries. Undo restores original IDs/fields/affected references. Repeated generation creates no clones. (story 84)
+- [ ] Repeated requests/failure/conflict/ownership preserve history and report restoration completeness accurately.
+- [ ] Check several months, edit/resume/delete/restore with controlled time/test database. Check lifecycle on iOS.
