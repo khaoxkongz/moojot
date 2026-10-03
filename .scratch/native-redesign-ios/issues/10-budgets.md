@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — [ตัวอักษรและธีมบน iOS](01-ios-theme-foundation.md)
 
-**Status:** ready-for-human
+**Status:** done
 
 **Done in:** 7dd6d6e feat(budgets): plan and budget form from the design, with delete and server-side undo; c0dc775 fix(budgets): undoable replace on edit, safe concurrent delete, review clean-ups
 
@@ -38,3 +38,5 @@
 11. ดูทั้งธีมสว่างและมืด ว่าตัวอักษร สี แถบ และไอคอนสถานะอ่านง่าย
 
 ข้อสังเกตสำหรับคนตรวจ: ฐานข้อมูล dev สร้าง collection `finance_deletion` เองตอนลบงบครั้งแรก แต่ index ของมันจะมาเมื่อรัน `vp run db:push` กับฐานนั้นครั้งถัดไป (งานนี้ไม่ได้รัน)
+
+2026-10-03: ผู้ใช้ลองบน iPhone แล้วบอกว่าโอเค แต่ยังไม่ได้ไล่ทุกข้อในรายการด้านบน (1–11) อย่างละเอียด จึงปิดตั๋วเป็น `done` ตามที่ผู้ใช้ตกลง สิ่งที่ยังไม่เคยเห็นบนเครื่องจริง ควรดูอีกครั้งตอนตรวจรวมในตั๋ว 22: งบแท็ก, วันเริ่มเดือนแบบกำหนดเอง, การเอากลับคืนที่ถูกปฏิเสธ, ข้อ 9 (ปิดเน็ตแล้วลองอีกครั้ง), Dynamic Type/VoiceOver และการแก้หลังรีวิว (c0dc775: แก้งบไปทับงบอื่นแล้วเอากลับคืนได้, ข้อความเมื่อชนกัน) ยังต้องรัน `vp run db:push` กับฐาน dev เพื่อสร้าง index ของ `finance_deletion`
