@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { MessageCard } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text, TextInput } from "@/components/ui/typography";
 import { radius, raisedRing, touch, type AppTheme } from "@/constants/theme";
@@ -347,18 +348,14 @@ export default function SearchScreen() {
     body = (
       // Keeps taps while the keyboard is up, like the other states, so ลองอีกครั้ง needs one tap. The term stays as typed.
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={bottom}>
-        <View style={styles.messageCard}>
-          <Text style={styles.messageTitle}>ค้นหาไม่สำเร็จ</Text>
-          <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="ลองค้นหาอีกครั้ง"
-            onPress={() => void resultsQuery.refetch()}
-            style={styles.retry}
-          >
-            <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-          </Pressable>
-        </View>
+        <MessageCard
+          align="start"
+          title="ค้นหาไม่สำเร็จ"
+          body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
+          onRetry={() => void resultsQuery.refetch()}
+          retryLabel="ลองค้นหาอีกครั้ง"
+          style={styles.messageCard}
+        />
       </ScrollView>
     );
   } else {
@@ -518,18 +515,7 @@ function createStyles(theme: AppTheme) {
       color: theme.onAccent,
     },
     loading: { marginTop: 40 },
-    messageCard: {
-      marginTop: 8,
-      marginHorizontal: 16,
-      padding: 20,
-      borderRadius: radius.card,
-      backgroundColor: theme.surface,
-      ...raisedRing(theme),
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 20 },
-    retry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center", marginTop: 4 },
-    retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
+    messageCard: { marginTop: 8, marginHorizontal: 16 },
   });
 }
 

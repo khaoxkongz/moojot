@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { MessageCard } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { Text } from "@/components/ui/typography";
 import { accentRing, radius, raisedRing, shadow, touch, type AppTheme } from "@/constants/theme";
@@ -31,6 +32,7 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import type { TransactionKind, WalletFilterSelection } from "@/types/finance";
 import { nextMonthOffset } from "@/utils/dates";
 import { amountLabel, isValidISODate, todayISO } from "@/utils/format";
+import { queryState } from "@/utils/query-state";
 
 const emptyRows: never[] = [];
 const kinds: Array<[TransactionKind, string]> = [
@@ -51,7 +53,7 @@ function InlineError({ message, onRetry }: Retry) {
   return (
     <View style={styles.inlineError}>
       <Text style={styles.inlineErrorText}>{message}</Text>
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retry}>
+      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.inlineRetry}>
         <Text style={styles.retryText}>ลองอีกครั้ง</Text>
       </Pressable>
     </View>
@@ -176,8 +178,11 @@ export default function SummaryScreen() {
     ? planRowSubtitle(budgetsQuery.data, { walletFiltered: Boolean(appliedWalletFilter) })
     : "ดูงบของเดือนนี้";
 
-  const pageError = !summary && (startDayQuery.error ?? summaryQuery.error);
-  const refreshError = summary && summaryQuery.error;
+  const { pageError } = queryState([startDayQuery, summaryQuery]);
+  // Not queryState's refreshError or retry. The line is for the month's totals only, and it stays up while a retry
+  // fetches (with its retries, several seconds of nothing on screen otherwise). Retry also reloads the bars, trend and
+  // budgets, which cannot join queryState: the breakdown that is switched off never has data.
+  const refreshError = Boolean(summary && summaryQuery.error);
   const retryAll = () => {
     for (const query of [startDayQuery, summaryQuery, categoriesQuery, tagsQuery, trendQuery, budgetsQuery]) {
       if (query.isEnabled) void query.refetch();
@@ -285,13 +290,13 @@ export default function SummaryScreen() {
         ) : null}
 
         {pageError ? (
-          <View style={styles.messageCard}>
-            <Text style={styles.messageTitle}>โหลดสรุปไม่สำเร็จ</Text>
-            <Text style={styles.messageBody}>เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง</Text>
-            <Pressable accessibilityRole="button" onPress={retryAll} style={styles.retry}>
-              <Text style={styles.retryText}>ลองอีกครั้ง</Text>
-            </Pressable>
-          </View>
+          <MessageCard
+            align="start"
+            title="โหลดสรุปไม่สำเร็จ"
+            body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
+            onRetry={retryAll}
+            style={styles.messageCard}
+          />
         ) : !overview ? (
           <ActivityIndicator color={theme.accentText} style={styles.loading} />
         ) : (
@@ -487,16 +492,8 @@ function createStyles(theme: AppTheme) {
     refreshErrorRow: { minHeight: touch.min, paddingHorizontal: 4, justifyContent: "center" },
     refreshError: { color: theme.danger, fontSize: 12, lineHeight: 17 },
     loading: { marginTop: 40 },
-    messageCard: {
-      marginTop: 8,
-      padding: 20,
-      borderRadius: radius.card,
-      backgroundColor: theme.surface,
-      ...raisedRing(theme),
-    },
-    messageTitle: { color: theme.text, fontSize: 15, lineHeight: 21 },
-    messageBody: { marginTop: 4, color: theme.muted, fontSize: 13, lineHeight: 20 },
-    retry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center" },
+    messageCard: { marginTop: 8 },
+    // The "ลองอีกครั้ง" link in the refresh line and in a card's own load error.
     retryText: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
     overview: {
       paddingTop: 16,
@@ -607,6 +604,7 @@ function createStyles(theme: AppTheme) {
     transferNote: { paddingBottom: 12, color: theme.muted, fontSize: 12, lineHeight: 18 },
     inlineError: { paddingVertical: 16, alignItems: "flex-start" },
     inlineErrorText: { color: theme.danger, fontSize: 13, lineHeight: 19 },
+    inlineRetry: { alignSelf: "flex-start", minHeight: touch.min, justifyContent: "center" },
     trendCard: { padding: 16, paddingTop: 16, paddingBottom: 16 },
     trendTitle: { color: theme.text, fontSize: 16, lineHeight: 22 },
     compareLine: { marginTop: 4, flexDirection: "row", alignItems: "flex-start", gap: 6 },

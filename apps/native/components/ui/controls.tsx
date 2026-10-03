@@ -469,30 +469,63 @@ export function InfoBox({
 }
 
 /**
- * A screen that could not load, or a record that is gone: a centered card with a title, a line of body and, when the
- * load can be tried again, a "ลองอีกครั้ง" link.
+ * A screen that could not load, a record that is gone, or an empty list: a card with a title, a line of body and, when
+ * the load can be tried again, a "ลองอีกครั้ง" link. Centered on its own (Plan, the budget form); `align="start"` sets
+ * it flush left among a screen's content (Home, Summary, Search). `style` places the card on the screen.
  */
-export function MessageCard({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
+export function MessageCard({
+  title,
+  body,
+  onRetry,
+  retryLabel,
+  align = "center",
+  style,
+}: {
+  title: string;
+  body: string;
+  onRetry?: () => void;
+  /** Spoken name of the retry link, when "ลองอีกครั้ง" alone does not say what it tries again. */
+  retryLabel?: string;
+  align?: "center" | "start";
+  style?: StyleProp<ViewStyle>;
+}) {
   const theme = useAppTheme();
+  const centered = align === "center";
   return (
     <View
-      style={{
-        marginTop: 12,
-        padding: 18,
-        borderRadius: radius.card,
-        backgroundColor: theme.surface,
-        alignItems: "center",
-        gap: 4,
-        ...raisedRing(theme),
-      }}
+      style={[
+        {
+          marginTop: 12,
+          padding: centered ? 18 : 20,
+          borderRadius: radius.card,
+          backgroundColor: theme.surface,
+          alignItems: centered ? "center" : "stretch",
+          gap: 4,
+          ...raisedRing(theme),
+        },
+        style,
+      ]}
     >
       <Text style={{ color: theme.text, fontSize: 15, lineHeight: 21 }}>{title}</Text>
-      <Text style={{ color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: "center" }}>{body}</Text>
+      <Text
+        style={{
+          color: theme.muted,
+          fontSize: 13,
+          lineHeight: centered ? 19 : 20,
+          textAlign: centered ? "center" : "auto",
+        }}
+      >
+        {body}
+      </Text>
       {onRetry ? (
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={retryLabel}
           onPress={onRetry}
-          style={{ minHeight: touch.min, justifyContent: "center", paddingHorizontal: 12 }}
+          style={[
+            { minHeight: touch.min, justifyContent: "center" },
+            centered ? { paddingHorizontal: 12 } : { alignSelf: "flex-start" },
+          ]}
         >
           <Text style={{ color: theme.accentText, fontSize: 14, lineHeight: 20 }}>ลองอีกครั้ง</Text>
         </Pressable>
