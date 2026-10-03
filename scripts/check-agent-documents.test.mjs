@@ -2,16 +2,20 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 const project = path.resolve(import.meta.dirname, "..");
 const checker = path.join(project, "scripts/check-agent-documents.py");
 const roots = [];
-const hookGit = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);
+const hookGitVariables = new Set(["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]);
 
-// A Git hook exports these variables, and they would point every git command below at the hook's repository.
-function isolated() {
-  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !hookGit.has(key)));
+// A Git hook can export these variables, and they would point every git command below at the hook's repository.
+function isolatedEnv() {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !hookGitVariables.has(key)));
+}
+
+function git(...args) {
+  return execFileSync("git", args, { encoding: "utf8", env: isolatedEnv() });
 }
 
 function write(root, name, text) {
@@ -29,15 +33,16 @@ function fixture(documents, exceptions = []) {
 }
 
 function check(root, ...args) {
-  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8", env: isolated() });
+  return spawnSync("python3", [checker, "--root", root, ...args], { encoding: "utf8", env: isolatedEnv() });
 }
 
 function stage(root) {
-  execFileSync("git", ["init", "--quiet", root], { env: isolated() });
-  execFileSync("git", ["-C", root, "add", "."], { env: isolated() });
+  git("init", "--quiet", root);
+  git("-C", root, "add", ".");
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
@@ -295,25 +300,23 @@ describe("Agent document gate", () => {
     expect(check(root, "--staged").stderr).toContain("missing-link");
   });
 
-  it("leaves the hook's repository unchanged when GIT_DIR points at it", () => {
+  // Git sets GIT_DIR for a pre-push hook only when the push comes from a linked worktree.
+  it("leaves the hook's repository unchanged when GIT_DIR points at a linked worktree", () => {
     const other = fixture({ "kept.txt": "kept\n" });
-    execFileSync("git", ["init", "--quiet", other], { env: isolated() });
-    execFileSync("git", ["-C", other, "add", "kept.txt"], { env: isolated() });
-    const gitDir = path.join(other, ".git");
+    git("init", "--quiet", other);
+    git("-C", other, "add", "kept.txt");
+    const identity = ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false"];
+    git("-C", other, ...identity, "commit", "--quiet", "--no-verify", "-m", "Keep");
+    const linked = path.join(fixture({}), "linked");
+    git("-C", other, "worktree", "add", "--quiet", linked);
+    const gitDir = path.join(other, ".git/worktrees/linked");
     const index = readFileSync(path.join(gitDir, "index"));
     const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nThe app stopped; data remains.\n" });
-    const saved = process.env.GIT_DIR;
-    process.env.GIT_DIR = gitDir;
-    let result;
-    try {
-      stage(root);
-      result = check(root, "--staged");
-    } finally {
-      if (saved === undefined) delete process.env.GIT_DIR;
-      else process.env.GIT_DIR = saved;
-    }
-    const bare = execFileSync("git", ["-C", other, "config", "core.bare"], { env: isolated(), encoding: "utf8" });
-    expect(bare.trim()).toBe("false");
+    vi.stubEnv("GIT_DIR", gitDir);
+    stage(root);
+    const result = check(root, "--staged");
+    vi.unstubAllEnvs();
+    expect(git("-C", other, "config", "core.bare").trim()).toBe("false");
     expect(readFileSync(path.join(gitDir, "index"))).toEqual(index);
     expect(result.stderr).toContain("spec.md:3 semicolon");
   });
@@ -322,7 +325,7 @@ describe("Agent document gate", () => {
     const root = fixture({ ".scratch/example/spec.md": "# Specification\n\nRead the document.\n" });
     const localChecker = path.join(root, "scripts/check-agent-documents.py");
     write(root, "scripts/check-agent-documents.py", readFileSync(checker, "utf8"));
-    const result = spawnSync("python3", [localChecker], { encoding: "utf8", env: isolated() });
+    const result = spawnSync("python3", [localChecker], { encoding: "utf8", env: isolatedEnv() });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Restore the repository's asd-ste100 skill");
     expect(result.stdout).not.toContain("Agent documents:");
