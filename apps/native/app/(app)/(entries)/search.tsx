@@ -354,7 +354,7 @@ export default function SearchScreen() {
           body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
           onRetry={() => void resultsQuery.refetch()}
           retryLabel="ลองค้นหาอีกครั้ง"
-          style={styles.messageCard}
+          margins={styles.messageCard}
         />
       </ScrollView>
     );

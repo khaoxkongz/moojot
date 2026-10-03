@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { bahtFontSize, MessageCard } from "@/components/ui/controls";
+import { bahtFontSize, MessageCard, RetryLinkText } from "@/components/ui/controls";
 import { HomeIcon } from "@/components/ui/home-icon";
 import { SpinningCounter } from "@/components/ui/spinning-counter";
 import { Text } from "@/components/ui/typography";
@@ -511,7 +511,7 @@ export default function HomeScreen() {
           {refreshError ? (
             <Pressable accessibilityRole="button" onPress={refetchHome} style={styles.refreshErrorRow}>
               <Text style={styles.refreshError}>
-                อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <Text style={styles.refreshRetry}>ลองอีกครั้ง</Text>
+                อัปเดตข้อมูลไม่สำเร็จ แสดงข้อมูลที่โหลดไว้ล่าสุด <RetryLinkText />
               </Text>
             </Pressable>
           ) : null}
@@ -523,14 +523,14 @@ export default function HomeScreen() {
               title="โหลดรายการไม่สำเร็จ"
               body="เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง"
               onRetry={refetchHome}
-              style={styles.messageCard}
+              margins={styles.messageCard}
             />
           ) : days.length === 0 ? (
             <MessageCard
               align="start"
               title={emptyTitle}
               body={appliedWalletFilter ? "ลองเลือกบัญชี บัตร หรือรายการอื่นเพิ่มเติม" : "แตะ “จดเพิ่ม” เพื่อเริ่มบันทึกรายรับรายจ่าย"}
-              style={styles.messageCard}
+              margins={styles.messageCard}
             />
           ) : (
             days.map((day) => <DayGroup key={day.date} day={day} reading={slipScan.reading} />)
@@ -657,7 +657,6 @@ function createStyles(theme: AppTheme) {
     refreshErrorRow: { marginTop: 4, marginHorizontal: 20, minHeight: touch.min, justifyContent: "center" },
     refreshError: { color: theme.danger, fontSize: 12, lineHeight: 17 },
     loading: { marginTop: 40 },
-    refreshRetry: { color: theme.accentText, fontSize: 14, lineHeight: 20 },
     messageCard: { marginTop: 22, marginHorizontal: 16 },
     dayHeader: {
       paddingTop: 22,
