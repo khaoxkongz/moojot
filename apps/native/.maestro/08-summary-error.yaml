@@ -3,6 +3,7 @@
 appId: com.anonymous.moojot
 ---
 - runFlow: sign-in.yaml
+# A first tap after the run that opened the app can do nothing; tap again then.
 - tapOn:
     text: "ดูสรุป"
     retryTapIfNoChange: true

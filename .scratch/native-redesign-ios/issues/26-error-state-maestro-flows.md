@@ -39,3 +39,15 @@ Simulator check, iPhone 11, development build:
   The failed run had no log in the retry handler, so the data does not show if the tap reached the button.
 - The error cards match the `notes/` screenshots of tickets 05, 08, 09, 10, and 25. Only the month and the dev-tools button position are different.
 - New screenshots in `notes/`: `05-app-home-{error,recovered}-dark`, `08-app-summary-{error,recovered}`, `09-app-search-{error,recovered}-dark`, and `10-app-plan-{error,recovered}-dark`.
+
+**Ticket 26 review fix — agent, 2026-10-03:** This fix applies the code review findings.
+
+- `--offline` only skips the API server check again. The error runs give `--offline --keep-app`, and `--keep-app` keeps the app open.
+  This replaces the `--offline` finding in the earlier comment.
+- `05-home-recovered.yaml` waits for a total that ends in “บาท” (baht) after an amount with two decimals.
+  This selector also matches the caption with dates, which Home shows when the month does not start on the 1st.
+- Step 4 of the `ios-preview` skill says that the four flow pairs cover only Home, Summary, Search, and Plan.
+  Sub-step 4 points to top-level step 1 (Services up). The dev-tools gotcha now gives the tap by name first.
+- The flows have comments for `retryTapIfNoChange` and for the iOS prompt that opens `moojot://plan`.
+
+Simulator check, iPhone 11, development build: the Home flow pair passed in light, with one retry tap.
