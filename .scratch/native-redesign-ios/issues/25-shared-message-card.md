@@ -4,7 +4,9 @@
 
 **Blocked by:** 10 — [Set budgets and restore deleted budgets](10-budgets.md)
 
-**Status:** ready-for-agent
+**Status:** done
+
+**Done in:** c3d1b88 refactor(native): Home, Summary and Search use the shared message card
 
 **Source:** Found in the ticket 10 code review. Ticket 10 added `MessageCard` in `apps/native/components/ui/controls.tsx` and `queryState()` in `apps/native/utils/query-state.ts`. The plan screen and the budget form use them.
 
@@ -12,11 +14,11 @@
 
 Each screen has its own copy of the card styles: `messageCard`, `retryText`, and the text styles around them. A new screen can copy them again. The next change to the card then needs an edit in every copy.
 
-- [ ] Summary (`app/(app)/(insights)/summary.tsx`) uses `MessageCard` and no longer defines its own card styles.
-- [ ] Search (`app/(app)/(entries)/search.tsx`) uses `MessageCard` and no longer defines its own card styles.
-- [ ] Home (`app/(app)/(tabs)/index.tsx`) uses `MessageCard` and no longer defines its own card styles.
-- [ ] Summary and Home use `queryState()` when it gives the same states. Home and Summary compute their errors differently from `queryState()`. For example, `queryState()` hides a refresh error while a retry fetches. If a screen needs its own states, keep them and write the reason in a comment in this file.
-- [ ] The existing tests and Maestro flows for tickets 05, 08, and 09 pass. The error and recovery screenshots match the screenshots in `notes/` for those tickets.
+- [x] Summary (`app/(app)/(insights)/summary.tsx`) uses `MessageCard` and no longer defines its own card styles.
+- [x] Search (`app/(app)/(entries)/search.tsx`) uses `MessageCard` and no longer defines its own card styles.
+- [x] Home (`app/(app)/(tabs)/index.tsx`) uses `MessageCard` and no longer defines its own card styles.
+- [x] Summary and Home use `queryState()` when it gives the same states. Home and Summary compute their errors differently from `queryState()`. For example, `queryState()` hides a refresh error while a retry fetches. If a screen needs its own states, keep them and write the reason in a comment in this file.
+- [x] The existing tests and Maestro flows for tickets 05, 08, and 09 pass. The error and recovery screenshots match the screenshots in `notes/` for those tickets.
 
 ## Comments
 
