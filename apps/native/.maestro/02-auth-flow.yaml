@@ -1,8 +1,7 @@
-# Ticket 02 signup / sign-in states, named <NN>-app-<state>. Runs against a throwaway API server, never the
-# development database: it signs up a new account. Setup (recipe in .scratch/native-redesign-ios/notes/02-auth-flow.md):
-#   - fixture account returning@example.test / returning-pass, name หมูกลับมา, onboarding complete;
-#   - no account for nobody@example.test;
-#   - the app's remembered email file deleted and nobody signed in, so the app makes a first start.
+# Ticket 02 signup / sign-in states, named <NN>-app-<state>. It signs up accounts in the development database, so run it with
+#   node scripts/ios-preview.mjs apps/native/.maestro/02-auth-flow.yaml <out-dir> --fixture --first-start
+# --fixture makes an account with setup complete (MAESTRO_FIXTURE_*) and an address with no account (MAESTRO_NEW_EMAIL);
+# --first-start signs the app out and forgets the remembered email, so it opens signup.
 appId: com.anonymous.moojot
 ---
 - extendedWaitUntil:
@@ -18,9 +17,9 @@ appId: com.anonymous.moojot
 # Typing clears only that field's error; Enter moves to the next field.
 - tapOn:
     id: "auth-name"
-- inputText: "หมูกลับมา"
+- inputText: ${MAESTRO_FIXTURE_NAME}
 - pressKey: Enter
-- inputText: "returning@example.test"
+- inputText: ${MAESTRO_FIXTURE_EMAIL}
 - pressKey: Enter
 # Show the password first: in a hidden new-password field the simulator's Automatic Strong Password cover takes the typing.
 - tapOn: "แสดงรหัสผ่าน"
@@ -38,6 +37,8 @@ appId: com.anonymous.moojot
     visible: "อีเมลนี้มีบัญชีอยู่แล้ว"
     timeout: 10000
 - takeScreenshot: 02-app-signup-duplicate
+# The on-screen keyboard can cover the notice action, and hideKeyboard fails here; a tap on the heading closes it.
+- tapOn: "หมูจด"
 - tapOn: "เข้าสู่ระบบด้วยอีเมลนี้"
 - waitForAnimationToEnd
 - takeScreenshot: 02-app-signin-from-notice
@@ -50,10 +51,10 @@ appId: com.anonymous.moojot
 - tapOn:
     id: "auth-password"
 - eraseText: 20
-- inputText: "returning-pass"
+- inputText: ${MAESTRO_FIXTURE_PASSWORD}
 - pressKey: Enter
 - extendedWaitUntil:
-    visible: "ยินดีต้อนรับกลับ หมูกลับมา"
+    visible: "ยินดีต้อนรับกลับ ${MAESTRO_FIXTURE_NAME}"
     timeout: 15000
 - takeScreenshot: 02-app-home-welcome
 # Sign out from the account sheet; the app reopens sign-in with this email and no password.
@@ -62,7 +63,7 @@ appId: com.anonymous.moojot
 - extendedWaitUntil:
     visible: "อีเมล.*"
     timeout: 15000
-- tapOn: "อีเมล.*returning@example.test.*"
+- tapOn: "อีเมล.*${MAESTRO_FIXTURE_EMAIL}.*"
 - waitForAnimationToEnd
 - takeScreenshot: 02-app-signout-sheet
 - tapOn: "ออกจากระบบ"
@@ -75,8 +76,8 @@ appId: com.anonymous.moojot
 # An email without an account: the notice offers signup with it, keeping the email.
 - tapOn:
     id: "auth-email"
-- eraseText: 40
-- inputText: "nobody@example.test"
+- eraseText: 80
+- inputText: ${MAESTRO_NEW_EMAIL}
 - tapOn:
     id: "auth-password"
 - inputText: "new-password"
@@ -85,6 +86,8 @@ appId: com.anonymous.moojot
     visible: "ยังไม่มีบัญชีของอีเมลนี้"
     timeout: 10000
 - takeScreenshot: 02-app-signin-unknown
+# The on-screen keyboard can cover the notice action, and hideKeyboard fails here; a tap on the heading closes it.
+- tapOn: "หมูจด"
 - tapOn: "สมัครสมาชิกด้วยอีเมลนี้"
 - tapOn:
     id: "auth-name"

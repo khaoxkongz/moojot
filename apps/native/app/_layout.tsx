@@ -5,7 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
-import { StyleSheet } from "react-native";
+import { LogBox, Platform, Settings, StyleSheet } from "react-native";
 
 import { useAppFonts } from "@/constants/fonts";
 import { AppDataProvider } from "@/context/app-data";
@@ -18,6 +18,9 @@ import { queryClient } from "@/utils/orpc";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 void SplashScreen.preventAutoHideAsync();
+// scripts/ios-preview.mjs sets the simulator preference `moojotPreview` before each Maestro run. The dev-only LogBox
+// banner would cover the tab bar that flows tap; errors still reach .preview-logs/metro.log.
+if (__DEV__ && Platform.OS === "ios" && Settings.get("moojotPreview")) LogBox.ignoreAllLogs();
 // The splash stays up until the saved theme is known, so the first screen never flashes the other palette.
 void themePreference.load();
 // The auth screen opens in sign-in mode with the remembered email, so it must be known before the first screen.

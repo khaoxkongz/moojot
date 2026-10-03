@@ -112,13 +112,13 @@ Matched values:
 
 The flow `apps/native/.maestro/02-auth-flow.yaml` ran in light and dark. Captures are `02-app-<state>[-dark].png` beside this file. The review fix ran the flow again in light and dark and replaced the captures. The sign-out sheet captures show the new title, line, and cancel button.
 
-The flow signs up a new account, so it ran against a throwaway database, not the development database. Recipe:
+The flow signs up new accounts. Ticket 02 ran it against a throwaway database. On 2026-10-03 the user approved all operations on the development database for agents, so this command replaces that setup:
 
-1. Start `MongoMemoryReplSet` on port 27999 from a script in the gitignored `.preview-logs/`.
-2. Run `prisma db push` against it.
-3. Start the API server with `DATABASE_URL` set to that replica set.
-4. Make the fixture `returning@example.test` through `/api/auth/sign-up/email`. Set `onboarding_complete_v1` through `/rpc/financePreferences/setSetting`. Both requests need an `origin` header from `CORS_ORIGIN`. The RPC request also needs the header `x-csrf-token: orpc`.
-5. Before each run, delete `nobody@example.test`, every session, and the app's `Documents/moojot-last-email-v1.txt`.
+```sh
+node scripts/ios-preview.mjs apps/native/.maestro/02-auth-flow.yaml <out-dir> --fixture --first-start
+```
+
+`--fixture` signs up an account with setup complete and gives the flow an address that has no account. `--first-start` signs the app out and deletes the remembered email. The `ios-preview` skill describes both flags.
 
 Checked states: first start in signup, incomplete-field errors, the live rule, show and hide, and duplicate signup. Also checked: the notice action into sign-in, wrong password, and Home with the welcome toast. The flow also checked the sign-out sheet, sign-in with the remembered email after sign-out, unknown email, the notice action into signup, and the greeting.
 
