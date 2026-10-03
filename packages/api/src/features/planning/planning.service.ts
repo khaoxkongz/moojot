@@ -1,4 +1,4 @@
-import type { Database } from "@moojot/db";
+import type { Database, Prisma } from "@moojot/db";
 import { Context, Effect, Layer, Schema } from "effect";
 import { activeTransactionWhere, satangToNumber } from "../../shared/finance/common";
 import { dateInMonth, getPeriodBounds, getPeriodForDate, shiftPeriodKey, todayISO } from "../../shared/finance/dates";
@@ -6,7 +6,13 @@ import { PrismaProvider } from "../../providers/prisma.provider";
 import { FinanceCategories } from "../../shared/finance/category.service";
 import { FinanceSettings } from "../../shared/finance/settings.service";
 import { planningInputs, recurringInput } from "./planning.schema";
-import { FinanceBadRequestError, FinanceNotFoundError, financeOperation } from "../../shared/finance/error";
+import { deleteWithUndo, keepDeletion, restoreDeletion } from "../../shared/finance/deletions";
+import {
+  FinanceBadRequestError,
+  FinanceConflictError,
+  FinanceNotFoundError,
+  financeOperation,
+} from "../../shared/finance/error";
 
 function mapBudget(row: {
   id: string;
@@ -28,6 +34,34 @@ function mapBudget(row: {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** What deleting a budget keeps, so restoring it brings back the same ID, target, limit and dates. */
+const BudgetSnapshot = Schema.Struct({
+  id: Schema.String,
+  periodKey: Schema.String,
+  scopeKey: Schema.String,
+  categoryId: Schema.NullOr(Schema.String),
+  tagId: Schema.NullOr(Schema.String),
+  /** Satang as a decimal string: JSON has no 64-bit integers. */
+  limitSatang: Schema.String,
+  warningThresholdPercent: Schema.Int,
+  createdAt: Schema.String,
+  updatedAt: Schema.String,
+});
+
+function budgetSnapshot(row: Parameters<typeof mapBudget>[0] & { scopeKey: string }) {
+  return Schema.encodeSync(BudgetSnapshot)({
+    id: row.id,
+    periodKey: row.periodKey,
+    scopeKey: row.scopeKey,
+    categoryId: row.categoryId,
+    tagId: row.tagId,
+    limitSatang: row.limitSatang.toString(),
+    warningThresholdPercent: row.warningThresholdPercent,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  });
 }
 
 function mapRecurring(row: {
@@ -64,29 +98,36 @@ function mapRecurring(row: {
   };
 }
 
-async function validateCategory(db: Database, userId: string, categoryId: string | null, kind: string) {
+/** Reads categories and tags: the database, or a transaction already open. */
+type CategoryReader = Pick<Prisma.TransactionClient, "financeCategory" | "financeTag">;
+/** The error a failed check throws: a bad request for a save, a conflict for a restore. */
+type Refusal = (message: string) => Error;
+const badRequest: Refusal = (message) => new FinanceBadRequestError({ message });
+const conflict: Refusal = (message) => new FinanceConflictError({ message });
+
+async function validateCategory(
+  db: CategoryReader,
+  userId: string,
+  categoryId: string | null,
+  kind: string,
+  refuse: Refusal = badRequest
+) {
   if (!categoryId) return;
-  if (kind === "transfer") throw new FinanceBadRequestError({ message: "Transfers cannot have a category" });
+  if (kind === "transfer") throw refuse("Transfers cannot have a category");
   const category = await db.financeCategory.findUnique({
     where: { userId_id: { userId, id: categoryId } },
     select: { kind: true },
   });
-  if (!category || category.kind !== kind) {
-    throw new FinanceBadRequestError({
-      message: "Category kind does not match transaction kind",
-    });
-  }
+  if (!category || category.kind !== kind) throw refuse("Category kind does not match transaction kind");
 }
 
-async function validateTagIds(db: Database, userId: string, tagIds: string[]) {
+async function validateTagIds(db: CategoryReader, userId: string, tagIds: string[], refuse: Refusal = badRequest) {
   if (!tagIds.length) return;
   const tags = await db.financeTag.findMany({
     where: { userId, id: { in: tagIds } },
     select: { id: true },
   });
-  if (tags.length !== tagIds.length) {
-    throw new FinanceBadRequestError({ message: "Tag does not exist" });
-  }
+  if (tags.length !== tagIds.length) throw refuse("Tag does not exist");
 }
 
 function budgetScopeKey(categoryId: string | null, tagId: string | null) {
@@ -145,6 +186,40 @@ function makePlanningOperations(
         const scopeKey = budgetScopeKey(categoryId, tagId);
         if (categoryId) await validateCategory(db, userId, categoryId, "expense");
         if (tagId) await validateTagIds(db, userId, [tagId]);
+        const fields = {
+          periodKey: input.periodKey,
+          scopeKey,
+          categoryId,
+          tagId,
+          limitSatang: BigInt(input.limitSatang),
+          warningThresholdPercent: input.warningThresholdPercent ?? 80,
+        };
+        if (input.id) {
+          // Editing keeps the budget's ID and month. A budget already set for the new target is removed in the same
+          // step, kept as a deletion like any delete, so it can still be brought back.
+          const id = input.id;
+          const row = await db.$transaction(async (tx) => {
+            const current = await tx.financeBudget.findFirst({ where: { id, userId }, select: { periodKey: true } });
+            if (!current) throw new FinanceNotFoundError({ message: "Budget does not exist" });
+            if (current.periodKey !== input.periodKey) {
+              throw new FinanceBadRequestError({ message: "An edited budget stays in its own month" });
+            }
+            const replaced = await tx.financeBudget.findFirst({
+              where: { userId, periodKey: input.periodKey, scopeKey, id: { not: id } },
+            });
+            if (replaced) {
+              await tx.financeBudget.delete({ where: { id: replaced.id } });
+              await keepDeletion(tx, {
+                userId,
+                kind: "budget",
+                targetId: replaced.id,
+                snapshot: budgetSnapshot(replaced),
+              });
+            }
+            return tx.financeBudget.update({ where: { id }, data: fields });
+          });
+          return mapBudget(row);
+        }
         const row = await db.financeBudget.upsert({
           where: { userId_periodKey_scopeKey: { userId, periodKey: input.periodKey, scopeKey } },
           create: {
@@ -169,12 +244,57 @@ function makePlanningOperations(
       userId: string,
       input: typeof planningInputs.deleteBudget.Type
     ) {
-      return yield* financeOperation("deleteBudget", async () => {
-        const result = await db.financeBudget.deleteMany({
-          where: { id: input.id, userId: userId },
-        });
-        return result.count > 0;
+      return yield* deleteWithUndo(db, {
+        userId,
+        kind: "budget",
+        targetId: input.id,
+        remove: async (tx) => {
+          const row = await tx.financeBudget.findFirst({ where: { id: input.id, userId } });
+          if (!row) return null;
+          await tx.financeBudget.delete({ where: { id: row.id } });
+          return budgetSnapshot(row);
+        },
       });
+    }),
+
+    restoreBudget: Effect.fn("PlanningService.restoreBudget")(function* (
+      userId: string,
+      input: typeof planningInputs.restoreBudget.Type
+    ) {
+      return yield* financeOperation("restoreBudget", () =>
+        restoreDeletion(db, {
+          userId,
+          kind: "budget",
+          deletionId: input.deletionId,
+          current: async (tx, id) => {
+            const row = await tx.financeBudget.findFirst({ where: { id, userId } });
+            return row ? mapBudget(row) : null;
+          },
+          restore: async (tx, stored) => {
+            const snapshot = Schema.decodeUnknownSync(BudgetSnapshot)(stored);
+            const taken = await tx.financeBudget.findFirst({
+              where: { userId, periodKey: snapshot.periodKey, scopeKey: snapshot.scopeKey },
+              select: { id: true },
+            });
+            if (taken) {
+              throw new FinanceConflictError({ message: "Another budget is set for this target now" });
+            }
+            // No budget for a name that is gone: the same checks as a save, refused as a conflict.
+            await validateCategory(tx, userId, snapshot.categoryId, "expense", conflict);
+            if (snapshot.tagId) await validateTagIds(tx, userId, [snapshot.tagId], conflict);
+            const row = await tx.financeBudget.create({
+              data: {
+                ...snapshot,
+                userId,
+                limitSatang: BigInt(snapshot.limitSatang),
+                createdAt: new Date(snapshot.createdAt),
+                updatedAt: new Date(snapshot.updatedAt),
+              },
+            });
+            return mapBudget(row);
+          },
+        })
+      );
     }),
 
     getBudgetStatuses: Effect.fn("PlanningService.getBudgetStatuses")(function* (
@@ -221,8 +341,13 @@ function makePlanningOperations(
             spentSatang,
             remainingSatang,
             percentUsed,
+            /** At or past the warning percent; also true when over, so read isOverLimit first (ใกล้ครบงบ). */
             isNearLimit: percentUsed >= budget.warningThresholdPercent,
-            isOverLimit: percentUsed >= 100,
+            /**
+             * เกินงบ: spending is more than the limit. Spending exactly the limit is not over. (Before ticket 10 this
+             * was true from 100%; no caller relied on that.)
+             */
+            isOverLimit: spent > BigInt(budget.limitSatang),
           };
         });
       });

@@ -21,7 +21,7 @@ export default function AppLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(insights)/summary" options={{ headerShown: false }} />
-        <Stack.Screen name="(planning)/plan" options={{ title: "วางแผน" }} />
+        <Stack.Screen name="(planning)/plan" options={{ headerShown: false }} />
         <Stack.Screen name="(streak)/streak-stats" options={{ headerShown: false }} />
         <Stack.Screen name="(streak)/streak-settings" options={{ headerShown: false }} />
         <Stack.Screen name="(streak)/streak-tutorial" options={{ headerShown: false }} />
@@ -45,7 +45,14 @@ export default function AppLayout() {
           name="(entries)/search"
           options={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}
         />
-        <Stack.Screen name="(planning)/budget-form" options={{ title: "ตั้งงบประมาณ", presentation: "modal" }} />
+        <Stack.Screen
+          name="(planning)/budget-form"
+          options={{
+            headerShown: false,
+            presentation: "fullScreenModal",
+            contentStyle: { backgroundColor: theme.background },
+          }}
+        />
         <Stack.Screen name="(planning)/recurring-form" options={{ title: "รายการจดซ้ำ", presentation: "modal" }} />
         <Stack.Screen name="(categories)/category-form" options={{ headerShown: false }} />
         <Stack.Screen name="(categories)/categories" options={{ headerShown: false }} />

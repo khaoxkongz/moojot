@@ -8,6 +8,8 @@ const nonEmptyText = S.Trim.check(S.isNonEmpty());
 const optionalId = S.optional(S.NullOr(nonEmptyText));
 
 const budgetInput = S.Struct({
+  /** The budget being edited. It keeps this ID even when it moves to another target. */
+  id: S.optional(nonEmptyText),
   periodKey: periodKeySchema,
   limitSatang: amountSatangSchema,
   categoryId: optionalId,
@@ -53,6 +55,7 @@ export const planningInputs = {
   listBudgets: S.toStandardSchemaV1(periodQuery),
   upsertBudget: S.toStandardSchemaV1(budgetInput),
   deleteBudget: S.toStandardSchemaV1(idInput),
+  restoreBudget: S.toStandardSchemaV1(S.Struct({ deletionId: nonEmptyText })),
   getBudgetStatuses: S.toStandardSchemaV1(periodQuery),
   createRecurringRule: S.toStandardSchemaV1(recurringInput),
   updateRecurringRule: S.toStandardSchemaV1(S.Struct({ id: nonEmptyText, patch: recurringPatch })),

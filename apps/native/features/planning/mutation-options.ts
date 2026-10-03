@@ -5,14 +5,6 @@ export const planningMutationOptions = {
     orpc.financePreferences.setMonthStartDay.mutationOptions({
       onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.ledger.listTransactions.queryKey() }),
     }),
-  upsertBudget: () =>
-    orpc.planning.upsertBudget.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.ledger.listTransactions.queryKey() }),
-    }),
-  deleteBudget: () =>
-    orpc.planning.deleteBudget.mutationOptions({
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.ledger.listTransactions.queryKey() }),
-    }),
   createRecurringRule: () =>
     orpc.planning.createRecurringRule.mutationOptions({
       onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.ledger.listTransactions.queryKey() }),
