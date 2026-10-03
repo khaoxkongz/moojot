@@ -1,0 +1,18 @@
+# Ticket 03 save recovery, part 3 of 3: after the failed save the app restarts, setup is still incomplete and resumes at
+# the recap with the answers kept on the device, and saving again opens Home. Run with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-onboarding-save-retry.yaml <out-dir>
+appId: com.anonymous.moojot
+---
+- extendedWaitUntil:
+    visible: "หมูจดพร้อมจดแล้ว!"
+    timeout: 20000
+- assertVisible: "ลดรายจ่าย"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-ready-resumed
+- tapOn:
+    id: "onboarding-finish"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-home-after-retry

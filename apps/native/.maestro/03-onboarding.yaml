@@ -1,0 +1,97 @@
+# Ticket 03 setup states, named <NN>-app-<state>: signup, greeting, the four steps with their errors and sheets, the
+# skipped photo step, the recap, and Home. It signs up an account in the development database, so run it with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-onboarding.yaml <out-dir> --fixture --first-start --photos reset
+# --photos reset forgets the photo answer, so the step explains slip reading and waits for allow or skip.
+appId: com.anonymous.moojot
+---
+- runFlow: signup-to-greeting.yaml
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-greeting
+- tapOn: "สวัสดี หมูจด!"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-terms
+# "ต่อไป" stays tappable without acceptance and says what is missing.
+- tapOn:
+    id: "onboarding-next"
+- assertVisible: "กรุณายอมรับข้อตกลงการใช้งานก่อนเริ่มใช้งาน"
+- takeScreenshot: 03-app-terms-error
+- tapOn: "อ่านข้อตกลงฉบับเต็ม"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-terms-sheet
+- tapOn: "เข้าใจแล้ว"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-terms-accept"
+- tapOn:
+    id: "onboarding-next"
+# Step 2 explains slip reading before any system prompt.
+- extendedWaitUntil:
+    visible: "อนุญาตและค้นหาสลิป"
+    timeout: 10000
+- takeScreenshot: 03-app-slips-ask
+- tapOn: "หมูจดอ่านสลิปอะไรได้บ้าง?"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-slips-info
+- tapOn: "เข้าใจแล้ว"
+- waitForAnimationToEnd
+- tapOn: "ข้ามไปก่อน"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-goals
+- tapOn:
+    id: "onboarding-next"
+- assertVisible: "เลือกอย่างน้อย 1 ข้อนะ"
+- takeScreenshot: 03-app-goals-error
+- tapOn: "ออมเงินเพิ่ม"
+- tapOn: "คุมงบใช้จ่าย"
+- takeScreenshot: 03-app-goals-picked
+- tapOn:
+    id: "onboarding-next"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-extras
+- tapOn: "พี่มนุษย์เกิดวันไหนนะ.*"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-birth-sheet
+# 29 February 2001 does not exist: the error shows at once and "เลือก" keeps the sheet open.
+- tapOn: "กุมภาพันธ์"
+- tapOn: "2544"
+# Scroll the day column (left) down to 29.
+- repeat:
+    while:
+      notVisible: "29"
+    commands:
+      - swipe:
+          start: "15%, 84%"
+          end: "15%, 64%"
+          duration: 500
+# The loop stops when 29 just shows at the column's bottom edge; a tap there would land on "ยกเลิก" below it.
+- swipe:
+    start: "15%, 84%"
+    end: "15%, 74%"
+    duration: 500
+- tapOn: "29"
+- assertVisible: "วันเกิดไม่ถูกต้อง"
+- takeScreenshot: 03-app-birth-invalid
+- tapOn: "เลือก"
+- assertVisible: "วันเกิดไม่ถูกต้อง"
+- tapOn: "2543"
+- tapOn: "เลือก"
+- waitForAnimationToEnd
+- assertVisible: ".*29 กุมภาพันธ์ 2543.*"
+- tapOn: "ให้หมูจดใช้ข้อมูลรายการ.*"
+- takeScreenshot: 03-app-extras-filled
+- tapOn:
+    id: "onboarding-next"
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-ready
+# The recap's back button returns to the last step with the answers kept.
+- tapOn: "ย้อนกลับ"
+- assertVisible: ".*29 กุมภาพันธ์ 2543.*"
+- tapOn:
+    id: "onboarding-next"
+- tapOn:
+    id: "onboarding-finish"
+- extendedWaitUntil:
+    visible: "จดเพิ่ม"
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-home

@@ -19,8 +19,15 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import { PillButton } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
 import { useAppEntry } from "@/context/app-entry";
+import { birthdayParts } from "@/features/settings/birthday";
 import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
+import {
+  PROFILE_SETTING_KEYS,
+  consentChoice,
+  type ConsentChoice as SavedConsent,
+  type ConsentSetting,
+} from "@/features/settings/profile-values";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { slipScanSession } from "@/features/slips/auto-import";
 import { authClient } from "@/lib/auth-client";
@@ -43,15 +50,8 @@ const months = [
 ];
 
 function parseBirthDate(value: string | null): Date | null {
-  if (!value) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return date.getFullYear() === Number(match[1]) &&
-    date.getMonth() + 1 === Number(match[2]) &&
-    date.getDate() === Number(match[3])
-    ? date
-    : null;
+  const parts = birthdayParts(value);
+  return parts ? new Date(parts.year, parts.month - 1, parts.day) : null;
 }
 
 function birthDateKey(date: Date): string {
@@ -74,8 +74,7 @@ function parseWebBirthDate(value: string): Date | null {
 
 type IconName = "email" | "calendar" | "terms" | "privacy" | "data" | "edit" | "chevron";
 type Sheet = "email" | "birth" | "personalization" | "updates" | "terms" | "privacy" | "data" | null;
-type ConsentSetting = "personalization" | "updates";
-type ConsentChoice = "yes" | "no" | null;
+type ConsentChoice = SavedConsent | null;
 
 function consentLabel(value: ConsentChoice): string {
   return value === "yes" ? "ยินยอม" : value === "no" ? "ไม่ยินยอม" : "ยังไม่ระบุ";
@@ -257,19 +256,19 @@ export default function AccountSettingsScreen() {
   const setSettingMutation = useMutation(settingsMutationOptions.setSetting());
 
   const birthDateQuery = useQuery({
-    ...settingsQueryOptions.value("profile_birth_date"),
+    ...settingsQueryOptions.value(PROFILE_SETTING_KEYS.birthDate),
     enabled: isFocused,
   });
   const birthMonthQuery = useQuery({
-    ...settingsQueryOptions.value("profile_birth_month"),
+    ...settingsQueryOptions.value(PROFILE_SETTING_KEYS.birthMonth),
     enabled: isFocused,
   });
   const personalizationQuery = useQuery({
-    ...settingsQueryOptions.value("onboarding_personalization"),
+    ...settingsQueryOptions.value(PROFILE_SETTING_KEYS.personalization),
     enabled: isFocused,
   });
   const updatesQuery = useQuery({
-    ...settingsQueryOptions.value("onboarding_updates"),
+    ...settingsQueryOptions.value(PROFILE_SETTING_KEYS.updates),
     enabled: isFocused,
   });
 
@@ -281,9 +280,8 @@ export default function AccountSettingsScreen() {
   const parsedMonth = Number(birthMonthQuery.data);
   const birthMonth =
     birthMonthQuery.data && Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : null;
-  const personalization: ConsentChoice =
-    personalizationQuery.data === "yes" || personalizationQuery.data === "no" ? personalizationQuery.data : null;
-  const updates: ConsentChoice = updatesQuery.data === "yes" || updatesQuery.data === "no" ? updatesQuery.data : null;
+  const personalization = consentChoice(personalizationQuery.data);
+  const updates = consentChoice(updatesQuery.data);
 
   const [birthDraft, setBirthDraft] = useState(new Date(2000, 0, 1));
   const [birthPickerOpen, setBirthPickerOpen] = useState(false);
@@ -310,11 +308,11 @@ export default function AccountSettingsScreen() {
     try {
       setSaving(true);
       await setSettingMutation.mutateAsync({
-        key: "profile_birth_date",
+        key: PROFILE_SETTING_KEYS.birthDate,
         value: date ? birthDateKey(date) : "",
       });
       await setSettingMutation.mutateAsync({
-        key: "profile_birth_month",
+        key: PROFILE_SETTING_KEYS.birthMonth,
         value: date ? String(date.getMonth() + 1) : "",
       });
       setSheet(null);
@@ -329,7 +327,7 @@ export default function AccountSettingsScreen() {
   async function saveConsent(setting: ConsentSetting, choice: Exclude<ConsentChoice, null>) {
     try {
       setSaving(true);
-      await setSettingMutation.mutateAsync({ key: `onboarding_${setting}`, value: choice });
+      await setSettingMutation.mutateAsync({ key: PROFILE_SETTING_KEYS[setting], value: choice });
       setSheet(null);
       setError(null);
     } catch (cause) {
@@ -382,7 +380,7 @@ export default function AccountSettingsScreen() {
       await clearLocalSlipImages(session?.user.id || "");
       // The server no longer holds these photos' identity, so they may be read again.
       if (session?.user.id) await slipScanSession.forget(session.user.id);
-      if (activeEmail) await setSettingMutation.mutateAsync({ key: "profile_email", value: activeEmail });
+      if (activeEmail) await setSettingMutation.mutateAsync({ key: PROFILE_SETTING_KEYS.email, value: activeEmail });
       setNotice(`ล้างข้อมูลของ ${activeEmail ?? "บัญชีนี้"} บนเซิร์ฟเวอร์แล้ว`);
     } catch (cause) {
       setError(errorMessage(cause));
