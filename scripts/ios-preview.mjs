@@ -11,10 +11,22 @@
 //   with no account. Every run gets new addresses, so nothing needs cleaning up between runs.
 // --first-start: sign the app out and forget the remembered email, so it opens signup as on a first start.
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { parseArgs } from "node:util";
+
+import { containerNeedsReinstall } from "./sim-container.mjs";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -90,6 +102,7 @@ for (const service of services) {
   }
 }
 
+if (!values["keep-app"]) repairContainer();
 if (values.fixture) Object.assign(env, await makeFixture());
 if (values["first-start"]) firstStart();
 
@@ -176,6 +189,27 @@ function firstStart() {
     encoding: "utf8",
   }).trim();
   rmSync(path.join(data, "Documents", "moojot-last-email-v1.txt"), { force: true });
+}
+
+// A data container without tmp/ breaks every asset download from Metro, so the icons vanish (issue 30).
+// Installing the same build again makes the container manager create a new, complete container.
+function repairContainer() {
+  const app = "com.anonymous.moojot";
+  const container = (kind) =>
+    execFileSync("xcrun", ["simctl", "get_app_container", "booted", app, kind], { encoding: "utf8" }).trim();
+  if (!containerNeedsReinstall(container("data"))) return;
+  const copy = path.join(mkdtempSync(path.join(tmpdir(), "ios-preview-app-")), "moojot.app");
+  cpSync(container("app"), copy, { recursive: true });
+  try {
+    execFileSync("xcrun", ["simctl", "terminate", "booted", app], { stdio: "ignore" });
+  } catch {
+    // not running
+  }
+  execFileSync("xcrun", ["simctl", "install", "booted", copy]);
+  rmSync(path.dirname(copy), { recursive: true, force: true });
+  if (containerNeedsReinstall(container("data")))
+    throw new Error("the app's data container is still incomplete after a reinstall; reinstall the dev build");
+  console.log("reinstalled the app: its data container had no tmp/ directory");
 }
 
 // Names the step Maestro stopped on and the files that show it, so nobody has to dig through the run directory.

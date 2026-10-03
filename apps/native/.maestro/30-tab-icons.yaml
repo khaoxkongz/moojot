@@ -1,0 +1,5 @@
+# Issue 30: the tab bar shows its icons after a launch (the MaterialCommunityIcons font loads from Metro).
+appId: com.anonymous.moojot
+---
+- runFlow: sign-in.yaml
+- takeScreenshot: 30-app-tab-icons

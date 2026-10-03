@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** ready-for-human
 
 **Source:** [Spec: Redesign Moojot with iOS acceptance first](../spec.md). Found on 2026-10-03, after ticket 02, during the `ios-preview` changes in commit 18d63ee.
 
@@ -36,6 +36,34 @@ The error occurred in every launch. It occurred with a cold Metro and with a war
 
 Commit 18d63ee hides the LogBox banner during `scripts/ios-preview.mjs` runs only. The script sets the simulator preference `moojotPreview`. App errors still go to `.preview-logs/metro.log`. The missing icons remain.
 
-- [ ] Find the cause. Compare the installed `expo-asset`, `@expo/vector-icons`, and `expo` versions with `bun.lock`. Clear the Metro cache (`expo start --clear`). Check the request from the simulator with the network log of the app.
-- [ ] The tab bar and the other icons show after a launch, and the app logs no `UnableToDownloadAssetException`.
+- [x] Find the cause. Compare the installed `expo-asset`, `@expo/vector-icons`, and `expo` versions with `bun.lock`. Clear the Metro cache (`expo start --clear`). Check the request from the simulator with the network log of the app.
+- [x] The tab bar and the other icons show after a launch, and the app logs no `UnableToDownloadAssetException`.
 - [ ] Check the development build on the physical iPhone 13 Pro.
+
+## Comments
+
+**Cause, found on the iPhone 11 simulator, 2026-10-03:** An unknown tool deleted the app's data container. The app then made a new folder at the same path. That folder had only `Library/Caches`. It had no `tmp/` and no container-manager metadata file.
+
+`URLSession` writes each download to `tmp/` first. Thus each Metro asset download failed (`__NSCFLocalDownloadFile: error 2 creating temp file`, `NSPOSIXErrorDomain Code=2`). Metro sent HTTP 200 each time. The fonts did not load, and `expo-asset` rejected with `UnableToDownloadAssetException`.
+
+The installed package versions agree with `bun.lock`. The double `?` in the URL and ATS are not the cause.
+
+Evidence:
+
+- The simulator log (`log show`, subsystem `com.apple.CFNetwork`) showed 2 failed downloads in each launch. After `mkdir tmp` in the container, the next launch had 0 failed downloads.
+- A reinstall of the same `.app` (`simctl install`) made a new, complete container. Then the launches had 0 failed downloads.
+- When we moved the container away, the failure occurred again. Then `scripts/ios-preview.mjs` made a complete container again without help.
+
+**Fix:** Before each launch, `scripts/ios-preview.mjs` checks the data container. If `tmp/` or the metadata file is missing, the script installs the installed build again. `scripts/sim-container.test.mjs` tests this check. A new container shows the dev menu's intro sheet one time, so `sign-in.yaml` now closes it. The `ios-preview` skill has a new "Missing icons" item.
+
+**Check on the simulator:** We ran `30-tab-icons.yaml` four times, two in light and two in dark. Each run showed the tab bar icons ([light](../notes/30-app-tab-icons.png), [dark](../notes/30-app-tab-icons-dark.png)). The simulator log had no failed download. `.preview-logs/metro.log` had no `UnableToDownloadAssetException`.
+
+**LogBox:** The `moojotPreview` change from commit 18d63ee stays. Other development warnings can also show the banner over the tab bar. App errors still go to `metro.log`.
+
+**Human check on the physical iPhone 13 Pro:**
+
+1. Run Metro from this checkout. Open the development build on the iPhone.
+2. Look at the tab bar. Make sure that the icons for “หน้าแรก” (Home) and “พี่มนุษย์” (profile) show.
+3. Make sure that no `UnableToDownloadAssetException` LogBox banner shows.
+4. Close the app fully and open it again. Do steps 2 and 3 again.
+5. If the icons are missing, delete the app and install it again with `vp exec expo run:ios --device`. Then do steps 2 to 4 again.
