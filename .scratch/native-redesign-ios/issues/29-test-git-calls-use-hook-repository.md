@@ -4,7 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-triage
+**Status:** done
+
+**Done in:** 59e5ef7 fix(scripts): keep hook Git variables out of the agent document test
 
 **Source:** Found on 2026-10-03, when the user pushed `feat/native-redesign-ios`.
 
@@ -23,8 +25,10 @@ That call keeps the same environment, so it can read the real index. Nobody chec
 
 Remove `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE` from the environment of the Git calls in the test. Include the checker that `check()` starts.
 
-- [ ] The `stage()` Git calls and the checker that `check()` starts run without `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`.
-- [ ] A test runs the test helpers with `GIT_DIR` set to another repository. That repository keeps `core.bare = false` and its index.
-- [ ] A push through `.vite-hooks/pre-push` passes, and `git config core.bare` in the main checkout then gives `false`.
+- [x] The `stage()` Git calls and the checker that `check()` starts run without `GIT_DIR`, `GIT_WORK_TREE`, and `GIT_INDEX_FILE`.
+- [x] A test runs the test helpers with `GIT_DIR` set to another repository. That repository keeps `core.bare = false` and its index.
+- [x] A push through `.vite-hooks/pre-push` passes, and `git config core.bare` in the main checkout then gives `false`.
 
 ## Comments
+
+- 2026-10-03: A push of 59e5ef7 to a temporary bare repository ran `.vite-hooks/pre-push`. The hook printed `pre-push: tests, types, tickets and helpers pass`. After the push, `git config core.bare` gave `false` for the main checkout.
