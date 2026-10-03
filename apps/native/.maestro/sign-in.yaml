@@ -4,6 +4,13 @@
 # sign-in tab and replaces the email.
 appId: com.anonymous.moojot
 ---
+# A new data container (a fresh install, or the reinstall in scripts/ios-preview.mjs) opens the dev menu's intro sheet.
+- runFlow:
+    when:
+      visible: "This is the developer menu.*"
+    commands:
+      - tapOn: "Continue"
+      - tapOn: "Close"
 - runFlow:
     when:
       visible: "เข้าสู่หมูจด"
