@@ -1,6 +1,6 @@
 // Runs a Maestro flow against the dev build on the booted iOS simulator and copies its screenshots out.
 // Usage: node scripts/ios-preview.mjs <flow.yaml> <out-dir> [--theme light|dark] [--metro-port 8081]
-//   [--offline] [--keep-app] [--fixture] [--first-start]
+//   [--offline] [--keep-app] [--fixture] [--first-start] [--photos grant|revoke|reset]
 // Starts the API server on :3000 and Metro for the dev build when they are not answering, and leaves them
 // running for the next run; their logs are .preview-logs/server.log and .preview-logs/metro.log.
 // --offline: the API server is meant to be stopped (error-state flows), so neither check nor start it.
@@ -10,6 +10,8 @@
 //   MAESTRO_FIXTURE_NAME / MAESTRO_FIXTURE_EMAIL / MAESTRO_FIXTURE_PASSWORD, plus MAESTRO_NEW_EMAIL, an address
 //   with no account. Every run gets new addresses, so nothing needs cleaning up between runs.
 // --first-start: sign the app out and forget the remembered email, so it opens signup as on a first start.
+// --photos: before the launch, give the app full photo access (grant), refuse it (revoke), or forget the answer so the
+//   system prompt can appear again (reset). The simulator cannot set limited access; only its own prompt can.
 import { execFileSync, spawn } from "node:child_process";
 import {
   copyFileSync,
@@ -37,6 +39,7 @@ const { positionals, values } = parseArgs({
     "keep-app": { type: "boolean", default: false },
     fixture: { type: "boolean", default: false },
     "first-start": { type: "boolean", default: false },
+    photos: { type: "string" },
   },
 });
 const [flow, outDir] = positionals;
@@ -106,6 +109,7 @@ for (const service of services) {
 if (!values["keep-app"]) repairContainer();
 if (values.fixture) Object.assign(env, await makeFixture());
 if (values["first-start"]) firstStart();
+if (values.photos) setPhotoAccess(values.photos);
 
 if (values.theme) execFileSync("xcrun", ["simctl", "ui", "booted", "appearance", values.theme]);
 if (!values["keep-app"]) {
@@ -169,6 +173,13 @@ function firstStart() {
   terminateApp();
   execFileSync("xcrun", ["simctl", "keychain", "booted", "reset"]);
   rmSync(path.join(appContainer("data"), "Documents", "moojot-last-email-v1.txt"), { force: true });
+}
+
+// A privacy change stops a running app, so it happens before the launch.
+function setPhotoAccess(action) {
+  if (!["grant", "revoke", "reset"].includes(action)) throw new Error("--photos takes grant, revoke or reset");
+  terminateApp();
+  execFileSync("xcrun", ["simctl", "privacy", "booted", action, "photos", appId]);
 }
 
 // Reinstalls the installed build when its data container is incomplete (see scripts/sim-container.mjs, issue 30).
