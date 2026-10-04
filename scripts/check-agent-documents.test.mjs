@@ -83,6 +83,23 @@ describe("Agent document gate", () => {
     expect(result.stderr).not.toContain("thai-prose");
   });
 
+  it("preserves commit records in a list but checks the list's prose", () => {
+    const root = fixture({
+      ".scratch/example/issues/01-done.md": [
+        "# Completed",
+        "",
+        "- 2aab590 feat(native): setup completes only when every answer is saved; then Home opens",
+        "- 44cb2b2 fix: address review findings",
+        "- The app stopped; data remains.",
+        "",
+      ].join("\n"),
+    });
+    const result = check(root);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("01-done.md:5 semicolon");
+    expect(result.stderr).not.toContain("01-done.md:3");
+  });
+
   it("allows Thai literals and the baht sign but rejects untranslated prose", () => {
     const root = fixture({
       ".scratch/example/spec.md": "# Specification\n\nShow “บันทึก” (save) beside 42 ฿.\n\nระบบอ่านข้อมูลใหม่\n",

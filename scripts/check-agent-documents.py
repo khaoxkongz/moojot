@@ -18,6 +18,8 @@ RECORD = re.compile(
     r"^\s*(?:\*\*)?(?:Status|Type|Label|Mode|Assignee|Done in|Blocked by|"
     r"Source|User stories|Parent|Published|Approval):(?:\*\*)?", re.I
 )
+# A list item that cites a commit, "- 2aab590 feat(native): subject", keeps the subject exactly as committed.
+COMMIT_RECORD = re.compile(r"^\s*[-*+]\s+[0-9a-f]{7,40} [a-z]+(?:\([^)\n]*\))?!?: ")
 FIELD_LABEL = re.compile(r"^\*\*[^*\n]+:\*\*\s*")
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.*?)\1(?!`)")
@@ -203,7 +205,7 @@ def links(lines):
 def prose(lines):
     result = []
     for line in lines:
-        if RECORD.match(line) or re.match(r"^ {0,3}\[[^\]]+\]:", line):
+        if RECORD.match(line) or COMMIT_RECORD.match(line) or re.match(r"^ {0,3}\[[^\]]+\]:", line):
             result.append("")
             continue
         line = FIELD_LABEL.sub("", line)
