@@ -10,6 +10,9 @@ const skipDirs = new Set(["node_modules", "ios", "android", ".expo", "dist", "we
 const shapes = [
   { pattern: /\+\s*543\b/, helper: "buddhistYear / shortBuddhistYear in utils/dates.ts" },
   { pattern: /%\s*100\s*===\s*0\s*\?\s*0\s*:\s*2/, helper: "amountLabel in utils/format.ts" },
+  // Ticket 03 copied both into the birthday picker and the setup draft.
+  { pattern: /\\d\{4\}-\\d\{2\}-\\d\{2\}/, helper: "isValidISODate in utils/format.ts" },
+  { pattern: /Number\(\s*[\w.]+\.slice\(0,\s*4\)\s*\)/, helper: "isoYear in utils/dates.ts" },
   {
     pattern: /(\w+)\s+instanceof\s+Error\s*\?\s*\1\.message\s*:\s*String\(\1\)/,
     helper: "errorMessage in utils/format.ts",

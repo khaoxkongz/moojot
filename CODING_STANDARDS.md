@@ -14,7 +14,7 @@ A matcher (search, alias, filter) is tested with a **near miss** too: an input t
 
 ## One helper per domain value
 
-Native code reads a `PeriodKey` and turns satang into baht through the helpers in `apps/native/utils/dates.ts` and `apps/native/utils/format.ts`, adding a helper there when one is missing. Flag a diff that parses a period key by hand (`slice`, `split`) or formats a date, year or amount inline beside an existing helper. `scripts/check-domain-helpers.mjs` already fails on the fixed shapes (`+ 543`, `% 100 === 0 ? 0 : 2`, `x instanceof Error ? x.message : String(x)`), so review for the copies it cannot see.
+Native code reads a `PeriodKey` and turns satang into baht through the helpers in `apps/native/utils/dates.ts` and `apps/native/utils/format.ts`, adding a helper there when one is missing. Flag a diff that parses a period key by hand (`slice`, `split`) or formats a date, year or amount inline beside an existing helper. `scripts/check-domain-helpers.mjs` already fails on the fixed shapes (`+ 543`, `% 100 === 0 ? 0 : 2`, `x instanceof Error ? x.message : String(x)`, an ISO-date regex, `Number(x.slice(0, 4))`), so review for the copies it cannot see.
 
 ## Deleting finance data keeps its undo
 
