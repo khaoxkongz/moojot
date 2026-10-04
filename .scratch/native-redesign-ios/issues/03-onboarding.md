@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — [Signup and sign-in](02-auth-flow.md)
 
-**Status:** ready-for-human
+**Status:** done
 
 **Done in:** 5f98735 chore(native): set the simulator's photo permission from the iOS preview script; 2aab590 feat(native): four-step setup from the design, complete only when every answer is saved; 44cb2b2 fix(native): address ticket 03 review findings
 
@@ -22,7 +22,7 @@
 - [x] Recap shows selected goals and actual photo access before use. (story 27)
 - [x] Optional birthday uses valid day/month/Buddhist-year columns. Profile uses the same two consent values. (story 26)
 - [x] Persist completion only after required data succeeds. Partial failure retains data for retry and leaves setup incomplete.
-- [ ] Check signup→ready→Home, skipped permission, Settings return, and partial-save recovery on iOS.
+- [x] Check signup→ready→Home, skipped permission, Settings return, and partial-save recovery on iOS.
 
 ## Comments
 
@@ -52,3 +52,11 @@ Check these items on the iPhone 13 Pro. Then tick the last box and set `Status: 
 7. On each step, swipe from the left edge of the screen. Check that the app stays on the same step. The header back button walks the steps.
 
 Nobody checked Dynamic Type or VoiceOver.
+
+**2026-10-04 — user decision:** The user did not do checks 1–7 above on the iPhone 13 Pro. The user decided to skip them for now and to set the ticket to `done`. The simulator evidence in [the ticket 03 notes](../notes/03-onboarding.md) is the only iOS evidence. These items have no check on a device:
+
+- Limited access.
+- Counts above 0.
+- A partial save on the device. The server test covers one failed key.
+- The busy labels, back during a pending save, and the message for a failed setup check after a completed save.
+- The left-edge back swipe, Dynamic Type, and VoiceOver.
