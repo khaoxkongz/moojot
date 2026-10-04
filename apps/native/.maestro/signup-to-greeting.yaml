@@ -1,0 +1,30 @@
+# Signs up a new account with MAESTRO_NEW_EMAIL and waits for setup's greeting. Run the parent flow with
+# --fixture (for the address) and --first-start (so the app opens signup).
+appId: com.anonymous.moojot
+---
+# A new data container (a fresh install, or the reinstall in scripts/ios-preview.mjs) opens the dev menu's intro sheet.
+- runFlow:
+    when:
+      visible: "This is the developer menu.*"
+    commands:
+      - tapOn: "Continue"
+      - tapOn: "Close"
+- extendedWaitUntil:
+    visible:
+      id: "auth-email"
+    timeout: 15000
+- tapOn:
+    id: "auth-name"
+- inputText: "หมูใหม่"
+- pressKey: Enter
+- inputText: ${MAESTRO_NEW_EMAIL}
+- pressKey: Enter
+# Show the password first: in a hidden new-password field the simulator's Automatic Strong Password cover takes the typing.
+- tapOn: "แสดงรหัสผ่าน"
+- tapOn:
+    id: "auth-password"
+- inputText: "new-password"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "สวัสดีพี่มนุษย์!"
+    timeout: 15000

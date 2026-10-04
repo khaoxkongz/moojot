@@ -1,0 +1,19 @@
+# Ticket 03 splash: a signed-out launch shows it for two seconds. The preview script's own launch waits longer than
+# that, so this flow launches the app itself. Run with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-splash.yaml <out-dir> --first-start --keep-app
+appId: com.anonymous.moojot
+---
+- openLink: "exp+moojot://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
+- extendedWaitUntil:
+    visible: "เข้าสู่หมูจด"
+    timeout: 30000
+# The entrance takes 0.9 s of the two seconds.
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 03-app-splash
+# A tap leaves at once.
+- tapOn: "เข้าสู่หมูจด"
+- extendedWaitUntil:
+    visible:
+      id: "auth-email"
+    timeout: 5000

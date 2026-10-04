@@ -19,51 +19,21 @@ import { useAppTheme } from "@/lib/use-app-theme";
 import { PillButton } from "@/components/ui/controls";
 import { Text, TextInput } from "@/components/ui/typography";
 import { useAppEntry } from "@/context/app-entry";
+import { SETUP_SETTING_KEYS } from "@moojot/api/shared/finance/setup-keys";
+import { birthdayParts } from "@/features/settings/birthday";
 import { SettingsPage } from "@/features/settings/components/settings-page";
 import { settingsMutationOptions } from "@/features/settings/mutation-options";
+import { consentChoice, type ConsentChoice, type ConsentSetting } from "@/features/settings/profile-values";
 import { settingsQueryOptions } from "@/features/settings/query-options";
 import { slipScanSession } from "@/features/slips/auto-import";
 import { authClient } from "@/lib/auth-client";
 import { clearLocalSlipImages } from "@/lib/local-slip-assets";
-import { errorMessage } from "@/utils/format";
-
-const months = [
-  "มกราคม",
-  "กุมภาพันธ์",
-  "มีนาคม",
-  "เมษายน",
-  "พฤษภาคม",
-  "มิถุนายน",
-  "กรกฎาคม",
-  "สิงหาคม",
-  "กันยายน",
-  "ตุลาคม",
-  "พฤศจิกายน",
-  "ธันวาคม",
-];
+import { isoFromDate } from "@/utils/dates";
+import { errorMessage, longThaiMonth, thaiDate } from "@/utils/format";
 
 function parseBirthDate(value: string | null): Date | null {
-  if (!value) return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  return date.getFullYear() === Number(match[1]) &&
-    date.getMonth() + 1 === Number(match[2]) &&
-    date.getDate() === Number(match[3])
-    ? date
-    : null;
-}
-
-function birthDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function formatBirthDate(date: Date): string {
-  return new Intl.DateTimeFormat("th-TH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  const parts = birthdayParts(value);
+  return parts ? new Date(parts.year, parts.month - 1, parts.day) : null;
 }
 
 function parseWebBirthDate(value: string): Date | null {
@@ -74,10 +44,10 @@ function parseWebBirthDate(value: string): Date | null {
 
 type IconName = "email" | "calendar" | "terms" | "privacy" | "data" | "edit" | "chevron";
 type Sheet = "email" | "birth" | "personalization" | "updates" | "terms" | "privacy" | "data" | null;
-type ConsentSetting = "personalization" | "updates";
-type ConsentChoice = "yes" | "no" | null;
+/** A consent as the profile shows it: null when the account never answered. */
+type ShownConsent = ConsentChoice | null;
 
-function consentLabel(value: ConsentChoice): string {
+function consentLabel(value: ShownConsent): string {
   return value === "yes" ? "ยินยอม" : value === "no" ? "ไม่ยินยอม" : "ยังไม่ระบุ";
 }
 
@@ -257,19 +227,19 @@ export default function AccountSettingsScreen() {
   const setSettingMutation = useMutation(settingsMutationOptions.setSetting());
 
   const birthDateQuery = useQuery({
-    ...settingsQueryOptions.value("profile_birth_date"),
+    ...settingsQueryOptions.value(SETUP_SETTING_KEYS.birthDate),
     enabled: isFocused,
   });
   const birthMonthQuery = useQuery({
-    ...settingsQueryOptions.value("profile_birth_month"),
+    ...settingsQueryOptions.value(SETUP_SETTING_KEYS.birthMonth),
     enabled: isFocused,
   });
   const personalizationQuery = useQuery({
-    ...settingsQueryOptions.value("onboarding_personalization"),
+    ...settingsQueryOptions.value(SETUP_SETTING_KEYS.personalization),
     enabled: isFocused,
   });
   const updatesQuery = useQuery({
-    ...settingsQueryOptions.value("onboarding_updates"),
+    ...settingsQueryOptions.value(SETUP_SETTING_KEYS.updates),
     enabled: isFocused,
   });
 
@@ -281,9 +251,8 @@ export default function AccountSettingsScreen() {
   const parsedMonth = Number(birthMonthQuery.data);
   const birthMonth =
     birthMonthQuery.data && Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : null;
-  const personalization: ConsentChoice =
-    personalizationQuery.data === "yes" || personalizationQuery.data === "no" ? personalizationQuery.data : null;
-  const updates: ConsentChoice = updatesQuery.data === "yes" || updatesQuery.data === "no" ? updatesQuery.data : null;
+  const personalization = consentChoice(personalizationQuery.data);
+  const updates = consentChoice(updatesQuery.data);
 
   const [birthDraft, setBirthDraft] = useState(new Date(2000, 0, 1));
   const [birthPickerOpen, setBirthPickerOpen] = useState(false);
@@ -310,11 +279,11 @@ export default function AccountSettingsScreen() {
     try {
       setSaving(true);
       await setSettingMutation.mutateAsync({
-        key: "profile_birth_date",
-        value: date ? birthDateKey(date) : "",
+        key: SETUP_SETTING_KEYS.birthDate,
+        value: date ? isoFromDate(date) : "",
       });
       await setSettingMutation.mutateAsync({
-        key: "profile_birth_month",
+        key: SETUP_SETTING_KEYS.birthMonth,
         value: date ? String(date.getMonth() + 1) : "",
       });
       setSheet(null);
@@ -326,10 +295,10 @@ export default function AccountSettingsScreen() {
     }
   }
 
-  async function saveConsent(setting: ConsentSetting, choice: Exclude<ConsentChoice, null>) {
+  async function saveConsent(setting: ConsentSetting, choice: ConsentChoice) {
     try {
       setSaving(true);
-      await setSettingMutation.mutateAsync({ key: `onboarding_${setting}`, value: choice });
+      await setSettingMutation.mutateAsync({ key: SETUP_SETTING_KEYS[setting], value: choice });
       setSheet(null);
       setError(null);
     } catch (cause) {
@@ -382,7 +351,7 @@ export default function AccountSettingsScreen() {
       await clearLocalSlipImages(session?.user.id || "");
       // The server no longer holds these photos' identity, so they may be read again.
       if (session?.user.id) await slipScanSession.forget(session.user.id);
-      if (activeEmail) await setSettingMutation.mutateAsync({ key: "profile_email", value: activeEmail });
+      if (activeEmail) await setSettingMutation.mutateAsync({ key: SETUP_SETTING_KEYS.email, value: activeEmail });
       setNotice(`ล้างข้อมูลของ ${activeEmail ?? "บัญชีนี้"} บนเซิร์ฟเวอร์แล้ว`);
     } catch (cause) {
       setError(errorMessage(cause));
@@ -448,7 +417,9 @@ export default function AccountSettingsScreen() {
               <Row
                 icon="calendar"
                 label="วันเกิด"
-                value={birthDate ? formatBirthDate(birthDate) : birthMonth ? months[birthMonth - 1] : "ยังไม่ระบุ"}
+                value={
+                  birthDate ? thaiDate(isoFromDate(birthDate)) : birthMonth ? longThaiMonth(birthMonth) : "ยังไม่ระบุ"
+                }
                 edit
                 onPress={() => open("birth")}
               />

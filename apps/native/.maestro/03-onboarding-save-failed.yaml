@@ -1,0 +1,12 @@
+# Ticket 03 save recovery, part 2 of 3: with the API server stopped, saving setup fails and the recap says so. Run with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-onboarding-save-failed.yaml <out-dir> --offline --keep-app
+# then run 03-onboarding-save-retry.yaml, which starts the server again and relaunches the app.
+appId: com.anonymous.moojot
+---
+- tapOn:
+    id: "onboarding-finish"
+- extendedWaitUntil:
+    visible: "บันทึกไม่สำเร็จ ลองอีกครั้ง"
+    timeout: 30000
+- waitForAnimationToEnd
+- takeScreenshot: 03-app-ready-save-failed

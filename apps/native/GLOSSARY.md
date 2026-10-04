@@ -72,3 +72,18 @@ A rule that makes Moojot create finance entries on the due dates the user sets.
 A period when the user intentionally disables a recurring rule.
 Resuming the rule does not create entries for due dates within that period.
 _Avoid_: App inactivity (`ช่วงที่ไม่ได้เปิดแอป`), when referring to an intentional rule pause.
+
+**Setup** (`ตั้งค่าเริ่มใช้งาน`):
+The steps a new account completes before Home: terms, photo access, goals, and optional information, then a recap.
+Setup is complete only after the server saves the account's answers.
+_Avoid_: Onboarding complete, when the answers are not saved yet.
+
+**Photo access** (`สิทธิ์เข้าถึงรูปภาพ`):
+The device permission for Moojot to read photos: full, limited, or refused.
+Automatic slip reading needs full access.
+A skipped photo step (`ข้ามไปก่อน`) is a choice in Setup, not a permission.
+
+**Found slip photos** (`รูปในอัลบั้มสลิป`):
+Images from the last 30 days in the supported bank albums, counted in Setup.
+They are unread, and they are not saved entries.
+_Avoid_: Slips or transactions, when referring to counted photos.

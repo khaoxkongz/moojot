@@ -1,0 +1,20 @@
+# Ticket 03 save recovery, part 1 of 3: a new account answers setup up to the recap. Run with
+#   node scripts/ios-preview.mjs apps/native/.maestro/03-onboarding-to-ready.yaml <out-dir> --fixture --first-start --photos reset
+# then stop the API server (lsof -ti tcp:3000 -sTCP:LISTEN | xargs kill) and run 03-onboarding-save-failed.yaml.
+appId: com.anonymous.moojot
+---
+- runFlow: signup-to-greeting.yaml
+- tapOn: "สวัสดี หมูจด!"
+- tapOn:
+    id: "onboarding-terms-accept"
+- tapOn:
+    id: "onboarding-next"
+- tapOn: "ข้ามไปก่อน"
+- tapOn: "ลดรายจ่าย"
+- tapOn:
+    id: "onboarding-next"
+- tapOn:
+    id: "onboarding-next"
+- extendedWaitUntil:
+    visible: "หมูจดพร้อมจดแล้ว!"
+    timeout: 10000
